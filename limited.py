@@ -5,7 +5,7 @@ Commands:
 - /limited <beer/brewery text> HH:MM
 - /limited, then type <beer/brewery text> HH:MM
 
-Stores data in BOT_DATA_DIR/DATA_DIR so Fly.io deploys do not wipe it.
+Stores data in BOT_DATA_DIR/DATA_DIR so redeploys do not wipe it.
 """
 
 import os

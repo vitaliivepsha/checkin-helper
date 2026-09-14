@@ -22,10 +22,10 @@ bot_log.txt
 bot_log_old_broken.txt
 *.log
 
-# Orphaned data files - no code path reads these anymore (confirmed via
-# grep before adding here - see README/session notes if this ever needs
-# re-checking), kept on disk for reference rather than deleted
-beers_cache.json
+# Orphaned data files - no code path reads these anymore, not even via an
+# env var override (checked .env too, not just source - beers_cache.json
+# was wrongly listed here once already, see README/session notes), kept
+# on disk for reference rather than deleted
 beers_result.json
 mbcc_2022.json
 mbcc_2024.json

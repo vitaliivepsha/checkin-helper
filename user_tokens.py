@@ -2,7 +2,7 @@
 
 Each friend connects their own Untappd account via /connect_untappd so their
 check-ins land on their own account, not the bot owner's. Persisted under
-DATA_DIR (the Fly volume) so it survives redeploys - same pattern as
+DATA_DIR (the persistent volume) so it survives redeploys - same pattern as
 checkins.json/pinned.json in bot.py.
 """
 

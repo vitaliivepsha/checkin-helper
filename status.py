@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 # ── Persistent data directory ────────────────────────────────────────────────
-# Keep status JSON on the same Fly Volume as checkins.json.
+# Keep status JSON on the same persistent volume as checkins.json.
 DATA_DIR = os.path.abspath(os.getenv("BOT_DATA_DIR") or os.getenv("DATA_DIR") or ".")
 os.makedirs(DATA_DIR, exist_ok=True)
 

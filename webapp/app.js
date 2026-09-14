@@ -471,10 +471,20 @@
     searchDebounce = setTimeout(() => runSearch(q), 350);
   });
 
+  // Toggling a filter checkbox fires a fresh (non-debounced) search while a
+  // debounced typed one may still be in flight - with no ordering guarantee
+  // on which response lands first, rendering unconditionally could show
+  // stale results for a query the user has already changed. A monotonic
+  // request id, checked when the response lands, discards any response
+  // that isn't from the most recent call.
+  let searchRequestId = 0;
+
   async function runSearch(query) {
+    const requestId = ++searchRequestId;
     const festivalPriority = festivalPriorityCheckbox.checked;
     const wishlistPriority = wishlistPriorityCheckbox.checked;
     const { ok, status, data } = await apiPost("/api/checkin/search", { query, festivalPriority, wishlistPriority });
+    if (requestId !== searchRequestId) return; // superseded by a newer search - discard
     if (!ok) {
       $("search-status").textContent = status === 429
         ? "Untappd тимчасово обмежив запити — спробуйте за хвилину."

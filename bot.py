@@ -35,8 +35,9 @@ import festival_watch
 import comment_watch
 
 # ── Persistent data directory ────────────────────────────────────────────────
-# Fly.io root filesystems are ephemeral. Mount a Fly Volume at /data and set
-# BOT_DATA_DIR=/data (or DATA_DIR=/data) so mutable JSON state survives deploys.
+# Most container hosts have an ephemeral root filesystem. Mount a persistent
+# volume/disk at some path and set BOT_DATA_DIR (or DATA_DIR) to it so mutable
+# JSON state survives redeploys.
 DATA_DIR = os.path.abspath(os.getenv("BOT_DATA_DIR") or os.getenv("DATA_DIR") or ".")
 os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -55,8 +56,8 @@ auto_toast.init(DATA_DIR)  # same reasoning - /auto_toast must work regardless o
 festival_watch.init(DATA_DIR)  # same - /festival_watch's config commands must work regardless of the Mini App
 comment_watch.init(DATA_DIR)  # same - /comment_watch's on/off command must work regardless of the Mini App
 
-# Public HTTPS base URL this bot is reachable at (Fly.io app URL) - needed to
-# build the Telegram Mini App link for the festival check-in webapp.
+# Public HTTPS base URL this bot is reachable at (the deployed app's own URL)
+# - needed to build the Telegram Mini App link for the festival check-in webapp.
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "")
 _webapp_server_task = None  # keeps the asyncio.create_task result alive (avoid GC)
 
@@ -392,65 +393,105 @@ async def begin_ocr_text_correction(
 
 
 # ── Pinned messages storage ───────────────────────────────────────────────────
+# asyncio.Lock + write-to-.tmp-then-os.replace() + tolerate a corrupt/partial
+# file - same convention every other data module in this project uses
+# (checkin_queue.py, user_tokens.py, auto_toast.py, had_it_index.py, ...).
+# checkins.json/pinned.json used to be the two holdouts still doing a plain
+# open(path, "w"): a process kill mid-write (routine on most container hosts -
+# redeploys, OOM) left a truncated file, and the bare `except FileNotFoundError`
+# meant the very next read raised an uncaught JSONDecodeError - with no global
+# PTB error handler registered, that silently broke every checkin-related
+# command/button for every user until someone fixed the file by hand.
 
-def load_pinned() -> dict:
+_pinned_lock = asyncio.Lock()
+
+
+def _atomic_write_json(path: str, data: dict) -> None:
+    tmp_path = path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, path)
+
+
+def _load_json_tolerant(path: str) -> dict:
+    if not os.path.exists(path):
+        return {}
     try:
-        with open(PINNED_FILE, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (json.JSONDecodeError, OSError):
         return {}
 
-def save_pinned(data: dict):
-    with open(PINNED_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
 
-def get_pinned(user_id, chat_id, kind: str) -> int | None:
-    return load_pinned().get(f"{user_id}:{chat_id}:{kind}")
+async def load_pinned() -> dict:
+    async with _pinned_lock:
+        return _load_json_tolerant(PINNED_FILE)
 
-def set_pinned(user_id, chat_id, kind: str, msg_id: int):
-    data = load_pinned()
-    data[f"{user_id}:{chat_id}:{kind}"] = msg_id
-    save_pinned(data)
 
-def clear_pinned(user_id, chat_id, kind: str):
-    data = load_pinned()
-    data.pop(f"{user_id}:{chat_id}:{kind}", None)
-    save_pinned(data)
+async def save_pinned(data: dict) -> None:
+    async with _pinned_lock:
+        _atomic_write_json(PINNED_FILE, data)
+
+
+async def get_pinned(user_id, chat_id, kind: str) -> int | None:
+    data = await load_pinned()
+    return data.get(f"{user_id}:{chat_id}:{kind}")
+
+
+async def set_pinned(user_id, chat_id, kind: str, msg_id: int) -> None:
+    async with _pinned_lock:
+        data = _load_json_tolerant(PINNED_FILE)
+        data[f"{user_id}:{chat_id}:{kind}"] = msg_id
+        _atomic_write_json(PINNED_FILE, data)
+
+
+async def clear_pinned(user_id, chat_id, kind: str) -> None:
+    async with _pinned_lock:
+        data = _load_json_tolerant(PINNED_FILE)
+        data.pop(f"{user_id}:{chat_id}:{kind}", None)
+        _atomic_write_json(PINNED_FILE, data)
 
 
 # ── Checkins ──────────────────────────────────────────────────────────────────
 
-def load_checkins() -> dict:
-    try:
-        with open(CHECKINS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
+_checkins_lock = asyncio.Lock()
 
-def save_checkins(data: dict):
-    with open(CHECKINS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
 
-def get_user_checkins(user_id) -> dict:
-    return load_checkins().get(str(user_id), {})
+async def load_checkins() -> dict:
+    async with _checkins_lock:
+        return _load_json_tolerant(CHECKINS_FILE)
 
-def add_checkin(user_id, beer_id: str, name: str, brewery: str, url: str):
-    data = load_checkins()
-    uid = str(user_id)
-    if uid not in data:
-        data[uid] = {}
-    data[uid][beer_id] = {
-        "name": name, "brewery": brewery, "url": url,
-        "ts": datetime.now().strftime("%H:%M")
-    }
-    save_checkins(data)
 
-def remove_checkin(user_id, beer_id: str):
-    data = load_checkins()
-    uid = str(user_id)
-    if uid in data and beer_id in data[uid]:
-        del data[uid][beer_id]
-        save_checkins(data)
+async def save_checkins(data: dict) -> None:
+    async with _checkins_lock:
+        _atomic_write_json(CHECKINS_FILE, data)
+
+
+async def get_user_checkins(user_id) -> dict:
+    data = await load_checkins()
+    return data.get(str(user_id), {})
+
+
+async def add_checkin(user_id, beer_id: str, name: str, brewery: str, url: str) -> None:
+    async with _checkins_lock:
+        data = _load_json_tolerant(CHECKINS_FILE)
+        uid = str(user_id)
+        if uid not in data:
+            data[uid] = {}
+        data[uid][beer_id] = {
+            "name": name, "brewery": brewery, "url": url,
+            "ts": datetime.now().strftime("%H:%M")
+        }
+        _atomic_write_json(CHECKINS_FILE, data)
+
+
+async def remove_checkin(user_id, beer_id: str) -> None:
+    async with _checkins_lock:
+        data = _load_json_tolerant(CHECKINS_FILE)
+        uid = str(user_id)
+        if uid in data and beer_id in data[uid]:
+            del data[uid][beer_id]
+            _atomic_write_json(CHECKINS_FILE, data)
 
 
 # ── Beer DB ───────────────────────────────────────────────────────────────────
@@ -709,8 +750,8 @@ def brewery_then_beer_alpha_key(beer: dict) -> tuple[str, str, str, str]:
 
 # ── Stats / Todo helpers ──────────────────────────────────────────────────────
 
-def build_stats_text(user_id, lng: str) -> str:
-    checkins = get_user_checkins(user_id)
+async def build_stats_text(user_id, lng: str) -> str:
+    checkins = await get_user_checkins(user_id)
     if not checkins:
         return t(lng, "stats_empty")
     lines = [t(lng, "stats_header", count=len(checkins))]
@@ -725,8 +766,8 @@ def build_stats_text(user_id, lng: str) -> str:
             lines.append(f"• {name} — _{brewery}_ {ts}")
     return "\n".join(lines)
 
-def build_todo_page(user_id, page: int, lng: str, session_filter: str = "all") -> tuple[str, int]:
-    checkins = get_user_checkins(user_id)
+async def build_todo_page(user_id, page: int, lng: str, session_filter: str = "all") -> tuple[str, int]:
+    checkins = await get_user_checkins(user_id)
     checked_ids = set(checkins.keys())
     todo = [b for b in FESTIVAL_BEERS if b["id"] not in checked_ids]
     if session_filter != "all":
@@ -832,7 +873,7 @@ async def send_or_update_pinned(
     text: str, keyboard=None, lng: str = "en"
 ) -> int:
     is_private = int(chat_id) == int(user_id)
-    existing_id = get_pinned(user_id, chat_id, kind)
+    existing_id = await get_pinned(user_id, chat_id, kind)
     logger.info(f"send_or_update_pinned: user={user_id} chat={chat_id} kind={kind} existing={existing_id} is_private={is_private}")
 
     kwargs = dict(parse_mode="Markdown", disable_web_page_preview=True)
@@ -854,20 +895,20 @@ async def send_or_update_pinned(
                     await ensure_pinned(context, chat_id, existing_id)
                 return existing_id
             logger.warning(f"Edit failed (id={existing_id}) chat={chat_id}: {type(e).__name__}: {e}")
-            clear_pinned(user_id, chat_id, kind)
+            await clear_pinned(user_id, chat_id, kind)
 
     msg = await context.bot.send_message(chat_id=chat_id, text=text, **kwargs)
-    set_pinned(user_id, chat_id, kind, msg.message_id)
+    await set_pinned(user_id, chat_id, kind, msg.message_id)
     if is_private:
         await ensure_pinned(context, chat_id, msg.message_id)
     return msg.message_id
 
 async def refresh_pinned_todo(context, user_id: int, lng: str):
-    existing_id = get_pinned(user_id, user_id, "todo")
+    existing_id = await get_pinned(user_id, user_id, "todo")
     if not existing_id:
         return
     try:
-        text, total_pages = build_todo_page(user_id, 0, lng, "all")
+        text, total_pages = await build_todo_page(user_id, 0, lng, "all")
         keyboard = todo_keyboard(0, total_pages, user_id, "all")
         await context.bot.edit_message_text(
             chat_id=user_id, message_id=existing_id,
@@ -880,7 +921,7 @@ async def refresh_pinned_todo(context, user_id: int, lng: str):
 
 # ── Keyboards ─────────────────────────────────────────────────────────────────
 
-def beer_keyboard(
+async def beer_keyboard(
     beer_id: str,
     untappd_url: str,
     user_id,
@@ -892,7 +933,7 @@ def beer_keyboard(
     In private chats we can show personal check-in state.
     In group chats inline keyboards are shared, so keep the button neutral.
     """
-    checked = personal_state and beer_id in get_user_checkins(user_id)
+    checked = personal_state and beer_id in await get_user_checkins(user_id)
 
     checkin_btn = (
         InlineKeyboardButton(t(lng, "btn_checked"), callback_data=f"uncheckin:{beer_id}")
@@ -926,7 +967,7 @@ def nofound_keyboard(untappd_url: str, msg_id: int, lng: str) -> InlineKeyboardM
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lng = lang(update)
-    checkins = get_user_checkins(update.effective_user.id)
+    checkins = await get_user_checkins(update.effective_user.id)
     await update.message.reply_text(
         t(lng, "start", beer_count=len(ALL_BEERS), checkin_count=len(checkins)),
         parse_mode="Markdown"
@@ -937,7 +978,7 @@ async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lng = lang(update)
     user_id = update.effective_user.id
     is_group = update.effective_chat.id != user_id
-    text = build_stats_text(user_id, lng)
+    text = await build_stats_text(user_id, lng)
     try:
         # Always send to private (user_id == private chat_id)
         msg_id = await send_or_update_pinned(
@@ -966,7 +1007,7 @@ async def todo_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not FESTIVAL_BEERS:
         await update.message.reply_text(t(lng, "todo_no_festival"))
         return
-    text, total_pages = build_todo_page(user_id, 0, lng, "all")
+    text, total_pages = await build_todo_page(user_id, 0, lng, "all")
     keyboard = todo_keyboard(0, total_pages, user_id, "all")
     try:
         msg_id = await send_or_update_pinned(
@@ -1023,7 +1064,7 @@ async def find_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from rapidfuzz import fuzz
     query = " ".join(args).strip()
     query_norm = query.lower()
-    checkins = get_user_checkins(user_id)
+    checkins = await get_user_checkins(user_id)
 
     def field_match(value: str, strong_score: int = 90) -> bool:
         value_norm = (value or "").lower().strip()
@@ -1092,13 +1133,23 @@ async def find_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(text, parse_mode="Markdown", disable_web_page_preview=True)
 
 async def clear_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Wiping check-in marks is permanent (no undo, unlike a webapp check-in
+    which at least has a confirm screen before it ever touches Untappd) -
+    show a confirmation prompt instead of clearing immediately, same
+    "irreversible action needs a confirm step" reasoning the webapp's own
+    confirm screen is built on (see README)."""
     lng = lang(update)
-    data = load_checkins()
+    data = await load_checkins()
     uid = str(update.effective_user.id)
     count = len(data.get(uid, {}))
-    data[uid] = {}
-    save_checkins(data)
-    await update.message.reply_text(t(lng, "cleared", count=count))
+    if count == 0:
+        await update.message.reply_text(t(lng, "clear_confirm_empty"))
+        return
+    keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton(t(lng, "btn_clear_confirm"), callback_data=f"clear_confirm:{uid}"),
+        InlineKeyboardButton(t(lng, "btn_clear_cancel"), callback_data="delete_msg"),
+    ]])
+    await update.message.reply_text(t(lng, "clear_confirm_prompt", count=count), reply_markup=keyboard)
 
 async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cancel pending prompts and keep the chat clean.
@@ -1630,7 +1681,7 @@ async def _send_detected_results(
                 if not first_result_message_used:
                     await progress_msg.edit_text(
                         text,
-                        reply_markup=beer_keyboard(
+                        reply_markup=await beer_keyboard(
                             beer_id,
                             untappd_url,
                             user_id,
@@ -1647,7 +1698,7 @@ async def _send_detected_results(
                     sent_beer = await resilient_send_message(context,
                         chat_id=chat_id,
                         text=text,
-                        reply_markup=beer_keyboard(
+                        reply_markup=await beer_keyboard(
                             beer_id,
                             untappd_url,
                             user_id,
@@ -1664,7 +1715,7 @@ async def _send_detected_results(
                     "chat_id": chat_id, "user_id": user_id, "lng": lng,
                 }
                 await sent_beer.edit_reply_markup(
-                    reply_markup=beer_keyboard(
+                    reply_markup=await beer_keyboard(
                         beer_id,
                         untappd_url,
                         user_id,
@@ -1674,7 +1725,7 @@ async def _send_detected_results(
                     )
                 )
             else:
-                web_url = search_untappd_web(beer_name, brewery_name)
+                web_url = await asyncio.to_thread(search_untappd_web, beer_name, brewery_name)
                 text = f"🍺 <code>{h(beer_name)}</code>"
                 if brewery_name:
                     text += f"\n🏭 {h(brewery_name)}"
@@ -1758,6 +1809,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer()
         return
 
+    elif data.startswith("clear_confirm:"):
+        # Only the person who ran /clear can confirm it - a bare "clear_confirm"
+        # with no owner check would let anyone else in a group chat tap this
+        # button and end up wiping their OWN check-ins (not the requester's,
+        # since the wipe always targets the tapper - still confusing/unwanted
+        # for someone who never typed /clear themselves).
+        owner_id = data.split(":", 1)[1]
+        if str(user_id) != owner_id:
+            await query.answer(t(lng, "clear_not_yours"), show_alert=True)
+            return
+        data_store = await load_checkins()
+        count = len(data_store.get(owner_id, {}))
+        data_store[owner_id] = {}
+        await save_checkins(data_store)
+        await query.answer()
+        await query.edit_message_text(t(lng, "cleared", count=count))
+        return
+
     elif data == "delete_msg":
         await query.answer()
         try:
@@ -1770,7 +1839,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         beer_id = data.split(":", 1)[1]
         is_private = int(query.message.chat_id) == int(user_id)
 
-        already_checked = beer_id in get_user_checkins(user_id)
+        already_checked = beer_id in await get_user_checkins(user_id)
         beer_info = context.bot_data.get(f"beer:{beer_id}", {})
 
         if not beer_info.get("name") or beer_info.get("name") == "?":
@@ -1793,7 +1862,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 show_alert=True,
             )
         else:
-            add_checkin(user_id, beer_id, beer_name, brewery, url)
+            await add_checkin(user_id, beer_id, beer_name, brewery, url)
             await refresh_pinned_todo(context, user_id, lng)
 
             private_text = t(lng, "checkin_private_notice", beer_name=beer_name)
@@ -1832,7 +1901,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg_id = query.message.message_id
 
             await query.edit_message_reply_markup(
-                reply_markup=beer_keyboard(
+                reply_markup=await beer_keyboard(
                     beer_id,
                     untappd_url,
                     user_id,
@@ -1846,13 +1915,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         beer_id = data.split(":", 1)[1]
         is_private = int(query.message.chat_id) == int(user_id)
 
-        was_checked = beer_id in get_user_checkins(user_id)
+        was_checked = beer_id in await get_user_checkins(user_id)
         beer_info = context.bot_data.get(f"beer:{beer_id}", {})
         beer_name = beer_info.get("name", "?")
         brewery = beer_info.get("brewery", "")
 
         if was_checked:
-            remove_checkin(user_id, beer_id)
+            await remove_checkin(user_id, beer_id)
             await refresh_pinned_todo(context, user_id, lng)
 
             private_text = t(lng, "uncheckin_private_notice", beer_name=beer_name)
@@ -1893,7 +1962,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg_id = query.message.message_id
 
             await query.edit_message_reply_markup(
-                reply_markup=beer_keyboard(
+                reply_markup=await beer_keyboard(
                     beer_id,
                     untappd_url,
                     user_id,
@@ -1909,7 +1978,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         page = int(parts[1])
         owner_id = int(parts[2])
         session_filter = parts[3] if len(parts) > 3 else "all"
-        text, total_pages = build_todo_page(owner_id, page, lng, session_filter)
+        text, total_pages = await build_todo_page(owner_id, page, lng, session_filter)
         keyboard = todo_keyboard(page, total_pages, owner_id, session_filter)
         await query.edit_message_text(
             text=text, parse_mode="Markdown",
@@ -2050,7 +2119,7 @@ async def _apply_ocr_text_correction(update: Update, context: ContextTypes.DEFAU
 
     style = pending.get("style", "")
     abv_str = pending.get("abv_str", "")
-    web_url = search_untappd_web(corrected_beer, corrected_brewery)
+    web_url = await asyncio.to_thread(search_untappd_web, corrected_beer, corrected_brewery)
 
     text = f"🍺 <code>{h(corrected_beer)}</code>"
     if corrected_brewery:
@@ -2355,13 +2424,19 @@ async def _apply_search_result(context, pending: dict, match: dict, user_id):
     msg_id = pending.get("msg_id", 0)
 
     sess = session_emoji(match)
-    text = f"🍺 `{match['name']}`\n🏭 {match.get('brewery', '')}"
+    # HTML + h() (escape), not raw Markdown - a DB beer name containing a
+    # backtick/underscore/asterisk would otherwise make edit_message_text
+    # raise "can't parse entities"; with no global PTB error handler, that
+    # update is silently dropped and this manual-search pick appears to do
+    # nothing. Matches the pattern already used for live-search results
+    # elsewhere in this same flow.
+    text = f"🍺 <code>{h(match['name'])}</code>\n🏭 {h(match.get('brewery', ''))}"
     if display_style:
-        text += f"\n🏷 {display_style}{abv_str}"
+        text += f"\n🏷 {h(display_style)}{h(abv_str)}"
     if sess:
-        text += f"\n{sess} {match.get('session', '')}"
+        text += f"\n{h(sess)} {h(match.get('session', ''))}"
     if match.get("location"):
-        text += f"\n📍 {match.get('location')}"
+        text += f"\n📍 {h(match.get('location'))}"
 
     context.bot_data[f"beer:{beer_id}"] = {
         "name": match["name"], "brewery": match.get("brewery", ""),
@@ -2369,7 +2444,7 @@ async def _apply_search_result(context, pending: dict, match: dict, user_id):
     }
     personal_keyboard = int(pending["chat_id"]) == int(user_id)
 
-    keyboard = beer_keyboard(
+    keyboard = await beer_keyboard(
         beer_id,
         untappd_url,
         user_id,
@@ -2381,13 +2456,13 @@ async def _apply_search_result(context, pending: dict, match: dict, user_id):
     try:
         await context.bot.edit_message_text(
             chat_id=pending["chat_id"], message_id=msg_id,
-            text=text, parse_mode="Markdown",
+            text=text, parse_mode="HTML",
             reply_markup=keyboard, disable_web_page_preview=True
         )
     except Exception as e:
         logger.error(f"Edit message error: {e}")
         await context.bot.send_message(
-            chat_id=pending["chat_id"], text=text, parse_mode="Markdown",
+            chat_id=pending["chat_id"], text=text, parse_mode="HTML",
             reply_markup=keyboard, disable_web_page_preview=True
         )
 

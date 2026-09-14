@@ -924,12 +924,6 @@ async def handle_queue_list(request: web.Request) -> web.Response:
     token = await _resolve_token(tg_user)
 
     all_items = await checkin_queue.list_items()
-    # Per-viewer had-it: reuses the same mechanism as search results, keyed
-    # by beerId under "beerId" so _annotate_had_it can mutate in place.
-    await _annotate_had_it(all_items, user_id, token)
-    if not token:
-        for it in all_items:
-            it.setdefault("hadIt", None)
 
     # Once *you* have checked a beer in *through this queue*, or personally
     # dismissed it with "✕", it drops off your own view - other people (or
@@ -944,6 +938,17 @@ async def handle_queue_list(request: web.Request) -> web.Response:
         if user_id not in (it.get("completedBy") or [])
         and user_id not in (it.get("hiddenBy") or [])
     ]
+    # Annotate AFTER filtering - _annotate_had_it only touches the first 5
+    # (quota-conserving), and those must be the first 5 the viewer will
+    # actually see, not 5 that might include beers already filtered out of
+    # their own view (which would both waste quota-costing check_i_had_beer
+    # calls on beers this response never returns, and leave later, genuinely
+    # visible beers with no had-it badge at all).
+    await _annotate_had_it(items, user_id, token)
+    if not token:
+        for it in items:
+            it.setdefault("hadIt", None)
+
     return web.json_response({"items": items, "total": len(all_items)})
 
 
@@ -1336,7 +1341,7 @@ async def start_webapp_server(
     via `_ptb_bot.send_message`; nothing else here needs it. `festival_beers`
     is bot.py's ALL_BEERS (id/name/brewery/style/session) - searched before
     falling back to a live Untappd search. `data_dir` is bot.py's DATA_DIR
-    (the persistent Fly volume) for per-user tokens and the shared queue.
+    (the persistent volume) for per-user tokens and the shared queue.
     `sessions_raw` is bot.py's SESSIONS_RAW (the undeduped {session: [beers]}
     dict) - used to recover every session a beer appears in, since
     ALL_BEERS itself only keeps the first.
