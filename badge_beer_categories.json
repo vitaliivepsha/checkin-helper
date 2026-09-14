@@ -1,0 +1,1607 @@
+{
+  "_source": "https://badges.untappd.com/ — public Untappd badge catalog, BEER BADGES category (style-pack and country/region-pack badges), fetched 2026-09-12",
+  "_note": "Two arrays: 'style_badges' (earned by checking in N DISTINCT BEERS matching one or more specific Untappd beer STYLE strings) and 'country_badges' (earned by checking in N DISTINCT BEERS from breweries in one or more specific COUNTRY/REGION names). Each entry's 'styles' or 'countries' array lists the exact style names / country-region names from the badge's own 'How to earn it' text on its detail page (https://badges.untappd.com/[id]-[slug]). 'count' is the number of distinct qualifying beers needed per tier; nearly all of these badges are repeating 'type_pack' badges that level up indefinitely by the same increment each time ('levels' = max level shown on the catalog, typically 100) — level 1 requires 'count' distinct beers, and each subsequent level requires 'count' MORE new distinct qualifying beers (not cumulative beyond that). The 8 'Super Style: ...' badges are the one exception: they are gated behind an active Untappd Insiders subscription, the FIRST qualifying beer alone earns level 1, and every 5 additional unique beers earns the next level — see their 'note' fields. Icon URLs are taken directly from each badge's own detail page (format https://assets.untappd.com/badges/bdg_*.jpg or assets.untappd.com/promo/*), matching the venue-badges file's convention. Country/region names are given as written in each badge's own text (Untappd's own country_name values are usually an exact or near-exact match, e.g. 'Mexico', 'Germany'; a few badges match a REGION spanning many countries, e.g. 'Central America' or 'the Caribbean' — those list every named country/territory). SKIPPED (not included below): (1) VENUE-category badges — already covered by badge_venue_categories.json; (2) purely social/frequency/meta badges (streaks, friend counts, level-up-by-any-beer badges, total-unique-beer-count badges like Elite/Epic/Uber, etc.); (3) one-off special-edition / brewery-collab / festival / date-window badges that check in a SPECIFIC named beer or brewery list rather than a generic style or country (e.g. Firestone Walker/Wicked Weed/Vault City/Top Rated Box/Punchtöberfest/cycling-route badges, and the time-boxed 'Belgian Beer Badge' and 'Celebrate Oktoberfest (2026)', which duplicate the evergreen 'Belgian Holiday' and 'Oktoberfest' badges already listed here); (4) badges keyed on beer ATTRIBUTES other than style or country of origin — IBU (Hopped Down/Hopped Up), ABV (Middle of the Road, Riding Steady, Sky's the Limit), or time/venue/frequency behavior (Taste Crazy, Wheel of Styles, Beer Connoisseur, Beer of the World, Beer Melting Pot); (5) badges keyed on a curated BREWERY LIST rather than a style or country (Cheers to Independent U.S. Craft Breweries, Pride365, Trappist Travesty, Untappd Groupie); (6) badges keyed on Untappd SERVING STYLE (Bottle, Can, Draft, Growler, Crowler, Cask, Nitro, Tank, Taster, Side Pull) rather than beer style, and (7) 'Home Brewed Goodness' (only 2 check-ins of the ambiguous 'Homebrew' category, not a real style/country match). See '_excluded_examples' at the bottom of each section for a representative (non-exhaustive) list of what was screened out this way. UPDATE 2026-09-14: reconciled every style_badges styles string against 306 real Untappd style strings observed across two heavy connected accounts (53k+ combined check-ins) - 9 entries used outdated/reworded style names that never substring-matched the live taxonomy (mostly pre-\"Category - Subcategory\" renames, e.g. \"American Brown Ale\" -> \"Brown Ale - American\", \"Russian Imperial Stout\" -> \"Stout - Russian Imperial\"), fixed to the exact live strings. A handful of remaining entries (Historical Beer - Berliner Braunbier, Blonde Ale, Sorghum/Millet Beer, Happoshu, Broyhan, Kuit / Kuyt / Koyt, Zoigl, Slushie) found no match in that 306-string sample either way - left as-is (unconfirmed either wrong or just genuinely rare/absent from both accounts, not reverified against Untappd directly). CORRECTION 2026-09-14: the 2026-09-14 reconciliation pass wrongly \"fixed\" Hella Delicious!'s second style from \"Bock - Maibock / Heller (Helles) / Lentebock\" to \"Bock - Hell / Maibock / Lentebock\" based on a false-positive fuzzy word-overlap match (both share 3 of 4 words with an unrelated real style) - reverted after a live badge_description straight from Untappd (fetched via get_my_profile) explicitly confirmed the ORIGINAL phrasing was correct all along (the style just had zero matching beers in the sample used for reconciliation, not a wrong name). CORRECTION 2026-09-14 (part 2): also reverted 3 more manual (non-fuzzy-script-confirmed) guesses from the same 2026-09-14 pass - Old is New (Old Ale, not Old / Stock Ale), Oat of this World! (Stout - Imperial Oatmeal, not Stout - Imperial / Double Oatmeal), Zwickel City (Zwickel / Kellerbier, not Kellerbier / Zwickelbier) - none of these had either an exact word-reorder match or a systematic sibling-pattern confirmation (unlike the Non-Alcoholic/Wild Ale/Brown Ale fixes, which are kept), and one near-identical-reasoning guess (Hella Delicious!) was proven wrong by a live badge_description, so these were reverted rather than left as unverified. UPDATE 2026-09-14 (exact-match markers): confirmed live (Session Life showed level 93 vs real 86 - 40 extra beers from the DIFFERENT real style \"IPA - Session New England / Hazy\" being substring-matched by catalog style \"IPA - Session\") that a catalog style already shaped like a complete real \"Category - Subcategory\" leaf name can wrongly also match a MORE SPECIFIC sibling real style that extends it with extra words (not a parent/umbrella relationship - two independent leaf styles that happen to share a text prefix). A \"=\" prefix on a styles[] entry (e.g. \"=IPA - Session\") now means EXACT match only, not substring - added to Session Life (confirmed) and all 5 \"Super Style: X\" badges (each names exactly one specific leaf style by construction, never a parent/umbrella term - high confidence by naming convention, not guesswork). Also fixed \"Super Style: IPA - Imperial / Double New England / Hazy\" whose styles[] entry was truncated (missing \"/ Hazy\") to the exact real string. Three more badges have the same theoretical risk (Fruits of Your Labor/\"Sour - Fruited\", To The Port/\"Porter - Imperial / Double\", Tripping on TIPAs/\"IPA - Triple\") but are ordinary (non-Super-Style) badges where broad-vs-exact intent cannot be inferred from naming convention alone and has not been live-confirmed either way - left as plain substring matches rather than guessed.",
+  "style_badges": [
+    {
+      "badge": "2X",
+      "styles": [
+        "Imperial / Double"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_2xCore_md.jpg",
+      "note": "Matches ANY style name containing the substring \"Imperial / Double\" (e.g. IPA - Imperial / Double, Stout - Imperial / Double). Untappd explicitly excludes Doppelbock even though it is colloquially an imperial-strength style.",
+      "url": "https://badges.untappd.com/5381-2x"
+    },
+    {
+      "badge": "\"Aww, Shucks\"",
+      "styles": [
+        "Stout - Oyster"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/promo/ab7c5f606f_UTC-OysterStout-Badge_1000x1000.png",
+      "url": "https://badges.untappd.com/753452-aww-shucks"
+    },
+    {
+      "badge": "Beyond a Shadow of a Stout",
+      "styles": [
+        "Stout"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_shadow_of_a_stout_lg.jpg",
+      "note": "Any Stout variation counts (parent style match, not one specific sub-style).",
+      "url": "https://badges.untappd.com/386488-beyond-a-shadow-of-a-stout"
+    },
+    {
+      "badge": "Black as the Night",
+      "styles": [
+        "IPA - Black / Cascadian Dark Ale",
+        "IPA - Imperial / Double Black"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BlackAsTheNight_lg.jpg",
+      "url": "https://badges.untappd.com/12108-black-as-the-night"
+    },
+    {
+      "badge": "Bravo for Brown",
+      "styles": [
+        "Brown Ale - American",
+        "Brown Ale - English",
+        "Brown Ale - Imperial / Double",
+        "Brown Ale - Belgian",
+        "Brown Ale - Other",
+        "IPA - Brown",
+        "Historical Beer - Berliner Braunbier"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BravoForBrown_lg.jpg",
+      "url": "https://badges.untappd.com/751-bravo-for-brown"
+    },
+    {
+      "badge": "California Dreamin'",
+      "styles": [
+        "California Common"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_cadream_lg.jpg",
+      "url": "https://badges.untappd.com/288924-california-dreamin"
+    },
+    {
+      "badge": "Oktoberfest",
+      "styles": [
+        "Festbier",
+        "Märzen"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_oktoberfest_lg.jpg",
+      "note": "Evergreen, year-round version (distinct from the time-boxed 'Celebrate Oktoberfest (2026)' special-edition badge, which is excluded).",
+      "url": "https://badges.untappd.com/117-oktoberfest"
+    },
+    {
+      "badge": "Cream of the Crop",
+      "styles": [
+        "Cream Ale"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_CreamCore_lg.jpg",
+      "url": "https://badges.untappd.com/5431-cream-of-the-crop"
+    },
+    {
+      "badge": "Crisp as Day",
+      "styles": [
+        "Pilsner - Other",
+        "Pilsner - German",
+        "Pilsner - Imperial / Double",
+        "Pilsner - Czech / Bohemian",
+        "Pilsner - Italian",
+        "Pilsner - New Zealand",
+        "Pilsner - American",
+        "Kellerbier / Zwickelbier - Kellerpils"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_pilsner_lg.jpg",
+      "url": "https://badges.untappd.com/414-crisp-as-day"
+    },
+    {
+      "badge": "Crystal is King",
+      "styles": [
+        "Wheat Beer - Kristallweizen"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_crystal_lg.jpg",
+      "url": "https://badges.untappd.com/288824-crystal-is-king"
+    },
+    {
+      "badge": "Dessert Time!",
+      "styles": [
+        "Stout - Pastry",
+        "Stout - Imperial / Double Pastry",
+        "Sour - Smoothie / Pastry"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_DessertTime_v2_Core_lg.jpg",
+      "url": "https://badges.untappd.com/460437-dessert-time"
+    },
+    {
+      "badge": "Down In Smoke",
+      "styles": [
+        "Smoked Beer",
+        "Grodziskie / Grätzer",
+        "Lichtenhainer",
+        "Rauchbier",
+        "Porter - Smoked",
+        "Lager - Smoked",
+        "Farmhouse Ale - Gotlandsdricke",
+        "Farmhouse Ale - Stjørdalsøl"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_DownInSmoke_lg.jpg",
+      "url": "https://badges.untappd.com/721-down-in-smoke"
+    },
+    {
+      "badge": "Dubbel, Tripel and Quad Oh My!",
+      "styles": [
+        "Belgian Dubbel",
+        "Belgian Tripel",
+        "Belgian Quad"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_DubTripQuad_lg.jpg",
+      "url": "https://badges.untappd.com/3458-dubbel-tripel-and-quad-oh-my"
+    },
+    {
+      "badge": "Edward Fortyhands",
+      "styles": [
+        "Malt Liquor"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_maltliquorcore.png",
+      "url": "https://badges.untappd.com/674635-edward-fortyhands"
+    },
+    {
+      "badge": "Fields of Gold",
+      "styles": [
+        "Blonde Ale",
+        "Golden Ale"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_FieldsOfGold_lg.jpg",
+      "url": "https://badges.untappd.com/4185-fields-of-gold"
+    },
+    {
+      "badge": "Fourtitude",
+      "styles": [
+        "IPA - Quadruple"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/promo/d18e73a69f_UTC-QIPA-Style-Badge_1000x1000.png",
+      "url": "https://badges.untappd.com/777314-fourtitude"
+    },
+    {
+      "badge": "From the Cold",
+      "styles": [
+        "Bock - Eisbock",
+        "Cider - Ice",
+        "Freeze-Distilled"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_FromTheCold_Core_lg.jpg",
+      "url": "https://badges.untappd.com/460537-from-the-cold"
+    },
+    {
+      "badge": "Fruits of Your Labor",
+      "styles": [
+        "Fruit Beer",
+        "Lambic - Framboise",
+        "Lambic - Fruit",
+        "Lambic - Kriek",
+        "Sour - Fruited",
+        "Sour - Fruited Gose",
+        "Sour - Fruited Berliner Weisse",
+        "Sour - Smoothie / Pastry",
+        "IPA - Fruited",
+        "Pale Ale - Fruited",
+        "Wheat Beer - Fruited",
+        "Sour - Catharina"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_FruitsOfYourLabor_lg.jpg",
+      "url": "https://badges.untappd.com/711-fruits-of-your-labor"
+    },
+    {
+      "badge": "Gluten-Free",
+      "styles": [
+        "Gluten-Free"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_GlutenFree_lg.jpg",
+      "url": "https://badges.untappd.com/741-gluten-free"
+    },
+    {
+      "badge": "Gourd to the Last Drop",
+      "styles": [
+        "Pumpkin / Yam"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_pumpkinBeer_lg.jpg",
+      "url": "https://badges.untappd.com/455-gourd-to-the-last-drop"
+    },
+    {
+      "badge": "Grain Reaction",
+      "styles": [
+        "Specialty Grain",
+        "Sorghum/Millet Beer",
+        "Corn Beer / Chicha de Jora",
+        "Makgeolli",
+        "Happoshu"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/promo/27338308bd_2025-alt-grain-badge-001.png",
+      "url": "https://badges.untappd.com/721086-grain-reaction"
+    },
+    {
+      "badge": "Haze for Days",
+      "styles": [
+        "IPA - New England / Hazy",
+        "Pale Ale - New England / Hazy",
+        "IPA - Milkshake",
+        "Pale Ale - Milkshake"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_neipa_lg.jpg",
+      "url": "https://badges.untappd.com/288026-haze-for-days"
+    },
+    {
+      "badge": "Heavy Weight",
+      "styles": [
+        "Stout",
+        "Porter"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_heavyWeight_lg.jpg",
+      "url": "https://badges.untappd.com/25-heavy-weight"
+    },
+    {
+      "badge": "Heffenista",
+      "styles": [
+        "Hefeweizen"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_heffenista_lg.jpg",
+      "url": "https://badges.untappd.com/11-heffenista"
+    },
+    {
+      "badge": "Hella Delicious!",
+      "styles": [
+        "Lager - Helles",
+        "Bock - Maibock / Heller (Helles) / Lentebock"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_HellaDelicious_lg.jpg",
+      "url": "https://badges.untappd.com/12308-hella-delicious"
+    },
+    {
+      "badge": "Hey Honey",
+      "styles": [
+        "Mead",
+        "Honey Beer"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_mead_lg.jpg",
+      "url": "https://badges.untappd.com/847-hey-honey"
+    },
+    {
+      "badge": "I Believe in IPA!",
+      "styles": [
+        "IPA"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_hoptopia_lg.jpg",
+      "url": "https://badges.untappd.com/60-i-believe-in-ipa"
+    },
+    {
+      "badge": "I'll Be Bock",
+      "styles": [
+        "Bock"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_IllBeBox_lg.jpg",
+      "url": "https://badges.untappd.com/731-ill-be-bock"
+    },
+    {
+      "badge": "I'm With Seltzer!",
+      "styles": [
+        "Hard Seltzer"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_imwithselzer.jpg",
+      "url": "https://badges.untappd.com/643098-im-with-seltzer"
+    },
+    {
+      "badge": "Ich Bin Ein Berliner",
+      "styles": [
+        "Berliner Weisse"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_Berliner_lg.jpg",
+      "url": "https://badges.untappd.com/6229-ich-bin-ein-berliner"
+    },
+    {
+      "badge": "Imperial Czar",
+      "styles": [
+        "Stout - Russian Imperial"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ImperialStout_lg.jpg",
+      "url": "https://badges.untappd.com/3259-imperial-czar"
+    },
+    {
+      "badge": "In Lighter Times",
+      "styles": [
+        "IPA - Cold",
+        "Lager - IPL (India Pale Lager)"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_lighter_side_lg.jpg",
+      "url": "https://badges.untappd.com/243997-in-lighter-times"
+    },
+    {
+      "badge": "In With the Old, In With the New",
+      "styles": [
+        "Lambic - Gueuze"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_InWithTheOldNew_lg.jpg",
+      "url": "https://badges.untappd.com/34555-in-with-the-old-in-with-the-new"
+    },
+    {
+      "badge": "Iron Man",
+      "styles": [
+        "Strong Ale - American",
+        "Strong Ale - English",
+        "Strong Ale - Other",
+        "Belgian Strong Dark Ale",
+        "Belgian Strong Golden Ale",
+        "Lager - Strong"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_IronMan_lg.jpg",
+      "url": "https://badges.untappd.com/5065-iron-man"
+    },
+    {
+      "badge": "Johnny Appleseed",
+      "styles": [
+        "Cider"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_appleseed_lg.jpg",
+      "url": "https://badges.untappd.com/29-johnny-appleseed"
+    },
+    {
+      "badge": "Keep Your Wits About You",
+      "styles": [
+        "Witbier"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_witbier_lg.jpg",
+      "url": "https://badges.untappd.com/837-keep-your-wits-about-you"
+    },
+    {
+      "badge": "Kvass RYEot",
+      "styles": [
+        "Kvass"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_KvassRyeot_2020_lg.jpg",
+      "url": "https://badges.untappd.com/417385-kvass-ryeot"
+    },
+    {
+      "badge": "Lager Jack",
+      "styles": [
+        "Lager"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_LagerJack_lg.jpg",
+      "note": "Any Lager sub-style counts (American, Pale, Light, etc.).",
+      "url": "https://badges.untappd.com/187-lager-jack"
+    },
+    {
+      "badge": "Low Gravity",
+      "styles": [
+        "Non-Alcoholic"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_LowGravity_lg.jpg",
+      "url": "https://badges.untappd.com/5481-low-gravity"
+    },
+    {
+      "badge": "Magical History Tour",
+      "styles": [
+        "Adambier",
+        "Historical Beer - Berliner Braunbier",
+        "Broyhan",
+        "Burton Ale",
+        "Dampfbier",
+        "Gruit / Ancient Herbed Ale",
+        "Kentucky Common",
+        "Kottbusser",
+        "Kuit / Kuyt / Koyt",
+        "Lichtenhainer",
+        "Mumme",
+        "Historical Beer - Other",
+        "Steinbier",
+        "Zoigl"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_magicalhistorytour.png",
+      "url": "https://badges.untappd.com/565400-magical-history-tour"
+    },
+    {
+      "badge": "Mild Mannered",
+      "styles": [
+        "Mild - Other",
+        "Mild - Dark",
+        "Mild - Light"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_MildMannered_lg.jpg",
+      "url": "https://badges.untappd.com/12008-mild-mannered"
+    },
+    {
+      "badge": "Oat of this World!",
+      "styles": [
+        "Stout - Oatmeal",
+        "Stout - Imperial Oatmeal"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_oatsworld_lg.jpg",
+      "url": "https://badges.untappd.com/288625-oat-of-this-world"
+    },
+    {
+      "badge": "Old is New",
+      "styles": [
+        "Old Ale"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_old_is_new_lg.jpg",
+      "url": "https://badges.untappd.com/243596-old-is-new"
+    },
+    {
+      "badge": "Paint the Town Red",
+      "styles": [
+        "Red Ale - Irish",
+        "Red Ale - American Amber / Red",
+        "Red Ale - Imperial / Double",
+        "Red Ale - Other",
+        "Lager - Amber / Red",
+        "Lager - American Amber / Red",
+        "IPA - Red",
+        "Lager - Rotbier",
+        "Lager - Polotmavé (Czech Amber)",
+        "Mild - Ruby"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_PaintRed_lg.jpg",
+      "url": "https://badges.untappd.com/3572-paint-the-town-red"
+    },
+    {
+      "badge": "Pale as the Moon",
+      "styles": [
+        "Wheat Beer - American Pale Wheat",
+        "Pale Ale - Belgian",
+        "Pale Ale - American",
+        "Pale Ale - English",
+        "Pale Ale - New Zealand",
+        "Pale Ale - Australian",
+        "Pale Ale - Other",
+        "Pale Ale - New England / Hazy",
+        "Pale Ale - Milkshake",
+        "Non-Alcoholic - Pale Ale",
+        "Pale Ale - XPA (Extra Pale)",
+        "Pale Ale - Fruited"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_PaleMoon_lg.jpg",
+      "url": "https://badges.untappd.com/185-pale-as-the-moon"
+    },
+    {
+      "badge": "Pucker Up",
+      "styles": [
+        "Wild Ale",
+        "Lambic",
+        "Sour",
+        "Historical Beer - Lichtenhainer",
+        "Historical Beer - Berliner Braunbier"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SourBrew_lg.jpg",
+      "note": "\"Sour beer\" per Untappd = any style whose name contains one of these words/prefixes, not one exact style string.",
+      "url": "https://badges.untappd.com/184-pucker-up"
+    },
+    {
+      "badge": "Raising the Heat",
+      "styles": [
+        "Spiced / Herbed Beer",
+        "Historical Beer - Gruit / Ancient Herbed Ale",
+        "Chilli / Chile Beer"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_chilibeer_lg.jpg",
+      "url": "https://badges.untappd.com/4509-raising-the-heat"
+    },
+    {
+      "badge": "Respect the Kölsch",
+      "styles": [
+        "Kölsch"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_kolsch_lg.jpg",
+      "url": "https://badges.untappd.com/4659-respect-the-kolsch"
+    },
+    {
+      "badge": "Rye It Up!",
+      "styles": [
+        "Rye Beer",
+        "IPA - Rye",
+        "Roggenbier",
+        "Rye Wine"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ryeitup_lg.jpg",
+      "url": "https://badges.untappd.com/4459-rye-it-up"
+    },
+    {
+      "badge": "Schwarz-buckler",
+      "styles": [
+        "Schwarzbier",
+        "Lager - Dark",
+        "Lager - Tmavé (Czech Dark)"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_Schwarzbuckler_sm.jpg",
+      "url": "https://badges.untappd.com/12508-schwarz-buckler"
+    },
+    {
+      "badge": "Session Life",
+      "styles": [
+        "=IPA - Session"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SessionLife_lg.jpg",
+      "url": "https://badges.untappd.com/133454-session-life"
+    },
+    {
+      "badge": "Set the Table",
+      "styles": [
+        "Table Beer"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_set-the-table_lg.jpg",
+      "url": "https://badges.untappd.com/345617-set-the-table"
+    },
+    {
+      "badge": "Shake it Up!",
+      "styles": [
+        "IPA - Milkshake",
+        "IPA - Imperial / Double Milkshake",
+        "Pale Ale - Milkshake"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_shake_it_up_lg.jpg",
+      "url": "https://badges.untappd.com/386588-shake-it-up"
+    },
+    {
+      "badge": "So Udderly Sweet",
+      "styles": [
+        "Stout - Milk / Sweet"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_UdderlySweet_lg.jpg",
+      "url": "https://badges.untappd.com/5331-so-udderly-sweet"
+    },
+    {
+      "badge": "Super Style: American Lager",
+      "styles": [
+        "=Lager - American",
+        "Lager - American Light",
+        "Lager - American Amber / Red"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SuperStyleAmericanLager_lg.jpg",
+      "note": "Requires an active Untappd Insiders subscription. The first qualifying beer earns level 1; every 5 additional new unique beers of this style earns the next level. Does not qualify for retroactive badges.",
+      "url": "https://badges.untappd.com/541664-super-style-american-lager"
+    },
+    {
+      "badge": "Super Style: IPA - American",
+      "styles": [
+        "IPA - American"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_InsiderStyleIPA2022_lg.jpg",
+      "note": "Requires an active Untappd Insiders subscription. Started May 6, 2022. First qualifying beer earns level 1; every 5 additional new unique beers earns the next level.",
+      "url": "https://badges.untappd.com/503472-super-style-ipa-american"
+    },
+    {
+      "badge": "Super Style: IPA - Imperial / Double",
+      "styles": [
+        "=IPA - Imperial / Double"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SuperStyleIPAImperialDouble_md.jpg",
+      "note": "Requires an active Untappd Insiders subscription. Started September 22, 2022. First qualifying beer earns level 1; every 5 additional new unique beers earns the next level.",
+      "url": "https://badges.untappd.com/524882-super-style-ipa-imperial-double"
+    },
+    {
+      "badge": "Super Style: IPA - Imperial / Double New England / Hazy",
+      "styles": [
+        "=IPA - Imperial / Double New England / Hazy"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SuperStyleIPAImperialDoubleNewEngland_md.jpg",
+      "note": "Requires an active Untappd Insiders subscription. Started October 20, 2022. First qualifying beer earns level 1; every 5 additional new unique beers earns the next level.",
+      "url": "https://badges.untappd.com/527300-super-style-ipa-imperial-double-new-england-hazy"
+    },
+    {
+      "badge": "Super Style: IPA - New England / Hazy",
+      "styles": [
+        "IPA - New England / Hazy"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SuperStyleIPANewEnglandHazy_md.jpg",
+      "note": "Requires an active Untappd Insiders subscription. Started July 1, 2022. First qualifying beer earns level 1; every 5 additional new unique beers earns the next level.",
+      "url": "https://badges.untappd.com/516162-super-style-ipa-new-england-hazy"
+    },
+    {
+      "badge": "Super Style: Pilsner",
+      "styles": [
+        "Pilsner - Czech / Bohemian",
+        "Pilsner - German",
+        "Pilsner - Imperial / Double",
+        "Pilsner - Italian",
+        "Pilsner - New Zealand",
+        "Pilsner - Other"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SuperStylePilsner_md.jpg",
+      "note": "Requires an active Untappd Insiders subscription. First qualifying beer earns level 1; every 5 additional new unique beers earns the next level.",
+      "url": "https://badges.untappd.com/541864-super-style-pilsner"
+    },
+    {
+      "badge": "Super Style: Sour - Fruited",
+      "styles": [
+        "=Sour - Fruited"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SuperStyleSourFruited_md.jpg",
+      "note": "Requires an active Untappd Insiders subscription. Started August 30, 2022. First qualifying beer earns level 1; every 5 additional new unique beers earns the next level.",
+      "url": "https://badges.untappd.com/522174-super-style-sour-fruited"
+    },
+    {
+      "badge": "Super Style: Stout - Imperial / Double",
+      "styles": [
+        "=Stout - Imperial / Double"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SuperStyleStoutImperialDouble_md.jpg",
+      "note": "Requires an active Untappd Insiders subscription. Started July 1, 2022. First qualifying beer earns level 1; every 5 additional new unique beers earns the next level.",
+      "url": "https://badges.untappd.com/512754-super-style-stout-imperial-double"
+    },
+    {
+      "badge": "Super Style: Wheat Beer - Witbier / Blanche",
+      "styles": [
+        "Wheat Beer - Witbier / Blanche"
+      ],
+      "count": 5,
+      "first_level_count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SuperStyleWitbier_md.jpg",
+      "note": "Requires an active Untappd Insiders subscription. First qualifying beer earns level 1; every 5 additional new unique beers earns the next level.",
+      "url": "https://badges.untappd.com/541764-super-style-wheat-beer-witbier-blanche"
+    },
+    {
+      "badge": "Take A Dunk!",
+      "styles": [
+        "Wheat Beer - Dunkelweizen",
+        "Lager - Munich Dunkel"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_TakeADunk_lg.jpg",
+      "url": "https://badges.untappd.com/4807-take-a-dunk"
+    },
+    {
+      "badge": "The Dark Side",
+      "styles": [
+        "Dark Ale",
+        "Belgian Strong Dark Ale",
+        "Lager - Dark",
+        "IPA - Black / Cascadian Dark Ale",
+        "IPA - Imperial / Double Black",
+        "Schwarzbier",
+        "Mild - Dark",
+        "Lager - Tmavé (Czech Dark)"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_TheDarkSide_lg.jpg",
+      "url": "https://badges.untappd.com/12358-the-dark-side"
+    },
+    {
+      "badge": "The RADler",
+      "styles": [
+        "Shandy / Radler"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_RADler_lg.jpg",
+      "url": "https://badges.untappd.com/4907-the-radler"
+    },
+    {
+      "badge": "The Wine of Beers",
+      "styles": [
+        "Barleywine",
+        "Wheat Wine",
+        "Rye Wine"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_barleywine_lg.jpg",
+      "url": "https://badges.untappd.com/827-the-wine-of-beers"
+    },
+    {
+      "badge": "To The Alt",
+      "styles": [
+        "Altbier"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_AltBier_lg.jpg",
+      "url": "https://badges.untappd.com/4857-to-the-alt"
+    },
+    {
+      "badge": "To The Port",
+      "styles": [
+        "Porter - English",
+        "Porter - American",
+        "Porter - Imperial / Double",
+        "Porter - Other",
+        "Porter - Baltic",
+        "Porter - Coffee",
+        "Porter - Imperial / Double Coffee",
+        "Porter - Imperial / Double Baltic",
+        "Non-Alcoholic - Porter / Stout",
+        "Porter - Smoked"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ToThePort_lg.jpg",
+      "url": "https://badges.untappd.com/11958-to-the-port"
+    },
+    {
+      "badge": "Tripping on TIPAs",
+      "styles": [
+        "IPA - Triple"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_TrippingTIPAs_lg.jpg",
+      "url": "https://badges.untappd.com/168287-tripping-on-tipas"
+    },
+    {
+      "badge": "Trip to the Farm",
+      "styles": [
+        "Farmhouse Ale - Grisette",
+        "Farmhouse Ale - Saison",
+        "Farmhouse Ale - Sahti",
+        "Farmhouse Ale - Other",
+        "IPA - Farmhouse",
+        "Farmhouse Ale - Bière de Garde",
+        "Farmhouse Ale - Bière de Mars",
+        "Farmhouse Ale - Bière de Coupage",
+        "Farmhouse Ale - Brett",
+        "Farmhouse Ale - Kornøl"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_saison_lg.jpg",
+      "url": "https://badges.untappd.com/424-trip-to-the-farm"
+    },
+    {
+      "badge": "Viennaville",
+      "styles": [
+        "Lager - Vienna"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_viennaville_lg.jpg",
+      "url": "https://badges.untappd.com/243896-viennaville"
+    },
+    {
+      "badge": "Wake Up and Smell The Coffee!",
+      "styles": [
+        "Porter - Coffee",
+        "Porter - Imperial / Double Coffee",
+        "Stout - Imperial / Double Coffee",
+        "Stout - Coffee"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_smell_the_coffee_lg.jpg",
+      "url": "https://badges.untappd.com/386388-wake-up-and-smell-the-coffee"
+    },
+    {
+      "badge": "Wee Bit of the Scotch",
+      "styles": [
+        "Scotch Ale / Wee Heavy",
+        "Scottish Ale",
+        "Scottish Export Ale"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_WeeBitScotch_lg.jpg",
+      "url": "https://badges.untappd.com/4285-wee-bit-of-the-scotch"
+    },
+    {
+      "badge": "What Gose Round",
+      "styles": [
+        "Gose"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_GoseAround_lg.jpg",
+      "url": "https://badges.untappd.com/4235-what-gose-round"
+    },
+    {
+      "badge": "Winter Wonderland",
+      "styles": [
+        "Winter"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_wonderland_lg.jpg",
+      "note": "Matches beers whose NAME or STYLE contains the word \"Winter\" (a themed keyword match, not one formal style category).",
+      "url": "https://badges.untappd.com/49-winter-wonderland"
+    },
+    {
+      "badge": "Wit, Weiss, and Weizen",
+      "styles": [
+        "Wheat"
+      ],
+      "count": 1,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_WitWeissWeizen_lg.jpg",
+      "note": "Matches any style under Untappd's broader 'Wheat' parent category (any Wheat Beer sub-style). Unlike most style badges, the catalog text implies each additional distinct qualifying beer (not batches of 5) advances one level.",
+      "url": "https://badges.untappd.com/481483-wit-weiss-and-weizen"
+    },
+    {
+      "badge": "You Don't Know Brett!",
+      "styles": [
+        "Brett Beer",
+        "Wild Ale - American",
+        "IPA - Brett",
+        "Wild Ale - Other",
+        "Farmhouse Ale - Brett"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_dont_know_brett_lg.jpg",
+      "url": "https://badges.untappd.com/386788-you-dont-know-brett"
+    },
+    {
+      "badge": "You're Extra Special",
+      "styles": [
+        "Bitter - Extra Special / Strong (ESB)",
+        "Bitter - Session / Ordinary",
+        "Bitter - Best"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ExtraSpecial_lg.jpg",
+      "url": "https://badges.untappd.com/3724-youre-extra-special"
+    },
+    {
+      "badge": "Zwickel City",
+      "styles": [
+        "Zwickel / Kellerbier"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_zwickel_lg.jpg",
+      "url": "https://badges.untappd.com/288126-zwickel-city"
+    },
+    {
+      "badge": "Beer for Keeping",
+      "styles": [
+        "Bière de Garde",
+        "Bière de Mars"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerForKeeping_lg.jpg",
+      "url": "https://badges.untappd.com/12408-beer-for-keeping"
+    },
+    {
+      "badge": "Brain Freeze",
+      "styles": [
+        "Slushie"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_slushy_1000px.png",
+      "note": "Catalog copy says \"Check in 5 times\" rather than \"5 different\", but this is a standard repeating style-pack badge like its siblings and requires 5 distinct Slushie-style beers per level.",
+      "url": "https://badges.untappd.com/569815-brain-freeze"
+    }
+  ],
+  "_non_style_beer_badges_excluded": [
+    "2X, I Believe in IPA! etc. siblings aside — the following BEER BADGES-tagged badges were screened OUT because they do not reduce to 'N distinct beers of style X':",
+    "Hopped Down / Hopped Up (IBU threshold, not a style)",
+    "Middle of the Road / Riding Steady / Sky's the Limit (ABV threshold, not a style)",
+    "Taste Crazy (5 different styles within 24 hours — time-boxed diversity, not a target style)",
+    "Wheel of Styles (any 5 different styles — no specific target style)",
+    "Beer Connoisseur / Beer of the World / Beer Melting Pot (countries/regions counted generically, not one target country)",
+    "Home Brewed Goodness (2 check-ins of the ambiguous 'Homebrew' category, not a real style/country match)",
+    "99 Bottles, Carl the Crowler, Caskville, Draft City, For the Can, Growl the Growler, Sidekick, Smooth as Silk, Taster Please, Dunk Tank (Untappd SERVING STYLE — Bottle/Crowler/Cask/Draft/Can/Growler/Side Pull/Nitro/Taster/Tank — not beer style)",
+    "Firestone Fanatic, Long Live Cold Beer, The Squeeze Seeker, The Mind Wanderer, Perni-Haze/Pernicious/Imperial Perni-Haze IPA 2026, Wicked Weed Brewing Gold, Top Rated Box (Spring 2026) badges, Vault City/Sainsbury's badges, Totally vandeStreek! levels, La Trappe Quadrupel — 35 years, Belgian cycling-route badges (Start/Finish x5), 40 Years of Firsts, Sunlight Groove Argonaut, Celebrate Oktoberfest (2026), Ales for ALS, Cherry Champion, Creamsicle Sipper, Jungle Explorer, Tropical Taster, Feel Good Fun, Support for Ukraine (one-off special-edition / named-beer / named-brewery / date-window badges, not stably earnable via generic style stats)"
+  ],
+  "country_badges": [
+    {
+      "badge": "Amazons & Andes",
+      "countries": [
+        "Central America",
+        "South America"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_AmazonAndAndes_lg.jpg",
+      "note": "Region-level match (brewery located in either Central or South America), not a single country.",
+      "url": "https://badges.untappd.com/12659-amazons-andes"
+    },
+    {
+      "badge": "Baking in Balkan",
+      "countries": [
+        "Albania",
+        "Bosnia and Herzegovina",
+        "Bulgaria",
+        "Croatia",
+        "Greece",
+        "Kosovo",
+        "Montenegro",
+        "North Macedonia",
+        "Romania",
+        "Serbia",
+        "Slovenia"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_baking-in-balkan_lg.jpg",
+      "url": "https://badges.untappd.com/346018-baking-in-balkan"
+    },
+    {
+      "badge": "Belgian Holiday",
+      "countries": [
+        "Belgium"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_belgianHoliday_lg.jpg",
+      "note": "Evergreen version (distinct from the time-boxed 'Belgian Beer Badge' special-edition badge for 2026, which is excluded).",
+      "url": "https://badges.untappd.com/135-belgian-holiday"
+    },
+    {
+      "badge": "Beware of the Bison!",
+      "countries": [
+        "Belarus"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BewareOfTheBison_lg.jpg",
+      "url": "https://badges.untappd.com/12208-beware-of-the-bison"
+    },
+    {
+      "badge": "Brew Lagoon",
+      "countries": [
+        "Iceland"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BrewLagoon_lg.jpg",
+      "url": "https://badges.untappd.com/691-brew-lagoon"
+    },
+    {
+      "badge": "Brew of the Dragon",
+      "countries": [
+        "China"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_brewdragon_lg.jpg",
+      "url": "https://badges.untappd.com/4559-brew-of-the-dragon"
+    },
+    {
+      "badge": "Budmo",
+      "countries": [
+        "Ukraine"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_Budmo_lg.jpg",
+      "url": "https://badges.untappd.com/34505-budmo"
+    },
+    {
+      "badge": "Buena Onda: Breweries from Argentina",
+      "countries": [
+        "Argentina"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_argentina_country.png",
+      "url": "https://badges.untappd.com/563199-buena-onda-breweries-from-argentina"
+    },
+    {
+      "badge": "Call of the Swiss",
+      "countries": [
+        "Switzerland"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SwissMiss_lg.jpg",
+      "url": "https://badges.untappd.com/5813-call-of-the-swiss"
+    },
+    {
+      "badge": "Cerveza Matador",
+      "countries": [
+        "Mexico"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_cervMtdr_lg.jpg",
+      "url": "https://badges.untappd.com/10-cerveza-matador"
+    },
+    {
+      "badge": "Czech It Out",
+      "countries": [
+        "Czech Republic"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_czech_lg.jpg",
+      "url": "https://badges.untappd.com/857-czech-it-out"
+    },
+    {
+      "badge": "Danish Delight",
+      "countries": [
+        "Denmark"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_DanishDelight_lg.jpg",
+      "url": "https://badges.untappd.com/3953-danish-delight"
+    },
+    {
+      "badge": "Das Boot",
+      "countries": [
+        "Germany"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_DasBoot16_lg.jpg",
+      "url": "https://badges.untappd.com/47-das-boot"
+    },
+    {
+      "badge": "Deep Blue Sea",
+      "countries": [
+        "Antigua and Barbuda",
+        "Aruba",
+        "Bahamas",
+        "Barbados",
+        "Bermuda",
+        "British Virgin Islands",
+        "Cayman Islands",
+        "Cuba",
+        "Curacao",
+        "Dominica",
+        "Dominican Republic",
+        "Grenada",
+        "Haiti",
+        "Jamaica",
+        "Puerto Rico",
+        "Saint Kitts and Nevis",
+        "St. Lucia",
+        "St. Vincent & the Grenadines",
+        "Sint Maarten",
+        "Trinidad and Tobago",
+        "Turks and Caicos Islands",
+        "United States Virgin Islands"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_DeepBlueSea_lg.jpg",
+      "note": "Region-level match (brewery located anywhere in the Caribbean).",
+      "url": "https://badges.untappd.com/5531-deep-blue-sea"
+    },
+    {
+      "badge": "Down Under",
+      "countries": [
+        "Australia"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_downUnder_lg.jpg",
+      "url": "https://badges.untappd.com/75-down-under"
+    },
+    {
+      "badge": "Drink Like a Kiwi",
+      "countries": [
+        "New Zealand"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_newzeland_lg.jpg",
+      "url": "https://badges.untappd.com/408-drink-like-a-kiwi"
+    },
+    {
+      "badge": "El Central",
+      "countries": [
+        "Belize",
+        "Costa Rica",
+        "El Salvador",
+        "Guatemala",
+        "Honduras",
+        "Nicaragua",
+        "Panama"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_el-centro_lg.jpg",
+      "note": "Region-level match (brewery located anywhere in Central America).",
+      "url": "https://badges.untappd.com/346118-el-central"
+    },
+    {
+      "badge": "Flamenco",
+      "countries": [
+        "Spain"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_spain_lg.jpg",
+      "url": "https://badges.untappd.com/681-flamenco"
+    },
+    {
+      "badge": "Get Them To the Greek",
+      "countries": [
+        "Greece"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_GetToGreek_lg.jpg",
+      "url": "https://badges.untappd.com/6079-get-them-to-the-greek"
+    },
+    {
+      "badge": "God Save the King",
+      "countries": [
+        "United Kingdom",
+        "England"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_godSaveTheQueen_lg.jpg",
+      "url": "https://badges.untappd.com/71-god-save-the-king"
+    },
+    {
+      "badge": "Going Dutch",
+      "countries": [
+        "Netherlands"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_GoingDutch_lg.jpg",
+      "url": "https://badges.untappd.com/671-going-dutch"
+    },
+    {
+      "badge": "Going on Safari",
+      "countries": [
+        "Africa"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_GoingonSafari_lg.jpg",
+      "note": "Continent-level match (brewery located anywhere in Africa), not a single country.",
+      "url": "https://badges.untappd.com/5216-going-on-safari"
+    },
+    {
+      "badge": "Highlander",
+      "countries": [
+        "Scotland"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_Highlander_lg.jpg",
+      "url": "https://badges.untappd.com/3903-highlander"
+    },
+    {
+      "badge": "Land of the Free",
+      "countries": [
+        "United States"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_america_lg.jpg",
+      "url": "https://badges.untappd.com/406-land-of-the-free"
+    },
+    {
+      "badge": "Latitude for Latvia",
+      "countries": [
+        "Latvia"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_latitude-for-latvia_lg.jpg",
+      "url": "https://badges.untappd.com/345918-latitude-for-latvia"
+    },
+    {
+      "badge": "La Crème de la Crème",
+      "countries": [
+        "France",
+        "New Caledonia"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_LaCremedelaCreme_lg.jpg",
+      "url": "https://badges.untappd.com/4053-la-creme-de-la-creme"
+    },
+    {
+      "badge": "Luck of the Irish",
+      "countries": [
+        "Ireland"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_irish_lg.jpg",
+      "url": "https://badges.untappd.com/12-luck-of-the-irish"
+    },
+    {
+      "badge": "Na zdravje: Breweries from Slovenia",
+      "countries": [
+        "Slovenia"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerSlovenia_lg.jpg",
+      "url": "https://badges.untappd.com/537444-na-zdravje-breweries-from-slovenia"
+    },
+    {
+      "badge": "Never Finnished!",
+      "countries": [
+        "Finland"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_finnished_lg.jpg",
+      "url": "https://badges.untappd.com/4609-never-finnished"
+    },
+    {
+      "badge": "Pole Position",
+      "countries": [
+        "Poland"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_PolePosition_lg.jpg",
+      "url": "https://badges.untappd.com/4335-pole-position"
+    },
+    {
+      "badge": "Roamin' In Romania",
+      "countries": [
+        "Romania"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_RoaminInRomania_2020_lg.jpg",
+      "url": "https://badges.untappd.com/417485-roamin-in-romania"
+    },
+    {
+      "badge": "Rising Sun",
+      "countries": [
+        "Japan"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_RisingSun17_lg.jpg",
+      "url": "https://badges.untappd.com/73-rising-sun"
+    },
+    {
+      "badge": "Sláinte: Breweries from Northern Ireland",
+      "countries": [
+        "Northern Ireland"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerNorthernIreland_lg.jpg",
+      "url": "https://badges.untappd.com/537044-slainte-breweries-from-northern-ireland"
+    },
+    {
+      "badge": "Small But Not Forgotten",
+      "countries": [
+        "Åland Islands",
+        "Andorra",
+        "Channel Islands - Guernsey",
+        "Channel Islands - Jersey",
+        "Cyprus",
+        "Faroe Islands",
+        "Gibraltar",
+        "Greenland",
+        "Isle of Man",
+        "Liechtenstein",
+        "Luxembourg",
+        "Malta",
+        "Principality of Monaco",
+        "San Marino"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_small_not_forgotten_lg.jpg",
+      "url": "https://badges.untappd.com/243696-small-but-not-forgotten"
+    },
+    {
+      "badge": "Suds Samba",
+      "countries": [
+        "Brazil"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_brazil_lg.jpg",
+      "url": "https://badges.untappd.com/407-suds-samba"
+    },
+    {
+      "badge": "Swedish Brews",
+      "countries": [
+        "Sweden"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_Sweden_lg.jpg",
+      "url": "https://badges.untappd.com/701-swedish-brews"
+    },
+    {
+      "badge": "Terviseks!",
+      "countries": [
+        "Estonia"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_Estonia_lg.jpg",
+      "url": "https://badges.untappd.com/6129-terviseks"
+    },
+    {
+      "badge": "Thai Five!",
+      "countries": [
+        "Thailand"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_Thailand-Badge_1000x1000.png",
+      "url": "https://badges.untappd.com/661644-thai-five"
+    },
+    {
+      "badge": "That's for Sör!",
+      "countries": [
+        "Hungary"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ThatsForSor_lg.jpg",
+      "url": "https://badges.untappd.com/5863-thats-for-sor"
+    },
+    {
+      "badge": "The Backpacker",
+      "countries": [
+        "Myanmar",
+        "Thailand",
+        "Malaysia",
+        "Philippines",
+        "Singapore",
+        "Indonesia",
+        "East Timor",
+        "Vietnam",
+        "Cambodia",
+        "Laos",
+        "Taiwan",
+        "Brunei"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_TheBackpacker_lg.jpg",
+      "note": "Region-level match (brewery located in one of these South East Asian countries).",
+      "url": "https://badges.untappd.com/12258-the-backpacker"
+    },
+    {
+      "badge": "The Croats",
+      "countries": [
+        "Croatia"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_croats_lg.jpg",
+      "url": "https://badges.untappd.com/288226-the-croats"
+    },
+    {
+      "badge": "The Gondolier",
+      "countries": [
+        "Italy"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_italy_lg.jpg",
+      "url": "https://badges.untappd.com/410-the-gondolier"
+    },
+    {
+      "badge": "The Great White North",
+      "countries": [
+        "Canada"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_canada_lg.jpg",
+      "url": "https://badges.untappd.com/409-the-great-white-north"
+    },
+    {
+      "badge": "The Sign of Vytis",
+      "countries": [
+        "Lithuania"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_vytis_lg.jpg",
+      "url": "https://badges.untappd.com/288425-the-sign-of-vytis"
+    },
+    {
+      "badge": "Tower of Beer",
+      "countries": [
+        "England"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_TowerOfBeer_lg.jpg",
+      "url": "https://badges.untappd.com/168087-tower-of-beer"
+    },
+    {
+      "badge": "Trekking the Alps",
+      "countries": [
+        "Austria"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_TrekkingtheAlps_lg.jpg",
+      "url": "https://badges.untappd.com/5116-trekking-the-alps"
+    },
+    {
+      "badge": "Uma Cerveja",
+      "countries": [
+        "Portugal"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_UmaCerveja_lg.jpg",
+      "url": "https://badges.untappd.com/12609-uma-cerveja"
+    },
+    {
+      "badge": "Wailing For Wales",
+      "countries": [
+        "Wales"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_Wales_lg.jpg",
+      "url": "https://badges.untappd.com/6029-wailing-for-wales"
+    },
+    {
+      "badge": "наздраве: Breweries from Bulgaria",
+      "countries": [
+        "Bulgaria"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerBulgaria_lg.jpg",
+      "url": "https://badges.untappd.com/537144-nazdrave-breweries-from-bulgaria"
+    },
+    {
+      "badge": "अच्छी सेहत के लिए: Breweries from India",
+      "countries": [
+        "India"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerIndia_lg.jpg",
+      "url": "https://badges.untappd.com/537244-acachha-sahata-ka-le-breweries-from-india"
+    },
+    {
+      "badge": "건배: Breweries from South Korea",
+      "countries": [
+        "South Korea"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerSouthKorea_lg.jpg",
+      "url": "https://badges.untappd.com/537344-breweries-from-south-korea"
+    }
+  ],
+  "_non_country_beer_badges_excluded": [
+    "Beer Connoisseur (5 different countries, any — no specific target country)",
+    "Beer of the World (5 different regions, any — no specific target region)",
+    "Beer Melting Pot (5 beers from 5 different countries in a row — streak/behavioral, no specific target country)",
+    "Cheers to Independent U.S. Craft Breweries (a curated brewery list within the U.S., not a country match — see Land of the Free for the plain U.S. badge)",
+    "Trappist Travesty (Authentic Trappist Product certification, not a country)",
+    "Pride365 (a curated 'queer-led/queer-supporting breweries' list, not a country)",
+    "Untappd Groupie (beers the Untappd co-founders have had, not a country)",
+    "Belgian Beer Badge (time-boxed special-edition duplicate of the evergreen 'Belgian Holiday' badge, active only Apr 2 – Dec 31, 2026)"
+  ]
+}

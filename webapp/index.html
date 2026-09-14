@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Festival Check-in</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="/static/checkin/style.css">
+</head>
+<body>
+
+<div id="screen-search" class="screen active">
+  <div class="topbar">
+    <div class="topbar-top-row">
+      <button id="settings-bar-btn" class="icon-btn" title="Налаштування сповіщень">⚙️</button>
+      <button id="events-bar-btn" class="icon-btn" title="Останні події">🔔</button>
+      <div id="usage-badge" class="usage-badge"></div>
+    </div>
+    <div class="topbar-buttons">
+      <button id="queue-bar-btn" class="queue-bar-btn hidden">🥤 Черга (<span id="queue-count">0</span>)</button>
+      <button id="stats-bar-btn" class="queue-bar-btn">📊 Прогрес</button>
+      <button id="autotoast-bar-btn" class="queue-bar-btn">🍻 Авто-тост</button>
+      <button id="festival-watch-bar-btn" class="queue-bar-btn">🆕 Новинки</button>
+      <button id="badges-bar-btn" class="queue-bar-btn">🏅 Бейджі</button>
+    </div>
+  </div>
+  <input id="search-input" type="text" inputmode="search"
+         placeholder="Пиво або броварня…" autocomplete="off">
+  <div class="search-filters">
+    <label class="checkbox-label">
+      <input type="checkbox" id="festival-priority-checkbox" checked> Фестивальний список
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="wishlist-priority-checkbox"> Вішліст
+    </label>
+  </div>
+  <div id="search-status" class="hint"></div>
+  <div id="results" class="results"></div>
+</div>
+
+<div id="screen-queue" class="screen">
+  <button class="back-btn" data-back="search">Назад</button>
+  <div class="queue-header">
+    <h2>Спільна черга</h2>
+    <button id="queue-clear-btn" class="queue-clear-btn">🗑 Очистити все</button>
+  </div>
+  <div id="queue-status" class="hint"></div>
+  <div id="queue-list" class="results"></div>
+</div>
+
+<div id="screen-stats" class="screen">
+  <button class="back-btn" data-back="search">Назад</button>
+  <h2>Прогрес фестивалю</h2>
+  <div id="stats-summary" class="stats-summary hint"></div>
+  <div id="stats-sessions" class="results"></div>
+</div>
+
+<div id="screen-session-beers" class="screen">
+  <button class="back-btn" data-back="stats">Назад</button>
+  <h2 id="session-beers-title">Сесія</h2>
+  <input id="session-search-input" type="text" inputmode="search"
+         placeholder="Пошук у сесії…" autocomplete="off">
+  <div id="session-beers-status" class="hint"></div>
+  <div id="session-beers-list" class="results"></div>
+</div>
+
+<div id="screen-autotoast" class="screen">
+  <button class="back-btn" data-back="search">Назад</button>
+  <div class="queue-header">
+    <h2>Авто-тост</h2>
+    <label class="toggle-switch">
+      <input type="checkbox" id="autotoast-enabled-toggle">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <input id="autotoast-search-input" type="text" inputmode="search"
+         placeholder="🔍 Пошук серед друзів…" autocomplete="off">
+  <div id="autotoast-status" class="hint"></div>
+  <div id="autotoast-friends-list" class="results"></div>
+</div>
+
+<div id="screen-festival-watch" class="screen">
+  <button class="back-btn" data-back="search">Назад</button>
+  <div class="queue-header">
+    <h2>Стеження за новинками</h2>
+    <label class="toggle-switch">
+      <input type="checkbox" id="festival-watch-enabled-toggle">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div id="festival-watch-status" class="hint"></div>
+  <button id="festival-watch-here-btn" class="secondary-btn">🧭 Встановити мою поточну локацію</button>
+  <input id="festival-watch-search-input" type="text" placeholder="🔍 Або знайти локацію за назвою…" autocomplete="off">
+  <div id="festival-watch-search-results" class="venue-list hidden"></div>
+  <label class="checkbox-label festival-watch-radius-label">Радіус сповіщень (метри)</label>
+  <input id="festival-watch-radius-input" type="number" min="50" max="5000" step="50" value="500">
+</div>
+
+<div id="screen-badges" class="screen">
+  <button class="back-btn" data-back="search">Назад</button>
+  <h2>Прогрес бейджів</h2>
+  <input id="badges-search-input" type="text" inputmode="search"
+         placeholder="Пошук за назвою або тегом (напр. IPA, France)…" autocomplete="off">
+  <div class="pills" id="badges-sort-pills">
+    <button class="pill active" data-sort="level_desc">Рівень 100→0</button>
+    <button class="pill" data-sort="level_asc">Рівень 0→100</button>
+    <button class="pill" data-sort="alpha">За алфавітом</button>
+  </div>
+  <div id="badges-status" class="hint"></div>
+  <div id="badges-list" class="results"></div>
+</div>
+
+<div id="screen-badge-detail" class="screen">
+  <button class="back-btn" data-back="badges">Назад</button>
+  <div class="beer-card" id="badge-detail-card">
+    <img id="badge-detail-icon" class="badge-detail-icon" src="" alt="">
+    <div class="name" id="badge-detail-name"></div>
+    <div class="meta" id="badge-detail-progress"></div>
+    <div class="stats-bar"><div class="stats-bar-fill" id="badge-detail-bar"></div></div>
+  </div>
+  <div class="hint" id="badge-detail-howto"></div>
+  <div class="venue-badges" id="badge-detail-tags"></div>
+  <button id="badge-detail-untappd-btn" class="secondary-btn hidden">🔗 Відкрити бейдж на Untappd</button>
+</div>
+
+<div id="screen-settings" class="screen">
+  <button class="back-btn" data-back="search">Назад</button>
+  <h2>Налаштування сповіщень</h2>
+  <div class="settings-row" id="settings-row-autotoast">
+    <div class="settings-row-label">
+      <div class="settings-row-title">🍻 Авто-тост</div>
+      <div class="settings-row-hint">Автоматично тостити чекіни друзів зі списку</div>
+    </div>
+    <label class="toggle-switch">
+      <input type="checkbox" id="settings-autotoast-toggle">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="settings-row">
+    <div class="settings-row-label">
+      <div class="settings-row-title">🆕 Новинки фестивалю</div>
+      <div class="settings-row-hint">Сповіщати про пиво не з бази поруч із точкою стеження</div>
+    </div>
+    <label class="toggle-switch">
+      <input type="checkbox" id="settings-festivalwatch-toggle">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="settings-row">
+    <div class="settings-row-label">
+      <div class="settings-row-title">💬 Коментарі</div>
+      <div class="settings-row-hint">Сповіщати про нові коментарі на твоїх чекінах</div>
+    </div>
+    <label class="toggle-switch">
+      <input type="checkbox" id="settings-commentwatch-toggle">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div id="settings-status" class="hint"></div>
+</div>
+
+<div id="screen-events" class="screen">
+  <button class="back-btn" data-back="search">Назад</button>
+  <h2>Останні події</h2>
+  <div id="events-status" class="hint"></div>
+  <div id="events-list" class="results"></div>
+</div>
+
+<div id="screen-rate" class="screen">
+  <button class="back-btn" id="rate-back-btn">Назад</button>
+  <div id="rate-beer-card" class="beer-card"></div>
+
+  <div class="rating-block">
+    <div id="rating-readout" class="rating-readout">4.0</div>
+    <input id="rating-slider" type="range" min="0" max="5" step="0.25" value="4">
+    <div class="pills" id="rating-pills"></div>
+  </div>
+
+  <input id="shout-input" type="text" maxlength="140" placeholder="Коментар (необов'язково)">
+
+  <div id="venue-selected" class="venue-selected-card hidden"></div>
+
+  <button id="venue-toggle-btn" class="secondary-btn">📍 Мої локації</button>
+  <button id="venue-nearby-btn" class="secondary-btn">🧭 Локації поруч</button>
+  <input id="venue-search-input" type="text" placeholder="🔍 Пошук локації за назвою…">
+  <label class="checkbox-label">
+    <input type="checkbox" id="unique-venue-checkbox"> Лише нові (де ще не був)
+  </label>
+  <label class="checkbox-label">
+    <input type="checkbox" id="badge-venue-checkbox"> 🏅 Лише для бейджа
+  </label>
+  <div id="venue-list" class="venue-list hidden"></div>
+
+  <button id="to-confirm-btn" class="primary-btn">Далі →</button>
+</div>
+
+<div id="screen-confirm" class="screen">
+  <button class="back-btn" data-back="rate">Назад</button>
+  <h2>Підтвердіть чекін</h2>
+  <div id="confirm-summary" class="confirm-summary"></div>
+  <button id="submit-btn" class="primary-btn">✅ Чекінити</button>
+  <div id="submit-status" class="hint"></div>
+</div>
+
+<script src="/static/checkin/app.js"></script>
+</body>
+</html>

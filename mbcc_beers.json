@@ -1,0 +1,6443 @@
+{
+  "yellow": [
+    {
+      "id": "6229597",
+      "name": "Zenne Y Frontera (season 23|24 - Blend No. 55)",
+      "brewery": "3 Fonteinen",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6229597"
+    },
+    {
+      "id": "6229472",
+      "name": "Aardbei/Schaarbeekse (season 23|24 - Blend No. 4)",
+      "brewery": "3 Fonteinen",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6229472"
+    },
+    {
+      "id": "6489932",
+      "name": "Fractional BA Steeple",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6489932"
+    },
+    {
+      "id": "6509525",
+      "name": "Broward County Brand Stout (2025)",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6509525"
+    },
+    {
+      "id": "6631064",
+      "name": "Coco Logic",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6631064"
+    },
+    {
+      "id": "6688872",
+      "name": "Taco Stand",
+      "brewery": "Alder",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6688872"
+    },
+    {
+      "id": "4597531",
+      "name": "Bar",
+      "brewery": "Alder",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4597531"
+    },
+    {
+      "id": "6691101",
+      "name": "Blackout in Wankendorf",
+      "brewery": "Amager",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691101"
+    },
+    {
+      "id": "6691102",
+      "name": "Heavenly Hops - Oracle",
+      "brewery": "Amager",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691102"
+    },
+    {
+      "id": "6672037",
+      "name": "Alphonso Mango X Coconut X Sticky Rice X Pineapple Smoothie Sour",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672037"
+    },
+    {
+      "id": "6603173",
+      "name": "Portuguese Brandy Barrel Aged Imperial Stout",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6603173"
+    },
+    {
+      "id": "6491847",
+      "name": "8 Year Anniversary Red Berries Smoothie Sour",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6491847"
+    },
+    {
+      "id": "6671558",
+      "name": "Kohua",
+      "brewery": "Bad Seed",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671558"
+    },
+    {
+      "id": "6671564",
+      "name": "Thrice Great",
+      "brewery": "Bad Seed",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671564"
+    },
+    {
+      "id": "6613098",
+      "name": "Buried By Time",
+      "brewery": "Barrel Theory",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6613098"
+    },
+    {
+      "id": "6603154",
+      "name": "Both Things Can Be True",
+      "brewery": "Barrel Theory",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6603154"
+    },
+    {
+      "id": "6678175",
+      "name": "Polar",
+      "brewery": "Beak",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6678175"
+    },
+    {
+      "id": "6654145",
+      "name": "Harvest #2",
+      "brewery": "Beak",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6654145"
+    },
+    {
+      "id": "6666666",
+      "name": "Skelethops",
+      "brewery": "Benchwarmers",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6666666"
+    },
+    {
+      "id": "6289358",
+      "name": "Lemon Party",
+      "brewery": "Benchwarmers",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6289358"
+    },
+    {
+      "id": "6691582",
+      "name": "Cabernet Franc Cider Cuvee",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691582"
+    },
+    {
+      "id": "6691584",
+      "name": "Perry Cuvee",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691584"
+    },
+    {
+      "id": "6691585",
+      "name": "Rye kvass with cherry & cherry leaves",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691585"
+    },
+    {
+      "id": "826566",
+      "name": "La Piccola",
+      "brewery": "Birrificio Italiano",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/826566"
+    },
+    {
+      "id": "125000",
+      "name": "Delia",
+      "brewery": "Birrificio Italiano",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/125000"
+    },
+    {
+      "id": "6523980",
+      "name": "Kriek B-228 2022",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6523980"
+    },
+    {
+      "id": "6514489",
+      "name": "Barbera White Label 2023",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6514489"
+    },
+    {
+      "id": "6514490",
+      "name": "Olasz Rizling 2023",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6514490"
+    },
+    {
+      "id": "6245429",
+      "name": "The Sandeman Cellars 2022",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6245429"
+    },
+    {
+      "id": "6450021",
+      "name": "Citra Citra Citra",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6450021"
+    },
+    {
+      "id": "6659046",
+      "name": "Ein Pils",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6659046"
+    },
+    {
+      "id": "6583418",
+      "name": "Triple Barrel Caramel Delight",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6583418"
+    },
+    {
+      "id": "6640087",
+      "name": "Ski Dog",
+      "brewery": "Brasserie du Bas-Canada",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6640087"
+    },
+    {
+      "id": "6158330",
+      "name": "La Bourse Ou La Vie",
+      "brewery": "Brasserie du Bas-Canada",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6158330"
+    },
+    {
+      "id": "6534048",
+      "name": "Lambda 2025",
+      "brewery": "Bravoure",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6534048"
+    },
+    {
+      "id": "6689854",
+      "name": "Coping Mechanisms",
+      "brewery": "Bravoure",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6689854"
+    },
+    {
+      "id": "6647882",
+      "name": "Proto 132",
+      "brewery": "Brewski",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6647882"
+    },
+    {
+      "id": "6647878",
+      "name": "Oaked Pavel Pils",
+      "brewery": "Brewski",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6647878"
+    },
+    {
+      "id": "6515969",
+      "name": "Chula Vista Especial",
+      "brewery": "Chula Vista",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6515969"
+    },
+    {
+      "id": "6672245",
+      "name": "Fiesta De Noche: Maracas",
+      "brewery": "Chula Vista",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6672245"
+    },
+    {
+      "id": "6357277",
+      "name": "Polymorphism",
+      "brewery": "Cloudwater",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6357277"
+    },
+    {
+      "id": "6512878",
+      "name": "Trees for Life",
+      "brewery": "Cloudwater",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6512878"
+    },
+    {
+      "id": "6447492",
+      "name": "Garden Variety",
+      "brewery": "Crooked Moon",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6447492"
+    },
+    {
+      "id": "6640985",
+      "name": "Fragile",
+      "brewery": "Crooked Moon",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6640985"
+    },
+    {
+      "id": "5920688",
+      "name": "Spreading Stoke",
+      "brewery": "DankHouse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5920688"
+    },
+    {
+      "id": "4495332",
+      "name": "Fruit Roll'd Up: Banana Punch",
+      "brewery": "DankHouse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4495332"
+    },
+    {
+      "id": "6608552",
+      "name": "Barrel Aged S'meeses (2026)",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6608552"
+    },
+    {
+      "id": "6648576",
+      "name": "Cartoon Graveyard",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6648576"
+    },
+    {
+      "id": "3758117",
+      "name": "Mellow Astronaut",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/3758117"
+    },
+    {
+      "id": "6698881",
+      "name": "Skunk Jam Cryo Fresh #1 Citra",
+      "brewery": "Ebeltoft",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6698881"
+    },
+    {
+      "id": "6593478",
+      "name": "Ichiban Shibori",
+      "brewery": "Ebeltoft",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6593478"
+    },
+    {
+      "id": "6666530",
+      "name": "Lapse",
+      "brewery": "Elmeleven",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6666530"
+    },
+    {
+      "id": "6666507",
+      "name": "New Frequencies",
+      "brewery": "Elmeleven",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6666507"
+    },
+    {
+      "id": "6620032",
+      "name": "Slavic Dill Pickle Sour",
+      "brewery": "ExperiMENTAL Brews",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6620032"
+    },
+    {
+      "id": "5212650",
+      "name": "Rose",
+      "brewery": "Fair Isle",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5212650"
+    },
+    {
+      "id": "4740361",
+      "name": "Harlen",
+      "brewery": "Fair Isle",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4740361"
+    },
+    {
+      "id": "5020441",
+      "name": "Crop Top",
+      "brewery": "Fast Fashion",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5020441"
+    },
+    {
+      "id": "5498820",
+      "name": "Fast Casual",
+      "brewery": "Fast Fashion",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5498820"
+    },
+    {
+      "id": "5619995",
+      "name": "BA Coconut Drip 2023",
+      "brewery": "Finback",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5619995"
+    },
+    {
+      "id": "6667769",
+      "name": "Sit Back",
+      "brewery": "Finback",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6667769"
+    },
+    {
+      "id": "6448224",
+      "name": "Tønne Troll",
+      "brewery": "Firestone Walker",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6448224"
+    },
+    {
+      "id": "6584781",
+      "name": "Flander's Red Ale",
+      "brewery": "Firestone Walker",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6584781"
+    },
+    {
+      "id": "6616744",
+      "name": "Ube Snacks",
+      "brewery": "Flatland",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6616744"
+    },
+    {
+      "id": "6073339",
+      "name": "Embedded",
+      "brewery": "Flatland",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6073339"
+    },
+    {
+      "id": "5459633",
+      "name": "Koldskååål",
+      "brewery": "Flying Couch",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5459633"
+    },
+    {
+      "id": "5737626",
+      "name": "Stor Hvededag",
+      "brewery": "Flying Couch",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5737626"
+    },
+    {
+      "id": "6381738",
+      "name": "Danski Treats",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6381738"
+    },
+    {
+      "id": "6381863",
+      "name": "Albatross",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6381863"
+    },
+    {
+      "id": "6600011",
+      "name": "Little Luxuries",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6600011"
+    },
+    {
+      "id": "6481995",
+      "name": "Cold and Fuzzy",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6481995"
+    },
+    {
+      "id": "3810839",
+      "name": "Methode’ Push*Pop: heads up seven up",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3810839"
+    },
+    {
+      "id": "6640459",
+      "name": "Lemon Paradox Sour Gose",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6640459"
+    },
+    {
+      "id": "6447826",
+      "name": "Dark Vibes",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6447826"
+    },
+    {
+      "id": "6383185",
+      "name": "7th Anniversary",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6383185"
+    },
+    {
+      "id": "6571657",
+      "name": "Gelato XTREME: Crema",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6571657"
+    },
+    {
+      "id": "6689925",
+      "name": "Minerva BA Single Cask Tawny Port",
+      "brewery": "Galway Bay",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6689925"
+    },
+    {
+      "id": "6689927",
+      "name": "Corner Club",
+      "brewery": "Galway Bay",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6689927"
+    },
+    {
+      "id": "3093625",
+      "name": "Monkey's Paw",
+      "brewery": "Ghost Town",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3093625"
+    },
+    {
+      "id": "6607515",
+      "name": "Dank Drive",
+      "brewery": "Ghost Town",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6607515"
+    },
+    {
+      "id": "3004012",
+      "name": "Lagermaiz",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/3004012"
+    },
+    {
+      "id": "532397",
+      "name": "República",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/532397"
+    },
+    {
+      "id": "6655579",
+      "name": "Just Scandalous #1",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655579"
+    },
+    {
+      "id": "6655577",
+      "name": "Hops with Benefits",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655577"
+    },
+    {
+      "id": "6291765",
+      "name": "Zebra IV",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6291765"
+    },
+    {
+      "id": "3631079",
+      "name": "Czech 10°",
+      "brewery": "Human Robot",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/3631079"
+    },
+    {
+      "id": "6629284",
+      "name": "Single Axis Double Citra",
+      "brewery": "Human Robot",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6629284"
+    },
+    {
+      "id": "6598546",
+      "name": "Cruz America",
+      "brewery": "Humble Sea",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6598546"
+    },
+    {
+      "id": "3989670",
+      "name": "Fogzilla",
+      "brewery": "Humble Sea",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/3989670"
+    },
+    {
+      "id": "6128713",
+      "name": "Zwickel Hell",
+      "brewery": "Keesmann",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/6128713"
+    },
+    {
+      "id": "1672",
+      "name": "Herren Pils",
+      "brewery": "Keesmann",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/1672"
+    },
+    {
+      "id": "2921835",
+      "name": "Brown Ale",
+      "brewery": "Krenkerup",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2921835"
+    },
+    {
+      "id": "4972700",
+      "name": "1367 Pilsner",
+      "brewery": "Krenkerup",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4972700"
+    },
+    {
+      "id": "6663345",
+      "name": "Hype Dream Blackberry, Strawberry & Vanilla",
+      "brewery": "Lervig",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6663345"
+    },
+    {
+      "id": "6620448",
+      "name": "Fable by Rackhouse",
+      "brewery": "Lervig",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6620448"
+    },
+    {
+      "id": "6589417",
+      "name": "Coatna",
+      "brewery": "Lesser-Known",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6589417"
+    },
+    {
+      "id": "6492956",
+      "name": "Back To Dreams",
+      "brewery": "Lesser-Known",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6492956"
+    },
+    {
+      "id": "6585811",
+      "name": "Double Barrel Monolith",
+      "brewery": "Lua",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6585811"
+    },
+    {
+      "id": "6624035",
+      "name": "Right Where We Want To Be",
+      "brewery": "Lua",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6624035"
+    },
+    {
+      "id": "6667880",
+      "name": "What Do You Hold",
+      "brewery": "Lyric",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667880"
+    },
+    {
+      "id": "6673946",
+      "name": "Dreams of Dragon Fire",
+      "brewery": "Lyric",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6673946"
+    },
+    {
+      "id": "6667720",
+      "name": "Another Moon (2025)",
+      "brewery": "Marlobobo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6667720"
+    },
+    {
+      "id": "6484732",
+      "name": "Bourbon BA Stevnsberry - Stagg Jr. (2023)",
+      "brewery": "Marlobobo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6484732"
+    },
+    {
+      "id": "6391772",
+      "name": "Czech De Foudre",
+      "brewery": "Messorem",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6391772"
+    },
+    {
+      "id": "6647671",
+      "name": "Temporalis #0055",
+      "brewery": "Messorem",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6647671"
+    },
+    {
+      "id": "6458329",
+      "name": "Breaker Point",
+      "brewery": "Mikkeller",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6458329"
+    },
+    {
+      "id": "6508195",
+      "name": "Rødgrød",
+      "brewery": "Mikkeller",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6508195"
+    },
+    {
+      "id": "6580965",
+      "name": "Black Pearl",
+      "brewery": "Mikkeller London",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6580965"
+    },
+    {
+      "id": "6647180",
+      "name": "Citra Sour",
+      "brewery": "Mikkeller London",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6647180"
+    },
+    {
+      "id": "47240",
+      "name": "Minoh Pilsner",
+      "brewery": "Minoh",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/47240"
+    },
+    {
+      "id": "6444953",
+      "name": "BATON No.009",
+      "brewery": "Minoh",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6444953"
+    },
+    {
+      "id": "5745613",
+      "name": "Well Tempered",
+      "brewery": "Moksa",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5745613"
+    },
+    {
+      "id": "4277218",
+      "name": "One Million Blueberries",
+      "brewery": "Moksa",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4277218"
+    },
+    {
+      "id": "6163145",
+      "name": "Local Framboise",
+      "brewery": "Monkey Brew",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6163145"
+    },
+    {
+      "id": "6611836",
+      "name": "Mephisto",
+      "brewery": "Monkey Brew",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6611836"
+    },
+    {
+      "id": "6584448",
+      "name": "Dreamsicle Mixed Berries",
+      "brewery": "Mortalis",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6584448"
+    },
+    {
+      "id": "6280879",
+      "name": "Triple Moon",
+      "brewery": "Mortalis",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6280879"
+    },
+    {
+      "id": "49150",
+      "name": "Mühlen Kölsch",
+      "brewery": "Mühlen Kölsch",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/49150"
+    },
+    {
+      "id": "5186771",
+      "name": "Cozy Burrow",
+      "brewery": "Ology",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5186771"
+    },
+    {
+      "id": "4867921",
+      "name": "Snicky Snack",
+      "brewery": "Ology",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4867921"
+    },
+    {
+      "id": "6699181",
+      "name": "MBCC \"Festival Edition\" Extra Vanilla Soft Focus",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699181"
+    },
+    {
+      "id": "6699170",
+      "name": "\"Festival Edition\" Cake® Extra Vanilla",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699170"
+    },
+    {
+      "id": "6645744",
+      "name": "Barrel Aged Bianca Space Jam",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6645744"
+    },
+    {
+      "id": "6699164",
+      "name": "🍦 Soft Serve™️ Barrel Aged Pina Colada",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699164"
+    },
+    {
+      "id": "6636542",
+      "name": "Borderline",
+      "brewery": "One Drop",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6636542"
+    },
+    {
+      "id": "4700219",
+      "name": "Jaw Dropper",
+      "brewery": "One Drop",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4700219"
+    },
+    {
+      "id": "4312926",
+      "name": "Dream Club",
+      "brewery": "Other Half",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4312926"
+    },
+    {
+      "id": "1793659",
+      "name": "All Citra Everything",
+      "brewery": "Other Half",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/1793659"
+    },
+    {
+      "id": "5273965",
+      "name": "Mountain Magic",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5273965"
+    },
+    {
+      "id": "5742633",
+      "name": "Alpen Pils",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5742633"
+    },
+    {
+      "id": "6590388",
+      "name": "Cloud Nine",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6590388"
+    },
+    {
+      "id": "2440305",
+      "name": "In The Deep Steep",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2440305"
+    },
+    {
+      "id": "6699203",
+      "name": "Grækaris",
+      "brewery": "Oy",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699203"
+    },
+    {
+      "id": "5703728",
+      "name": "Himmber",
+      "brewery": "Oy",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5703728"
+    },
+    {
+      "id": "6655583",
+      "name": "Patience 5th Anniversary (2026)",
+      "brewery": "PINTA Barrel",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6655583"
+    },
+    {
+      "id": "6647191",
+      "name": "Obsession - Double Barrel Edition",
+      "brewery": "PINTA Barrel",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6647191"
+    },
+    {
+      "id": "5034893",
+      "name": "Jasmine Oolong Wheat",
+      "brewery": "Peiping Machine",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5034893"
+    },
+    {
+      "id": "6310468",
+      "name": "Peiping Lager",
+      "brewery": "Peiping Machine",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6310468"
+    },
+    {
+      "id": "6656844",
+      "name": "Lipo",
+      "brewery": "Philwill Brew",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6656844"
+    },
+    {
+      "id": "6656772",
+      "name": "Saison du Val’de Rød",
+      "brewery": "Philwill Brew",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6656772"
+    },
+    {
+      "id": "6661550",
+      "name": "Almond Weather",
+      "brewery": "Pleasanti Street",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6661550"
+    },
+    {
+      "id": "6661546",
+      "name": "Gyrup Wine",
+      "brewery": "Pleasanti Street",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6661546"
+    },
+    {
+      "id": "6421634",
+      "name": "Roggenwolf",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6421634"
+    },
+    {
+      "id": "6598448",
+      "name": "Bonfire Banger",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6598448"
+    },
+    {
+      "id": "6648333",
+      "name": "Lucid Delay",
+      "brewery": "Polly's",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6648333"
+    },
+    {
+      "id": "6679044",
+      "name": "Selection Criteria",
+      "brewery": "Polly's",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6679044"
+    },
+    {
+      "id": "3372386",
+      "name": "Lera",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/3372386"
+    },
+    {
+      "id": "6045201",
+      "name": "Basker",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6045201"
+    },
+    {
+      "id": "6381578",
+      "name": "Rodnad",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6381578"
+    },
+    {
+      "id": "6271929",
+      "name": "Saison Cidré",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6271929"
+    },
+    {
+      "id": "6591960",
+      "name": "Imperial Stout",
+      "brewery": "Popihn",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6591960"
+    },
+    {
+      "id": "6672761",
+      "name": "NEIPA DDH - Nelson Sauvin",
+      "brewery": "Popihn",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672761"
+    },
+    {
+      "id": "6671047",
+      "name": "Sunspill",
+      "brewery": "Puhaste",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6671047"
+    },
+    {
+      "id": "6671050",
+      "name": "Excess Protocol",
+      "brewery": "Puhaste",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6671050"
+    },
+    {
+      "id": "6682211",
+      "name": "Junk Drawer",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6682211"
+    },
+    {
+      "id": "5774527",
+      "name": "Tingles Vol. 1",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5774527"
+    },
+    {
+      "id": "6664993",
+      "name": "Into the Wildwood",
+      "brewery": "Resident Culture",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6664993"
+    },
+    {
+      "id": "4110586",
+      "name": "Riding for the Feeling",
+      "brewery": "Resident Culture",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4110586"
+    },
+    {
+      "id": "6655591",
+      "name": "Stay Focused",
+      "brewery": "Rivington",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6655591"
+    },
+    {
+      "id": "6636875",
+      "name": "Lignee Raspberry",
+      "brewery": "Rivington",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6636875"
+    },
+    {
+      "id": "6487153",
+      "name": "Vivid Livin'",
+      "brewery": "Ruse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6487153"
+    },
+    {
+      "id": "2887529",
+      "name": "Audio Aquatic",
+      "brewery": "Ruse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/2887529"
+    },
+    {
+      "id": "6681729",
+      "name": "Team Pils",
+      "brewery": "Salikatt",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6681729"
+    },
+    {
+      "id": "6528039",
+      "name": "Phoenix 2025",
+      "brewery": "Salikatt",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6528039"
+    },
+    {
+      "id": "5963416",
+      "name": "Mango Sticky Rice",
+      "brewery": "Samata",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5963416"
+    },
+    {
+      "id": "6099957",
+      "name": "Cha Thai Yuzu",
+      "brewery": "Samata",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6099957"
+    },
+    {
+      "id": "5230775",
+      "name": "Osmosis",
+      "brewery": "Sapwood Cellars",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5230775"
+    },
+    {
+      "id": "6361139",
+      "name": "City of Shadows",
+      "brewery": "Sapwood Cellars",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6361139"
+    },
+    {
+      "id": "6187901",
+      "name": "Lentenbock",
+      "brewery": "Schilling",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6187901"
+    },
+    {
+      "id": "1036259",
+      "name": "Alexandr",
+      "brewery": "Schilling",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/1036259"
+    },
+    {
+      "id": "5456891",
+      "name": "Erle Black Lager",
+      "brewery": "Schlenkerla",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/5456891"
+    },
+    {
+      "id": "5410148",
+      "name": "Weichsel Red Lager",
+      "brewery": "Schlenkerla",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/5410148"
+    },
+    {
+      "id": "70221",
+      "name": "Schönramer Dunkel",
+      "brewery": "Schönramer",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/70221"
+    },
+    {
+      "id": "87641",
+      "name": "Schönramer Hell",
+      "brewery": "Schönramer",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/87641"
+    },
+    {
+      "id": "5964126",
+      "name": "Island Lager",
+      "brewery": "Seven Island",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5964126"
+    },
+    {
+      "id": "6308956",
+      "name": "Forbidden Eden Cherries & Blueberries",
+      "brewery": "Seven Island",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6308956"
+    },
+    {
+      "id": "5782063",
+      "name": "Auster Lyudmila",
+      "brewery": "Sigma Brau",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5782063"
+    },
+    {
+      "id": "5313629",
+      "name": "Auster Qazaqstan",
+      "brewery": "Sigma Brau",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5313629"
+    },
+    {
+      "id": "6671488",
+      "name": "Tiger",
+      "brewery": "Soma",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6671488"
+    },
+    {
+      "id": "6663350",
+      "name": "Doppler",
+      "brewery": "Soma",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6663350"
+    },
+    {
+      "id": "6479562",
+      "name": "Porcelæn",
+      "brewery": "Stauning Whisky",
+      "location": "",
+      "url": "https://untappd.com/beer/6479562"
+    },
+    {
+      "id": "6690112",
+      "name": "Test of Time",
+      "brewery": "Stauning Whisky",
+      "location": "",
+      "url": "https://untappd.com/beer/6690112"
+    },
+    {
+      "id": "6513873",
+      "name": "XI Anniversary | Block Party",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6513873"
+    },
+    {
+      "id": "6684231",
+      "name": "Imperial Stout | Maple Barrel Aged with Hazelnut",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6684231"
+    },
+    {
+      "id": "6665292",
+      "name": "Jopejskie 2022 Maple Barrel Aged | Tonka & Palo Santo",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6665292"
+    },
+    {
+      "id": "4591098",
+      "name": "Pastry Princess",
+      "brewery": "Superstition",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4591098"
+    },
+    {
+      "id": "6333428",
+      "name": "Sunshine BeeMosa",
+      "brewery": "Superstition",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6333428"
+    },
+    {
+      "id": "1266050",
+      "name": "Spitsbergen Pilsner",
+      "brewery": "Svalbard",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1266050"
+    },
+    {
+      "id": "4487050",
+      "name": "Spitsbergen White IPA",
+      "brewery": "Svalbard",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4487050"
+    },
+    {
+      "id": "4508085",
+      "name": "The Last Apple Pie Cider",
+      "brewery": "Taihu",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4508085"
+    },
+    {
+      "id": "6673704",
+      "name": "Hop Lanterns Citra",
+      "brewery": "Taihu",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6673704"
+    },
+    {
+      "id": "6655109",
+      "name": "Lucent Grove",
+      "brewery": "Tall Trees",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655109"
+    },
+    {
+      "id": "6655125",
+      "name": "Astral Canopy",
+      "brewery": "Tall Trees",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655125"
+    },
+    {
+      "id": "5846950",
+      "name": "Blue Cat Mead 2024",
+      "brewery": "The Attic",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5846950"
+    },
+    {
+      "id": "6700059",
+      "name": "Vanilla Vial 2024",
+      "brewery": "The Attic",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6700059"
+    },
+    {
+      "id": "4805290",
+      "name": "Pacifier",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4805290"
+    },
+    {
+      "id": "6554037",
+      "name": "Stereo Mono Simcoe",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6554037"
+    },
+    {
+      "id": "6622906",
+      "name": "KrushMo Pseudo Sue",
+      "brewery": "Toppling Goliath",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6622906"
+    },
+    {
+      "id": "6357305",
+      "name": "Mornin' Delight 2025",
+      "brewery": "Toppling Goliath",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6357305"
+    },
+    {
+      "id": "6636755",
+      "name": "Sirenphobia",
+      "brewery": "Totopia",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6636755"
+    },
+    {
+      "id": "6603989",
+      "name": "Auroraphobia",
+      "brewery": "Totopia",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6603989"
+    },
+    {
+      "id": "6623853",
+      "name": "Pastry Pals",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6623853"
+    },
+    {
+      "id": "5755533",
+      "name": "Gremlin Mode",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5755533"
+    },
+    {
+      "id": "4648785",
+      "name": "Atom Mango",
+      "brewery": "Uchu",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4648785"
+    },
+    {
+      "id": "6080390",
+      "name": "Obsidian Tower",
+      "brewery": "Uchu",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6080390"
+    },
+    {
+      "id": "6562719",
+      "name": "Pomegranate Wheat",
+      "brewery": "Vana",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6562719"
+    },
+    {
+      "id": "4888011",
+      "name": "Crispy Boy",
+      "brewery": "Vana",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4888011"
+    },
+    {
+      "id": "6618864",
+      "name": "Sangrita",
+      "brewery": "Varvar",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6618864"
+    },
+    {
+      "id": "6683013",
+      "name": "Golden Ruta",
+      "brewery": "Varvar",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6683013"
+    },
+    {
+      "id": "6596050",
+      "name": "Stoopid: Passionfruit, Apricot, Mango & Coconut",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6596050"
+    },
+    {
+      "id": "6697856",
+      "name": "Gloop Sour - Strawberries & Cookies & Cream",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6697856"
+    },
+    {
+      "id": "6636752",
+      "name": "Triple-Stacked Lumberjack Breakfast",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6636752"
+    },
+    {
+      "id": "123035",
+      "name": "Pils",
+      "brewery": "Wagner Merkendorf",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/123035"
+    },
+    {
+      "id": "6257859",
+      "name": "Krushed Alive",
+      "brewery": "Warpigs",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6257859"
+    },
+    {
+      "id": "6605715",
+      "name": "Beyond the Grave",
+      "brewery": "Warpigs",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6605715"
+    },
+    {
+      "id": "6626631",
+      "name": "Starry Noche (2026)",
+      "brewery": "WeldWerks",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6626631"
+    },
+    {
+      "id": "1460137",
+      "name": "Juicy Bits",
+      "brewery": "WeldWerks",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/1460137"
+    },
+    {
+      "id": "6653984",
+      "name": "Love Child",
+      "brewery": "Willibald",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6653984"
+    },
+    {
+      "id": "6612151",
+      "name": "OG Krush",
+      "brewery": "Willibald",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6612151"
+    },
+    {
+      "id": "5454438",
+      "name": "Lager Tchèque",
+      "brewery": "Wills",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5454438"
+    },
+    {
+      "id": "6653902",
+      "name": "Cinco Spring",
+      "brewery": "Wills",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6653902"
+    },
+    {
+      "id": "6639227",
+      "name": "Oblivion",
+      "brewery": "Wunderkammer Biermanufaktur",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6639227"
+    },
+    {
+      "id": "6231180",
+      "name": "The English & Scottish Popular Ballads",
+      "brewery": "Wunderkammer Biermanufaktur",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6231180"
+    },
+    {
+      "id": "5197743",
+      "name": "PB&J Mixtape",
+      "brewery": "Xul",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5197743"
+    },
+    {
+      "id": "6588789",
+      "name": "Prey Seeker",
+      "brewery": "Xul",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6588789"
+    },
+    {
+      "id": "6654056",
+      "name": "Coelica (Blend Two)",
+      "brewery": "Y Not",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6654056"
+    },
+    {
+      "id": "6619876",
+      "name": "Habengut",
+      "brewery": "Y Not",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6619876"
+    },
+    {
+      "id": "6674998",
+      "name": "Always An Evergreen",
+      "brewery": "ÅBEN",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6674998"
+    },
+    {
+      "id": "6212459",
+      "name": "Mumbo Jumbo #6",
+      "brewery": "ÅBEN",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6212459"
+    }
+  ],
+  "blue": [
+    {
+      "id": "6641033",
+      "name": "Stella 17 (3 Fonteinen x Mikkeller) (season 24|25 - Blend No. 38)",
+      "brewery": "3 Fonteinen",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6641033"
+    },
+    {
+      "id": "6401425",
+      "name": "Cuvée Verlinden (season 24|25 - Blend No. 6)",
+      "brewery": "3 Fonteinen",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6401425"
+    },
+    {
+      "id": "6646637",
+      "name": "Coconut Scoop",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6646637"
+    },
+    {
+      "id": "6509541",
+      "name": "Broward County Brand Coconut Banana Cream Pie Stout",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6509541"
+    },
+    {
+      "id": "4407976",
+      "name": "Smooth Ops: Pina Colada",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4407976"
+    },
+    {
+      "id": "6178783",
+      "name": "Pumm",
+      "brewery": "Alder",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6178783"
+    },
+    {
+      "id": "6407784",
+      "name": "Buffalo River",
+      "brewery": "Alder",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6407784"
+    },
+    {
+      "id": "6691109",
+      "name": "Flatout Fuckery",
+      "brewery": "Amager",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691109"
+    },
+    {
+      "id": "6691106",
+      "name": "Hopla!",
+      "brewery": "Amager",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691106"
+    },
+    {
+      "id": "6416857",
+      "name": "Plum X Banana X Peach X Cherry X Coconut Smoothie Sour",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6416857"
+    },
+    {
+      "id": "6672040",
+      "name": "Banana X Passionfruit X Guava X Mango X Ice Cream Smoothie Sour",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672040"
+    },
+    {
+      "id": "6516309",
+      "name": "Bourbon Barrel Aged Chocolate X Coffee Imperial Stout 2025",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6516309"
+    },
+    {
+      "id": "6671560",
+      "name": "Cryo Fresh Bone Krusher",
+      "brewery": "Bad Seed",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671560"
+    },
+    {
+      "id": "6671563",
+      "name": "La Dolce Vita",
+      "brewery": "Bad Seed",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671563"
+    },
+    {
+      "id": "6613098",
+      "name": "Buried By Time",
+      "brewery": "Barrel Theory",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6613098"
+    },
+    {
+      "id": "6603154",
+      "name": "Both Things Can Be True",
+      "brewery": "Barrel Theory",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6603154"
+    },
+    {
+      "id": "6688536",
+      "name": "Silk",
+      "brewery": "Beak",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6688536"
+    },
+    {
+      "id": "6654146",
+      "name": "Harvest #3",
+      "brewery": "Beak",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6654146"
+    },
+    {
+      "id": "6666694",
+      "name": "Hop Lab #001",
+      "brewery": "Benchwarmers",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6666694"
+    },
+    {
+      "id": "6666669",
+      "name": "Lollipop Island",
+      "brewery": "Benchwarmers",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6666669"
+    },
+    {
+      "id": "6691590",
+      "name": "Rye kvass with sweet grass",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691590"
+    },
+    {
+      "id": "6691588",
+      "name": "Mosaic Cider",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691588"
+    },
+    {
+      "id": "6691587",
+      "name": "Merlot Cider Cuvee",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691587"
+    },
+    {
+      "id": "1010101",
+      "name": "Asteroid 56013",
+      "brewery": "Birrificio Italiano",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1010101"
+    },
+    {
+      "id": "6691206",
+      "name": "Cannoli Connection",
+      "brewery": "Birrificio Italiano",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6691206"
+    },
+    {
+      "id": "6708684",
+      "name": "Zomerkriek 2023",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6708684"
+    },
+    {
+      "id": "6514488",
+      "name": "Nebbiolo White Label 2023",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6514488"
+    },
+    {
+      "id": "6707622",
+      "name": "Mirabelle-Gewurz 2025",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6707622"
+    },
+    {
+      "id": "6707617",
+      "name": "Moonwalk 2025",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6707617"
+    },
+    {
+      "id": "6515318",
+      "name": "You Only Live Twice 2021",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6515318"
+    },
+    {
+      "id": "6583424",
+      "name": "Triple Barrel Original Sin",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6583424"
+    },
+    {
+      "id": "6641398",
+      "name": "Dissimulator",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6641398"
+    },
+    {
+      "id": "6633523",
+      "name": "Tmavé Pivo 13º",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6633523"
+    },
+    {
+      "id": "6656970",
+      "name": "Crème De La Crème",
+      "brewery": "Brasserie du Bas-Canada",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6656970"
+    },
+    {
+      "id": "6697556",
+      "name": "Erasmus #2",
+      "brewery": "Brasserie du Bas-Canada",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6697556"
+    },
+    {
+      "id": "6689852",
+      "name": "Stop Look Listen",
+      "brewery": "Bravoure",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6689852"
+    },
+    {
+      "id": "6689857",
+      "name": "Collision of Stubbornness",
+      "brewery": "Bravoure",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6689857"
+    },
+    {
+      "id": "6647877",
+      "name": "Drummer Boy",
+      "brewery": "Brewski",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6647877"
+    },
+    {
+      "id": "6647884",
+      "name": "Proto 133",
+      "brewery": "Brewski",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6647884"
+    },
+    {
+      "id": "6630082",
+      "name": "Mittelfrüh",
+      "brewery": "Chula Vista",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6630082"
+    },
+    {
+      "id": "6672316",
+      "name": "Fiesta De Noche: Mariachis",
+      "brewery": "Chula Vista",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6672316"
+    },
+    {
+      "id": "6666628",
+      "name": "Citraboost",
+      "brewery": "Cloudwater",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6666628"
+    },
+    {
+      "id": "6672905",
+      "name": "Persistence Is Utile VIII",
+      "brewery": "Cloudwater",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672905"
+    },
+    {
+      "id": "6702188",
+      "name": "Black Mass - Licorice Shot",
+      "brewery": "Crooked Moon",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6702188"
+    },
+    {
+      "id": "6640983",
+      "name": "Dead End Soul",
+      "brewery": "Crooked Moon",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6640983"
+    },
+    {
+      "id": "6561801",
+      "name": "Berry Dairy Fairy",
+      "brewery": "DankHouse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6561801"
+    },
+    {
+      "id": "6514154",
+      "name": "Chasing Trees: Strain 27",
+      "brewery": "DankHouse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6514154"
+    },
+    {
+      "id": "6608556",
+      "name": "Wizzle (2026)",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6608556"
+    },
+    {
+      "id": "2748779",
+      "name": "A Little Drippy",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/2748779"
+    },
+    {
+      "id": "3206857",
+      "name": "Chickity Czech Yo Self",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/3206857"
+    },
+    {
+      "id": "6698882",
+      "name": "Skunk Jam Cryo Fresh #2 Mosaic",
+      "brewery": "Ebeltoft",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6698882"
+    },
+    {
+      "id": "1542056",
+      "name": "Helles Lager",
+      "brewery": "Ebeltoft",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1542056"
+    },
+    {
+      "id": "6666506",
+      "name": "Orbits",
+      "brewery": "Elmeleven",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6666506"
+    },
+    {
+      "id": "6620032",
+      "name": "Slavic Dill Pickle Sour",
+      "brewery": "ExperiMENTAL Brews",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6620032"
+    },
+    {
+      "id": "3972597",
+      "name": "Eugene",
+      "brewery": "Fair Isle",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3972597"
+    },
+    {
+      "id": "5939251",
+      "name": "Oba",
+      "brewery": "Fair Isle",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5939251"
+    },
+    {
+      "id": "6696310",
+      "name": "Wool Socks",
+      "brewery": "Fast Fashion",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6696310"
+    },
+    {
+      "id": "5994360",
+      "name": "Reign Man",
+      "brewery": "Fast Fashion",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5994360"
+    },
+    {
+      "id": "2801955",
+      "name": "Orange Crush",
+      "brewery": "Finback",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2801955"
+    },
+    {
+      "id": "6293175",
+      "name": "Ffresh: Cherry",
+      "brewery": "Finback",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6293175"
+    },
+    {
+      "id": "6589331",
+      "name": "Beauty Everywhere",
+      "brewery": "Firestone Walker",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6589331"
+    },
+    {
+      "id": "6438998",
+      "name": "Krieky Koelschip",
+      "brewery": "Firestone Walker",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6438998"
+    },
+    {
+      "id": "6591378",
+      "name": "Year 10",
+      "brewery": "Flatland",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6591378"
+    },
+    {
+      "id": "6621210",
+      "name": "Puzzle of Complexity",
+      "brewery": "Flatland",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6621210"
+    },
+    {
+      "id": "6432085",
+      "name": "Solgt til Stanglakrids",
+      "brewery": "Flying Couch",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6432085"
+    },
+    {
+      "id": "6489329",
+      "name": "Aleventure Time",
+      "brewery": "Flying Couch",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6489329"
+    },
+    {
+      "id": "6381738",
+      "name": "Danski Treats",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6381738"
+    },
+    {
+      "id": "6227778",
+      "name": "Nillerzzzzz blend 8",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6227778"
+    },
+    {
+      "id": "5953502",
+      "name": "Romp",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5953502"
+    },
+    {
+      "id": "4631294",
+      "name": "Directionless and Drifting",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4631294"
+    },
+    {
+      "id": "3746526",
+      "name": "Methode’ Push*Pop: Tug of War",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3746526"
+    },
+    {
+      "id": "6558418",
+      "name": "Tropic Pancake",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6558418"
+    },
+    {
+      "id": "6381741",
+      "name": "Cakeob",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6381741"
+    },
+    {
+      "id": "6640457",
+      "name": "Blueberry Lemon Cupcake",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6640457"
+    },
+    {
+      "id": "6631821",
+      "name": "Gelato XTREME: Banana, Mango & Yuzu Custard",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6631821"
+    },
+    {
+      "id": "6383191",
+      "name": "Master Blend #05",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6383191"
+    },
+    {
+      "id": "6689921",
+      "name": "Disco Paradiso",
+      "brewery": "Galway Bay",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6689921"
+    },
+    {
+      "id": "6435253",
+      "name": "Dekadent Reality",
+      "brewery": "Galway Bay",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6435253"
+    },
+    {
+      "id": "5263992",
+      "name": "Dismal",
+      "brewery": "Ghost Town",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5263992"
+    },
+    {
+      "id": "997043",
+      "name": "Nose Goblin",
+      "brewery": "Ghost Town",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/997043"
+    },
+    {
+      "id": "6623211",
+      "name": "Debút 2025",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6623211"
+    },
+    {
+      "id": "6591501",
+      "name": "Saison De La Bruja",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6591501"
+    },
+    {
+      "id": "5122321",
+      "name": "Superlager",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5122321"
+    },
+    {
+      "id": "6655582",
+      "name": "Just Scandalous #2",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655582"
+    },
+    {
+      "id": "6583059",
+      "name": "Eternal Hangover",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6583059"
+    },
+    {
+      "id": "6655567",
+      "name": "Extratropical Cyclone",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655567"
+    },
+    {
+      "id": "5745757",
+      "name": "Bodhran",
+      "brewery": "Human Robot",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5745757"
+    },
+    {
+      "id": "4927495",
+      "name": "Rösten",
+      "brewery": "Human Robot",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4927495"
+    },
+    {
+      "id": "4712118",
+      "name": "Humble Sea Helles",
+      "brewery": "Humble Sea",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4712118"
+    },
+    {
+      "id": "1476431",
+      "name": "Socks & Sandals",
+      "brewery": "Humble Sea",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/1476431"
+    },
+    {
+      "id": "5698319",
+      "name": "Zwickel Pils",
+      "brewery": "Keesmann",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/5698319"
+    },
+    {
+      "id": "20175",
+      "name": "Keesmann Hell",
+      "brewery": "Keesmann",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/20175"
+    },
+    {
+      "id": "1565241",
+      "name": "IPA",
+      "brewery": "Krenkerup",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1565241"
+    },
+    {
+      "id": "457537",
+      "name": "Guld",
+      "brewery": "Krenkerup",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/457537"
+    },
+    {
+      "id": "6671187",
+      "name": "Five by Rackhouse",
+      "brewery": "Lervig",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6671187"
+    },
+    {
+      "id": "2050741",
+      "name": "Supersonic",
+      "brewery": "Lervig",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2050741"
+    },
+    {
+      "id": "5708234",
+      "name": "LK Pils",
+      "brewery": "Lesser-Known",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5708234"
+    },
+    {
+      "id": "4914989",
+      "name": "Lunar Handshake",
+      "brewery": "Lesser-Known",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4914989"
+    },
+    {
+      "id": "6428056",
+      "name": "In Tandem",
+      "brewery": "Lua",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6428056"
+    },
+    {
+      "id": "6433795",
+      "name": "All 2025",
+      "brewery": "Lua",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6433795"
+    },
+    {
+      "id": "6673948",
+      "name": "Definitely Not Alone",
+      "brewery": "Lyric",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6673948"
+    },
+    {
+      "id": "6667873",
+      "name": "Colours on the Street",
+      "brewery": "Lyric",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667873"
+    },
+    {
+      "id": "6578379",
+      "name": "Wooden Symphony - Vanilla Edition (2023)",
+      "brewery": "Marlobobo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6578379"
+    },
+    {
+      "id": "6620827",
+      "name": "Boreotropical Beam Pie (2024)",
+      "brewery": "Marlobobo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6620827"
+    },
+    {
+      "id": "6647665",
+      "name": "Cape Et Dague",
+      "brewery": "Messorem",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6647665"
+    },
+    {
+      "id": "6647668",
+      "name": "Creme De La Creme",
+      "brewery": "Messorem",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6647668"
+    },
+    {
+      "id": "6671172",
+      "name": "Pils, Death & Robots",
+      "brewery": "Mikkeller",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671172"
+    },
+    {
+      "id": "6671170",
+      "name": "A Measure of Excess",
+      "brewery": "Mikkeller",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671170"
+    },
+    {
+      "id": "6298345",
+      "name": "Market Best",
+      "brewery": "Mikkeller London",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6298345"
+    },
+    {
+      "id": "6647182",
+      "name": "Heaps & Heaps of... Peacharine",
+      "brewery": "Mikkeller London",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6647182"
+    },
+    {
+      "id": "68192",
+      "name": "Yuzu White",
+      "brewery": "Minoh",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/68192"
+    },
+    {
+      "id": "2982181",
+      "name": "Sarayuma Shikao",
+      "brewery": "Minoh",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/2982181"
+    },
+    {
+      "id": "6681557",
+      "name": "Modi Operandi",
+      "brewery": "Moksa",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6681557"
+    },
+    {
+      "id": "6583767",
+      "name": "Moksa Eight",
+      "brewery": "Moksa",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6583767"
+    },
+    {
+      "id": "6691095",
+      "name": "Imperial Kriek",
+      "brewery": "Monkey Brew",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6691095"
+    },
+    {
+      "id": "6406138",
+      "name": "Demon Box 2025",
+      "brewery": "Monkey Brew",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6406138"
+    },
+    {
+      "id": "4970120",
+      "name": "Mind Flayer",
+      "brewery": "Mortalis",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4970120"
+    },
+    {
+      "id": "4155638",
+      "name": "Lupus Salictarius",
+      "brewery": "Mortalis",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4155638"
+    },
+    {
+      "id": "49150",
+      "name": "Mühlen Kölsch",
+      "brewery": "Mühlen Kölsch",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/49150"
+    },
+    {
+      "id": "6524102",
+      "name": "Dazed & Tomfused",
+      "brewery": "Ology",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6524102"
+    },
+    {
+      "id": "5572249",
+      "name": "Nice Crispi Treats",
+      "brewery": "Ology",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5572249"
+    },
+    {
+      "id": "6699181",
+      "name": "MBCC \"Festival Edition\" Extra Vanilla Soft Focus",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699181"
+    },
+    {
+      "id": "6699184",
+      "name": "\"Festival Edition\" Extra Vanilla Hopewell",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699184"
+    },
+    {
+      "id": "6553503",
+      "name": "🍦Soft Serve™️ Bianca XXL",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6553503"
+    },
+    {
+      "id": "6629197",
+      "name": "Opera Omnia",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6629197"
+    },
+    {
+      "id": "4065878",
+      "name": "Toasted Marshmallow & Salted Caramel Pecan Mudcake",
+      "brewery": "One Drop",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4065878"
+    },
+    {
+      "id": "6631950",
+      "name": "It's Go Time",
+      "brewery": "One Drop",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6631950"
+    },
+    {
+      "id": "6628379",
+      "name": "Sportsballin'",
+      "brewery": "Other Half",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6628379"
+    },
+    {
+      "id": "3908668",
+      "name": "Broccoli World",
+      "brewery": "Other Half",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/3908668"
+    },
+    {
+      "id": "6038031",
+      "name": "Aerials",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6038031"
+    },
+    {
+      "id": "4747377",
+      "name": "Nuclear Powder",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4747377"
+    },
+    {
+      "id": "6614048",
+      "name": "Super Sendy",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6614048"
+    },
+    {
+      "id": "4965846",
+      "name": "Svart Salt",
+      "brewery": "Oy",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4965846"
+    },
+    {
+      "id": "5327583",
+      "name": "Gullhornið",
+      "brewery": "Oy",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5327583"
+    },
+    {
+      "id": "6655580",
+      "name": "Affection 5th Anniversary (2026)",
+      "brewery": "PINTA Barrel",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6655580"
+    },
+    {
+      "id": "6647189",
+      "name": "Obsession",
+      "brewery": "PINTA Barrel",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6647189"
+    },
+    {
+      "id": "6689557",
+      "name": "Spring Hills in Soft Haze",
+      "brewery": "Peiping Machine",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6689557"
+    },
+    {
+      "id": "6127947",
+      "name": "Salted Plum",
+      "brewery": "Peiping Machine",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6127947"
+    },
+    {
+      "id": "6691194",
+      "name": "Bumle",
+      "brewery": "Philwill Brew",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691194"
+    },
+    {
+      "id": "6656772",
+      "name": "Saison du Val’de Rød",
+      "brewery": "Philwill Brew",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6656772"
+    },
+    {
+      "id": "6667556",
+      "name": "Homebrew Days",
+      "brewery": "Pleasanti Street",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667556"
+    },
+    {
+      "id": "6667192",
+      "name": "Stellar Madeira",
+      "brewery": "Pleasanti Street",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667192"
+    },
+    {
+      "id": "6151627",
+      "name": "Kask",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6151627"
+    },
+    {
+      "id": "6399092",
+      "name": "Barrique Noire",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6399092"
+    },
+    {
+      "id": "3517743",
+      "name": "A Passion for Fashion",
+      "brewery": "Polly's",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/3517743"
+    },
+    {
+      "id": "6681918",
+      "name": "Dethrone",
+      "brewery": "Polly's",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6681918"
+    },
+    {
+      "id": "6259302",
+      "name": "Glänta",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6259302"
+    },
+    {
+      "id": "4572735",
+      "name": "Come Together 2020",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4572735"
+    },
+    {
+      "id": "6690211",
+      "name": "Breath of Cider",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6690211"
+    },
+    {
+      "id": "6615399",
+      "name": "Cidre Extra-Brut - Eleve En Barrique De Palo Cortado",
+      "brewery": "Popihn",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6615399"
+    },
+    {
+      "id": "6429801",
+      "name": "BARLEY W. - BA Bourbon 26 Mois",
+      "brewery": "Popihn",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6429801"
+    },
+    {
+      "id": "6671055",
+      "name": "Immensus",
+      "brewery": "Puhaste",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6671055"
+    },
+    {
+      "id": "6639751",
+      "name": "Noctis",
+      "brewery": "Puhaste",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6639751"
+    },
+    {
+      "id": "6622835",
+      "name": "Joint Custody",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6622835"
+    },
+    {
+      "id": "6524162",
+      "name": "Mai Tai",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6524162"
+    },
+    {
+      "id": "6628352",
+      "name": "Royal Cookies",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6628352"
+    },
+    {
+      "id": "4266714",
+      "name": "Human Potential",
+      "brewery": "Resident Culture",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4266714"
+    },
+    {
+      "id": "6450119",
+      "name": "Unworthy Victor",
+      "brewery": "Resident Culture",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6450119"
+    },
+    {
+      "id": "6655592",
+      "name": "Fear & Ego",
+      "brewery": "Rivington",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6655592"
+    },
+    {
+      "id": "6619649",
+      "name": "Secrets In The Spirits",
+      "brewery": "Rivington",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6619649"
+    },
+    {
+      "id": "6569608",
+      "name": "Hemisphere of Shadows",
+      "brewery": "Ruse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6569608"
+    },
+    {
+      "id": "6676592",
+      "name": "The Winds Farewell",
+      "brewery": "Ruse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6676592"
+    },
+    {
+      "id": "6681737",
+      "name": "10th Anniversary #5",
+      "brewery": "Salikatt",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6681737"
+    },
+    {
+      "id": "6567855",
+      "name": "Slurp Machine",
+      "brewery": "Salikatt",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6567855"
+    },
+    {
+      "id": "6346984",
+      "name": "Lod Chong Cheesecake",
+      "brewery": "Samata",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6346984"
+    },
+    {
+      "id": "5302641",
+      "name": "SOURKULT",
+      "brewery": "Samata",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5302641"
+    },
+    {
+      "id": "6641284",
+      "name": "Pristine State",
+      "brewery": "Sapwood Cellars",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6641284"
+    },
+    {
+      "id": "5237293",
+      "name": "O'Postrophe",
+      "brewery": "Sapwood Cellars",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5237293"
+    },
+    {
+      "id": "4485327",
+      "name": "Volksgarten",
+      "brewery": "Schilling",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4485327"
+    },
+    {
+      "id": "1272495",
+      "name": "Modernism",
+      "brewery": "Schilling",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/1272495"
+    },
+    {
+      "id": "471",
+      "name": "Aecht Schlenkerla Rauchbier - Märzen",
+      "brewery": "Schlenkerla",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/471"
+    },
+    {
+      "id": "19475",
+      "name": "Eiche",
+      "brewery": "Schlenkerla",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/19475"
+    },
+    {
+      "id": "87603",
+      "name": "Saphir Bock",
+      "brewery": "Schönramer",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/87603"
+    },
+    {
+      "id": "87641",
+      "name": "Schönramer Hell",
+      "brewery": "Schönramer",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/87641"
+    },
+    {
+      "id": "6603927",
+      "name": "Dark Ages - Light Devourer",
+      "brewery": "Seven Island",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6603927"
+    },
+    {
+      "id": "6672851",
+      "name": "Hop Massacre",
+      "brewery": "Seven Island",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672851"
+    },
+    {
+      "id": "5311186",
+      "name": "Auster Blanche de Chymkent",
+      "brewery": "Sigma Brau",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5311186"
+    },
+    {
+      "id": "5353248",
+      "name": "Auster Mango Chili Gose",
+      "brewery": "Sigma Brau",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5353248"
+    },
+    {
+      "id": "6697562",
+      "name": "Proxy",
+      "brewery": "Soma",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6697562"
+    },
+    {
+      "id": "6680103",
+      "name": "Ripple",
+      "brewery": "Soma",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6680103"
+    },
+    {
+      "id": "6479562",
+      "name": "Porcelæn",
+      "brewery": "Stauning Whisky",
+      "location": "",
+      "url": "https://untappd.com/beer/6479562"
+    },
+    {
+      "id": "6690112",
+      "name": "Test of Time",
+      "brewery": "Stauning Whisky",
+      "location": "",
+      "url": "https://untappd.com/beer/6690112"
+    },
+    {
+      "id": "6665295",
+      "name": "Imperial Stout BBA Wyoming Bourbon Whiskey | Ultra Vanilla",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6665295"
+    },
+    {
+      "id": "5760942",
+      "name": "Jopejskie BBA Hazelnut",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5760942"
+    },
+    {
+      "id": "6671154",
+      "name": "Harvest Shock",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6671154"
+    },
+    {
+      "id": "3695991",
+      "name": "Cha-Cha Shake",
+      "brewery": "Superstition",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3695991"
+    },
+    {
+      "id": "6521193",
+      "name": "Dream Tickle White",
+      "brewery": "Superstition",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6521193"
+    },
+    {
+      "id": "1462907",
+      "name": "Spitsbergen Blonde",
+      "brewery": "Svalbard",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1462907"
+    },
+    {
+      "id": "1266050",
+      "name": "Spitsbergen Pilsner",
+      "brewery": "Svalbard",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1266050"
+    },
+    {
+      "id": "4455809",
+      "name": "Passion Fruit Hurricane",
+      "brewery": "Taihu",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4455809"
+    },
+    {
+      "id": "5281227",
+      "name": "Flat White",
+      "brewery": "Taihu",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5281227"
+    },
+    {
+      "id": "6655105",
+      "name": "Into the Murk",
+      "brewery": "Tall Trees",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655105"
+    },
+    {
+      "id": "6655133",
+      "name": "Astral Canopy - Fruited",
+      "brewery": "Tall Trees",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655133"
+    },
+    {
+      "id": "6700063",
+      "name": "Vanagandr 2022-2025",
+      "brewery": "The Attic",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6700063"
+    },
+    {
+      "id": "6700065",
+      "name": "Vanilla in the Dark 2025",
+      "brewery": "The Attic",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6700065"
+    },
+    {
+      "id": "6691206",
+      "name": "Cannoli Connection",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6691206"
+    },
+    {
+      "id": "6697547",
+      "name": "To Be Pacific",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6697547"
+    },
+    {
+      "id": "6198755",
+      "name": "Dark and Easy",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6198755"
+    },
+    {
+      "id": "5422634",
+      "name": "Assassin with Coconut, Pecan, & Vanilla (2023)",
+      "brewery": "Toppling Goliath",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5422634"
+    },
+    {
+      "id": "6638163",
+      "name": "Supa Sue-Mo",
+      "brewery": "Toppling Goliath",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6638163"
+    },
+    {
+      "id": "6636753",
+      "name": "Nullphobia",
+      "brewery": "Totopia",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6636753"
+    },
+    {
+      "id": "6662467",
+      "name": "Biasphobia",
+      "brewery": "Totopia",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6662467"
+    },
+    {
+      "id": "6622845",
+      "name": "Split Instict",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6622845"
+    },
+    {
+      "id": "4804291",
+      "name": "Irie Jungle Sour Vibes 2022",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4804291"
+    },
+    {
+      "id": "6694738",
+      "name": "Nothingness",
+      "brewery": "Uchu",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6694738"
+    },
+    {
+      "id": "6057886",
+      "name": "Uchu Paradise",
+      "brewery": "Uchu",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6057886"
+    },
+    {
+      "id": "4326443",
+      "name": "Jasmine Rice Lager",
+      "brewery": "Vana",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4326443"
+    },
+    {
+      "id": "6654476",
+      "name": "Hazy IPA",
+      "brewery": "Vana",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6654476"
+    },
+    {
+      "id": "6620745",
+      "name": "Solidøl Blair Athol 2026",
+      "brewery": "Varvar",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6620745"
+    },
+    {
+      "id": "6682995",
+      "name": "Citra Moon",
+      "brewery": "Varvar",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6682995"
+    },
+    {
+      "id": "6581011",
+      "name": "You Won't Believe It's Not Crumble!",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6581011"
+    },
+    {
+      "id": "6654833",
+      "name": "Xtremely Stoopid",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6654833"
+    },
+    {
+      "id": "6431020",
+      "name": "GLOOP - Chocolate Fudge Brownie",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6431020"
+    },
+    {
+      "id": "123035",
+      "name": "Pils",
+      "brewery": "Wagner Merkendorf",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/123035"
+    },
+    {
+      "id": "5332188",
+      "name": "10 Degrees Pivo",
+      "brewery": "Warpigs",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5332188"
+    },
+    {
+      "id": "5747103",
+      "name": "Prokrastinator",
+      "brewery": "Warpigs",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5747103"
+    },
+    {
+      "id": "5498533",
+      "name": "ScienceWerks",
+      "brewery": "WeldWerks",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5498533"
+    },
+    {
+      "id": "3995987",
+      "name": "Blueberry Cobbler",
+      "brewery": "WeldWerks",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/3995987"
+    },
+    {
+      "id": "6645790",
+      "name": "Cloak & Dagger",
+      "brewery": "Willibald",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6645790"
+    },
+    {
+      "id": "3831050",
+      "name": "Willibald Lager",
+      "brewery": "Willibald",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3831050"
+    },
+    {
+      "id": "6670036",
+      "name": "Réfractaires",
+      "brewery": "Wills",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6670036"
+    },
+    {
+      "id": "6267389",
+      "name": "IPA De Quartier",
+      "brewery": "Wills",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6267389"
+    },
+    {
+      "id": "6663662",
+      "name": "Wunderland",
+      "brewery": "Wunderkammer Biermanufaktur",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6663662"
+    },
+    {
+      "id": "6672141",
+      "name": "Table Grapes",
+      "brewery": "Wunderkammer Biermanufaktur",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672141"
+    },
+    {
+      "id": "5699566",
+      "name": "PB&J Mixtape: Blackberry",
+      "brewery": "Xul",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5699566"
+    },
+    {
+      "id": "6620894",
+      "name": "XKS 17",
+      "brewery": "Xul",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6620894"
+    },
+    {
+      "id": "6438846",
+      "name": "Himstregims",
+      "brewery": "Y Not",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6438846"
+    },
+    {
+      "id": "6612515",
+      "name": "Theory of Hops",
+      "brewery": "Y Not",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6612515"
+    },
+    {
+      "id": "6674985",
+      "name": "9 Year Anniversary",
+      "brewery": "ÅBEN",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6674985"
+    },
+    {
+      "id": "5230635",
+      "name": "Mumbo Jumbo #1",
+      "brewery": "ÅBEN",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5230635"
+    }
+  ],
+  "red": [
+    {
+      "id": "6641053",
+      "name": "Zweigelt (3 Fonteinen x Christoph Hoch) (season 23|24 - Blend No. 50)",
+      "brewery": "3 Fonteinen",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6641053"
+    },
+    {
+      "id": "6437897",
+      "name": "Oude Geuze Cuvée Armand & Gaston Vintage 2020 (season 19|20 - Blend No. 15)",
+      "brewery": "3 Fonteinen",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6437897"
+    },
+    {
+      "id": "6509538",
+      "name": "Broward County Brand Salted Caramel Pecan Pie Stout",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6509538"
+    },
+    {
+      "id": "6513523",
+      "name": "Broward County Brand Heritage Barleywine Ale",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6513523"
+    },
+    {
+      "id": "2024098",
+      "name": "Dopealicious",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2024098"
+    },
+    {
+      "id": "6301588",
+      "name": "TDH Rockfield",
+      "brewery": "Alder",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6301588"
+    },
+    {
+      "id": "6495980",
+      "name": "Aalis Reserva 2025",
+      "brewery": "Alder",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6495980"
+    },
+    {
+      "id": "6691141",
+      "name": "Chokokoko",
+      "brewery": "Amager",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691141"
+    },
+    {
+      "id": "6691110",
+      "name": "Berry Bliss - Passionfruit & Raspberry Cheesecake Sour",
+      "brewery": "Amager",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691110"
+    },
+    {
+      "id": "6516302",
+      "name": "Mango X Banana X Passionfruit X Vanilla Smoothie Sour",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6516302"
+    },
+    {
+      "id": "6675085",
+      "name": "Chocolate X Ice Cream X Port Wine X Brandy Barrel Aged Imperial Stout",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6675085"
+    },
+    {
+      "id": "6560462",
+      "name": "Pear X Lemon X Apricot X Mango Smoothie Sour",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6560462"
+    },
+    {
+      "id": "5643214",
+      "name": "Cognac Barrel Aged Vanilla Imperial Stout",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5643214"
+    },
+    {
+      "id": "6671556",
+      "name": "Feuer",
+      "brewery": "Bad Seed",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671556"
+    },
+    {
+      "id": "6671557",
+      "name": "Funke",
+      "brewery": "Bad Seed",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671557"
+    },
+    {
+      "id": "6613098",
+      "name": "Buried By Time",
+      "brewery": "Barrel Theory",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6613098"
+    },
+    {
+      "id": "6603154",
+      "name": "Both Things Can Be True",
+      "brewery": "Barrel Theory",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6603154"
+    },
+    {
+      "id": "6668765",
+      "name": "Squeeze",
+      "brewery": "Beak",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6668765"
+    },
+    {
+      "id": "6654144",
+      "name": "Harvest #1",
+      "brewery": "Beak",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6654144"
+    },
+    {
+      "id": "6120747",
+      "name": "Sushi Time",
+      "brewery": "Benchwarmers",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6120747"
+    },
+    {
+      "id": "5799001",
+      "name": "Bring the Cheese",
+      "brewery": "Benchwarmers",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5799001"
+    },
+    {
+      "id": "6691593",
+      "name": "Rye berry kvass with blackberry & blackcurrant leaves",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691593"
+    },
+    {
+      "id": "6691592",
+      "name": "Chardonnay Cider Cuvee",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691592"
+    },
+    {
+      "id": "6691591",
+      "name": "Citra Cider",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691591"
+    },
+    {
+      "id": "2211013",
+      "name": "Polock en Rouge",
+      "brewery": "Birrificio Italiano",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2211013"
+    },
+    {
+      "id": "13776",
+      "name": "Tipopils",
+      "brewery": "Birrificio Italiano",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/13776"
+    },
+    {
+      "id": "6523973",
+      "name": "Kriek B-225 2022",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6523973"
+    },
+    {
+      "id": "6514492",
+      "name": "Merlot Grand Cru 2021",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6514492"
+    },
+    {
+      "id": "6707628",
+      "name": "Dry Hop 2024",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6707628"
+    },
+    {
+      "id": "6707627",
+      "name": "Kutfruit 2025",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6707627"
+    },
+    {
+      "id": "6509163",
+      "name": "Tokaj Lélek 2021",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6509163"
+    },
+    {
+      "id": "6450021",
+      "name": "Citra Citra Citra",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6450021"
+    },
+    {
+      "id": "6659046",
+      "name": "Ein Pils",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6659046"
+    },
+    {
+      "id": "6639081",
+      "name": "Final Boss",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6639081"
+    },
+    {
+      "id": "5002053",
+      "name": "DDH Constantin",
+      "brewery": "Brasserie du Bas-Canada",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5002053"
+    },
+    {
+      "id": "5489483",
+      "name": "Boire Double",
+      "brewery": "Brasserie du Bas-Canada",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5489483"
+    },
+    {
+      "id": "6689849",
+      "name": "Dozen Sunbeams",
+      "brewery": "Bravoure",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6689849"
+    },
+    {
+      "id": "6689847",
+      "name": "Moiré (2026)",
+      "brewery": "Bravoure",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6689847"
+    },
+    {
+      "id": "6472611",
+      "name": "Chrome Bucket",
+      "brewery": "Brewski",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6472611"
+    },
+    {
+      "id": "6653310",
+      "name": "Blood Of The Forest",
+      "brewery": "Brewski",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6653310"
+    },
+    {
+      "id": "6630082",
+      "name": "Mittelfrüh",
+      "brewery": "Chula Vista",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6630082"
+    },
+    {
+      "id": "6672367",
+      "name": "Fiesta De Noche: Pińatas",
+      "brewery": "Chula Vista",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6672367"
+    },
+    {
+      "id": "6228577",
+      "name": "Talk Is Always Easy",
+      "brewery": "Cloudwater",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6228577"
+    },
+    {
+      "id": "4080312",
+      "name": "Double Dank",
+      "brewery": "Cloudwater",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4080312"
+    },
+    {
+      "id": "6702199",
+      "name": "Temple Roast - Espresso Martini",
+      "brewery": "Crooked Moon",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6702199"
+    },
+    {
+      "id": "6447497",
+      "name": "Duality",
+      "brewery": "Crooked Moon",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6447497"
+    },
+    {
+      "id": "6592512",
+      "name": "Family Truss'd",
+      "brewery": "DankHouse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6592512"
+    },
+    {
+      "id": "5267443",
+      "name": "Triple Beam Dream",
+      "brewery": "DankHouse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5267443"
+    },
+    {
+      "id": "6425048",
+      "name": "Aibohphobia (2025)",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6425048"
+    },
+    {
+      "id": "4928943",
+      "name": "Fruit Fighters",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4928943"
+    },
+    {
+      "id": "6655136",
+      "name": "Momma Cat",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6655136"
+    },
+    {
+      "id": "6717803",
+      "name": "Petroleum Cryo Fresh #1 Krush",
+      "brewery": "Ebeltoft",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6717803"
+    },
+    {
+      "id": "6698883",
+      "name": "Banana Republic",
+      "brewery": "Ebeltoft",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6698883"
+    },
+    {
+      "id": "6634240",
+      "name": "Dreamers Destination",
+      "brewery": "Elmeleven",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6634240"
+    },
+    {
+      "id": "6664840",
+      "name": "Flight 643",
+      "brewery": "Elmeleven",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6664840"
+    },
+    {
+      "id": "6620032",
+      "name": "Slavic Dill Pickle Sour",
+      "brewery": "ExperiMENTAL Brews",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6620032"
+    },
+    {
+      "id": "6605317",
+      "name": "Renee",
+      "brewery": "Fair Isle",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6605317"
+    },
+    {
+      "id": "4466047",
+      "name": "Magohalmi",
+      "brewery": "Fair Isle",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4466047"
+    },
+    {
+      "id": "5994360",
+      "name": "Reign Man",
+      "brewery": "Fast Fashion",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5994360"
+    },
+    {
+      "id": "5498820",
+      "name": "Fast Casual",
+      "brewery": "Fast Fashion",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5498820"
+    },
+    {
+      "id": "3576620",
+      "name": "BQE Chocolate Coffee 2019",
+      "brewery": "Finback",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3576620"
+    },
+    {
+      "id": "4188761",
+      "name": "If Whales Could Fly",
+      "brewery": "Finback",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4188761"
+    },
+    {
+      "id": "6359408",
+      "name": "Uber Omni Gruber",
+      "brewery": "Firestone Walker",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6359408"
+    },
+    {
+      "id": "6360242",
+      "name": "Primal Elements: Raspberry Blueberry",
+      "brewery": "Firestone Walker",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6360242"
+    },
+    {
+      "id": "6134636",
+      "name": "Year 9",
+      "brewery": "Flatland",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6134636"
+    },
+    {
+      "id": "6591382",
+      "name": "Bloom",
+      "brewery": "Flatland",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6591382"
+    },
+    {
+      "id": "3855060",
+      "name": "Yuzu Cucumber Gose",
+      "brewery": "Flying Couch",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/3855060"
+    },
+    {
+      "id": "5886521",
+      "name": "U Wot M8?",
+      "brewery": "Flying Couch",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5886521"
+    },
+    {
+      "id": "6381738",
+      "name": "Danski Treats",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6381738"
+    },
+    {
+      "id": "3797998",
+      "name": "Methode’ Push*Pop: Five Hundred",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3797998"
+    },
+    {
+      "id": "4082959",
+      "name": "Five Threads",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4082959"
+    },
+    {
+      "id": "5833235",
+      "name": "Cherry Braggot",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5833235"
+    },
+    {
+      "id": "6227767",
+      "name": "Double Barrel Maple Nillerzzzzz",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6227767"
+    },
+    {
+      "id": "6640457",
+      "name": "Blueberry Lemon Cupcake",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6640457"
+    },
+    {
+      "id": "6558421",
+      "name": "Dragonspawn",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6558421"
+    },
+    {
+      "id": "6536624",
+      "name": "Barrel Aged Day 2025: Cuvee",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6536624"
+    },
+    {
+      "id": "6631819",
+      "name": "Gelato XTREME: Cocco Fresco",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6631819"
+    },
+    {
+      "id": "6059960",
+      "name": "Oak / Darach",
+      "brewery": "Galway Bay",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6059960"
+    },
+    {
+      "id": "6689915",
+      "name": "Counting Off the Days Coffee & Cacao Edition",
+      "brewery": "Galway Bay",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6689915"
+    },
+    {
+      "id": "4168969",
+      "name": "Incidental Mortality",
+      "brewery": "Ghost Town",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4168969"
+    },
+    {
+      "id": "6415654",
+      "name": "Skullhaus",
+      "brewery": "Ghost Town",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6415654"
+    },
+    {
+      "id": "2505584",
+      "name": "Hombre Pájaro",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/2505584"
+    },
+    {
+      "id": "6686497",
+      "name": "Los Bravos Del Río",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6686497"
+    },
+    {
+      "id": "6655579",
+      "name": "Just Scandalous #1",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655579"
+    },
+    {
+      "id": "6568220",
+      "name": "Permanent Hangover",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6568220"
+    },
+    {
+      "id": "6655575",
+      "name": "Soul Destroyer",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655575"
+    },
+    {
+      "id": "3651795",
+      "name": "Hallertau Pils",
+      "brewery": "Human Robot",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/3651795"
+    },
+    {
+      "id": "6417936",
+      "name": "Jefe Dorado",
+      "brewery": "Human Robot",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6417936"
+    },
+    {
+      "id": "1925785",
+      "name": "Walk the Dank",
+      "brewery": "Humble Sea",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/1925785"
+    },
+    {
+      "id": "6536929",
+      "name": "Stoke of Genius",
+      "brewery": "Humble Sea",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6536929"
+    },
+    {
+      "id": "5698319",
+      "name": "Zwickel Pils",
+      "brewery": "Keesmann",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/5698319"
+    },
+    {
+      "id": "20175",
+      "name": "Keesmann Hell",
+      "brewery": "Keesmann",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/20175"
+    },
+    {
+      "id": "88221",
+      "name": "Stout",
+      "brewery": "Krenkerup",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/88221"
+    },
+    {
+      "id": "690944",
+      "name": "Weissbier",
+      "brewery": "Krenkerup",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/690944"
+    },
+    {
+      "id": "6699192",
+      "name": "Bright Side",
+      "brewery": "Lervig",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6699192"
+    },
+    {
+      "id": "6413314",
+      "name": "Confection by Rackhouse",
+      "brewery": "Lervig",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6413314"
+    },
+    {
+      "id": "5831785",
+      "name": "Four Meters",
+      "brewery": "Lesser-Known",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5831785"
+    },
+    {
+      "id": "6643694",
+      "name": "Our Little Ritual",
+      "brewery": "Lesser-Known",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6643694"
+    },
+    {
+      "id": "6620839",
+      "name": "Living Decorations",
+      "brewery": "Lua",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6620839"
+    },
+    {
+      "id": "6433791",
+      "name": "Mantra (2025)",
+      "brewery": "Lua",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6433791"
+    },
+    {
+      "id": "6673948",
+      "name": "Definitely Not Alone",
+      "brewery": "Lyric",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6673948"
+    },
+    {
+      "id": "6673946",
+      "name": "Dreams of Dragon's Fire",
+      "brewery": "Lyric",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6673946"
+    },
+    {
+      "id": "6667732",
+      "name": "Ploak Pie (2025)",
+      "brewery": "Marlobobo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6667732"
+    },
+    {
+      "id": "6667746",
+      "name": "Bourbon Ba Sakuranbobo (2023)",
+      "brewery": "Marlobobo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6667746"
+    },
+    {
+      "id": "6647660",
+      "name": "Demoliri 0025",
+      "brewery": "Messorem",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6647660"
+    },
+    {
+      "id": "6647657",
+      "name": "Baton Pas Gentil",
+      "brewery": "Messorem",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6647657"
+    },
+    {
+      "id": "6671175",
+      "name": "Terminal Volume",
+      "brewery": "Mikkeller",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671175"
+    },
+    {
+      "id": "6598513",
+      "name": "Carrot Fever",
+      "brewery": "Mikkeller",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6598513"
+    },
+    {
+      "id": "6567059",
+      "name": "Khao Lite",
+      "brewery": "Mikkeller London",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6567059"
+    },
+    {
+      "id": "6526573",
+      "name": "Grandma's Fridgecake",
+      "brewery": "Mikkeller London",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6526573"
+    },
+    {
+      "id": "6444976",
+      "name": "BATON No.010",
+      "brewery": "Minoh",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6444976"
+    },
+    {
+      "id": "1066983",
+      "name": "Barrel Aged Imperial Stout",
+      "brewery": "Minoh",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/1066983"
+    },
+    {
+      "id": "6583770",
+      "name": "Contiguous",
+      "brewery": "Moksa",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6583770"
+    },
+    {
+      "id": "3192640",
+      "name": "Sunset on Sunset",
+      "brewery": "Moksa",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/3192640"
+    },
+    {
+      "id": "6406147",
+      "name": "Timothy's Monster 2025",
+      "brewery": "Monkey Brew",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6406147"
+    },
+    {
+      "id": "6691098",
+      "name": "Bière de Coupage (Blend Boerenerf)",
+      "brewery": "Monkey Brew",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6691098"
+    },
+    {
+      "id": "6584437",
+      "name": "Ares Nelson",
+      "brewery": "Mortalis",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6584437"
+    },
+    {
+      "id": "6596100",
+      "name": "Starship Coconuts",
+      "brewery": "Mortalis",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6596100"
+    },
+    {
+      "id": "49150",
+      "name": "Mühlen Kölsch",
+      "brewery": "Mühlen Kölsch",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/49150"
+    },
+    {
+      "id": "6625273",
+      "name": "Dark Embrace Invitational (GA 2026)",
+      "brewery": "Ology",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6625273"
+    },
+    {
+      "id": "2457274",
+      "name": "Juice Lab: PBR",
+      "brewery": "Ology",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2457274"
+    },
+    {
+      "id": "6699181",
+      "name": "MBCC \"Festival Edition\" Extra Vanilla Soft Focus",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699181"
+    },
+    {
+      "id": "6699172",
+      "name": "🍦Soft Serve™️ Whiskey Sour",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699172"
+    },
+    {
+      "id": "6699170",
+      "name": "\"Festival Edition\" Cake® Extra Vanilla",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699170"
+    },
+    {
+      "id": "5884028",
+      "name": "Wipe Me Down",
+      "brewery": "One Drop",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5884028"
+    },
+    {
+      "id": "6636644",
+      "name": "Echo Chamber",
+      "brewery": "One Drop",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6636644"
+    },
+    {
+      "id": "6628393",
+      "name": "Curly Fries",
+      "brewery": "Other Half",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6628393"
+    },
+    {
+      "id": "6628386",
+      "name": "Crashing the Boards",
+      "brewery": "Other Half",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6628386"
+    },
+    {
+      "id": "6590389",
+      "name": "Deepest Steepest",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6590389"
+    },
+    {
+      "id": "6614048",
+      "name": "Super Sendy",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6614048"
+    },
+    {
+      "id": "2002572",
+      "name": "In The Steep",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2002572"
+    },
+    {
+      "id": "5742633",
+      "name": "Alpen Pils",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5742633"
+    },
+    {
+      "id": "6699681",
+      "name": "Oceanic IPA",
+      "brewery": "Oy",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699681"
+    },
+    {
+      "id": "5186747",
+      "name": "Fersvka",
+      "brewery": "Oy",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5186747"
+    },
+    {
+      "id": "6655581",
+      "name": "Liberty 5th Anniversary (2026)",
+      "brewery": "PINTA Barrel",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6655581"
+    },
+    {
+      "id": "6604040",
+      "name": "Vortex",
+      "brewery": "PINTA Barrel",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6604040"
+    },
+    {
+      "id": "6231549",
+      "name": "Fruit Punch",
+      "brewery": "Peiping Machine",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6231549"
+    },
+    {
+      "id": "4325642",
+      "name": "Green Bean Paste Wheat Beer",
+      "brewery": "Peiping Machine",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4325642"
+    },
+    {
+      "id": "6656844",
+      "name": "Lipo",
+      "brewery": "Philwill Brew",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6656844"
+    },
+    {
+      "id": "6656772",
+      "name": "Saison du Val’de Rød",
+      "brewery": "Philwill Brew",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6656772"
+    },
+    {
+      "id": "6667194",
+      "name": "Stellar Apple Brandy",
+      "brewery": "Pleasanti Street",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667194"
+    },
+    {
+      "id": "6667204",
+      "name": "Balcony Beer",
+      "brewery": "Pleasanti Street",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667204"
+    },
+    {
+      "id": "1127484",
+      "name": "Pime Öö PX",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/1127484"
+    },
+    {
+      "id": "6598456",
+      "name": "Limoncello IPA",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6598456"
+    },
+    {
+      "id": "6629097",
+      "name": "Valiant Deeds",
+      "brewery": "Polly's",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6629097"
+    },
+    {
+      "id": "6681923",
+      "name": "Within Reason",
+      "brewery": "Polly's",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6681923"
+    },
+    {
+      "id": "4741269",
+      "name": "Cider State of Mind 2019",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4741269"
+    },
+    {
+      "id": "6113905",
+      "name": "Replicant Syrah",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6113905"
+    },
+    {
+      "id": "6190106",
+      "name": "Skymning",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6190106"
+    },
+    {
+      "id": "6517783",
+      "name": "Barley W. X Imperial Stout - BA Blend Bourbon 24 mois",
+      "brewery": "Popihn",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6517783"
+    },
+    {
+      "id": "6647212",
+      "name": "Smoothie Sour - Mango / Blackberry / Raspberry / Coconut / Granola",
+      "brewery": "Popihn",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6647212"
+    },
+    {
+      "id": "6707452",
+      "name": "Embers (Apple Brandy BA)",
+      "brewery": "Puhaste",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6707452"
+    },
+    {
+      "id": "6683147",
+      "name": "Yuzu",
+      "brewery": "Puhaste",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6683147"
+    },
+    {
+      "id": "6384598",
+      "name": "Høflig",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6384598"
+    },
+    {
+      "id": "1339261",
+      "name": "Saftig",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/1339261"
+    },
+    {
+      "id": "6628353",
+      "name": "Picky",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6628353"
+    },
+    {
+      "id": "3484137",
+      "name": "Pageant Worthy",
+      "brewery": "Resident Culture",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/3484137"
+    },
+    {
+      "id": "6438832",
+      "name": "Bourbon Barrel Aged Ego Death Compost Cookie",
+      "brewery": "Resident Culture",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6438832"
+    },
+    {
+      "id": "6649564",
+      "name": "The Burbs",
+      "brewery": "Rivington",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6649564"
+    },
+    {
+      "id": "6604861",
+      "name": "Cosmos v4 [Banana, Mango & Coconut]",
+      "brewery": "Rivington",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6604861"
+    },
+    {
+      "id": "6678495",
+      "name": "Conference of the Birds",
+      "brewery": "Ruse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6678495"
+    },
+    {
+      "id": "5986672",
+      "name": "Deception Test",
+      "brewery": "Ruse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5986672"
+    },
+    {
+      "id": "6681731",
+      "name": "Feedwater",
+      "brewery": "Salikatt",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6681731"
+    },
+    {
+      "id": "6681735",
+      "name": "Cherry Season",
+      "brewery": "Salikatt",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6681735"
+    },
+    {
+      "id": "6259586",
+      "name": "Farang Buay",
+      "brewery": "Samata",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6259586"
+    },
+    {
+      "id": "6612557",
+      "name": "Ba Bin Cheese Pie",
+      "brewery": "Samata",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6612557"
+    },
+    {
+      "id": "6618809",
+      "name": "Moteuka & Ruins",
+      "brewery": "Sapwood Cellars",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6618809"
+    },
+    {
+      "id": "6495179",
+      "name": "Elliptical Orbit 2025",
+      "brewery": "Sapwood Cellars",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6495179"
+    },
+    {
+      "id": "5238122",
+      "name": "Jakobus",
+      "brewery": "Schilling",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5238122"
+    },
+    {
+      "id": "4796899",
+      "name": "Petřín 11˚",
+      "brewery": "Schilling",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4796899"
+    },
+    {
+      "id": "5456891",
+      "name": "Erle Black Lager",
+      "brewery": "Schlenkerla",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/5456891"
+    },
+    {
+      "id": "5410148",
+      "name": "Weichsel Red Lager",
+      "brewery": "Schlenkerla",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/5410148"
+    },
+    {
+      "id": "16059",
+      "name": "Schönramer Pils",
+      "brewery": "Schönramer",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/16059"
+    },
+    {
+      "id": "87641",
+      "name": "Schönramer Hell",
+      "brewery": "Schönramer",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/87641"
+    },
+    {
+      "id": "4328432",
+      "name": "Island Pils",
+      "brewery": "Seven Island",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4328432"
+    },
+    {
+      "id": "6603924",
+      "name": "Guardian of the Golden Nugget",
+      "brewery": "Seven Island",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6603924"
+    },
+    {
+      "id": "6061139",
+      "name": "Auster Chymkent Maracas",
+      "brewery": "Sigma Brau",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6061139"
+    },
+    {
+      "id": "5157649",
+      "name": "Auster Gose",
+      "brewery": "Sigma Brau",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5157649"
+    },
+    {
+      "id": "6697563",
+      "name": "Camber",
+      "brewery": "Soma",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6697563"
+    },
+    {
+      "id": "3990427",
+      "name": "Ratio",
+      "brewery": "Soma",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/3990427"
+    },
+    {
+      "id": "6479562",
+      "name": "Porcelæn",
+      "brewery": "Stauning Whisky",
+      "location": "",
+      "url": "https://untappd.com/beer/6479562"
+    },
+    {
+      "id": "6690112",
+      "name": "Test of Time",
+      "brewery": "Stauning Whisky",
+      "location": "",
+      "url": "https://untappd.com/beer/6690112"
+    },
+    {
+      "id": "6343552",
+      "name": "Orange Espresso Sour",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6343552"
+    },
+    {
+      "id": "6684232",
+      "name": "Imperial Cream Stout BBA | White Chocolate, Coconut, Vanilla",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6684232"
+    },
+    {
+      "id": "6680545",
+      "name": "Double Barrel Aged Series Arc",
+      "brewery": "Superstition",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6680545"
+    },
+    {
+      "id": "6553110",
+      "name": "HO! HO! HO!",
+      "brewery": "Superstition",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6553110"
+    },
+    {
+      "id": "2366255",
+      "name": "Spitsbergen Pale Ale",
+      "brewery": "Svalbard",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2366255"
+    },
+    {
+      "id": "1266050",
+      "name": "Spitsbergen Pilsner",
+      "brewery": "Svalbard",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1266050"
+    },
+    {
+      "id": "4233528",
+      "name": "Meyer Lemon Formosawa",
+      "brewery": "Taihu",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4233528"
+    },
+    {
+      "id": "2014798",
+      "name": "Taihu IPA",
+      "brewery": "Taihu",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/2014798"
+    },
+    {
+      "id": "6655133",
+      "name": "Astral Canopy - Fruited",
+      "brewery": "Tall Trees",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655133"
+    },
+    {
+      "id": "6655109",
+      "name": "Lucent Grove",
+      "brewery": "Tall Trees",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655109"
+    },
+    {
+      "id": "6301347",
+      "name": "Bitterblossom 2023",
+      "brewery": "The Attic",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6301347"
+    },
+    {
+      "id": "6301348",
+      "name": "Chokeflower 2022-2025",
+      "brewery": "The Attic",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6301348"
+    },
+    {
+      "id": "6443572",
+      "name": "North Sea Porter",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6443572"
+    },
+    {
+      "id": "6186942",
+      "name": "Lost in Hazy Space",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6186942"
+    },
+    {
+      "id": "6648396",
+      "name": "Double Barrel Assassin",
+      "brewery": "Toppling Goliath",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6648396"
+    },
+    {
+      "id": "6399699",
+      "name": "Krush Double Dry Hop Pseudo Sue",
+      "brewery": "Toppling Goliath",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6399699"
+    },
+    {
+      "id": "6676755",
+      "name": "Kodamaphobia",
+      "brewery": "Totopia",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6676755"
+    },
+    {
+      "id": "6653722",
+      "name": "Boxphobia",
+      "brewery": "Totopia",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6653722"
+    },
+    {
+      "id": "6568694",
+      "name": "Devil Dogs I",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6568694"
+    },
+    {
+      "id": "4398251",
+      "name": "Who Loves Orange Soda",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4398251"
+    },
+    {
+      "id": "6568697",
+      "name": "Devil Dogs II",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6568697"
+    },
+    {
+      "id": "5169896",
+      "name": "Geisha",
+      "brewery": "Uchu",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5169896"
+    },
+    {
+      "id": "6684122",
+      "name": "Uchu Toranomon",
+      "brewery": "Uchu",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6684122"
+    },
+    {
+      "id": "6654476",
+      "name": "Hazy IPA",
+      "brewery": "Vana",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6654476"
+    },
+    {
+      "id": "6381639",
+      "name": "Vana Mango & Passionfruit Wheat",
+      "brewery": "Vana",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6381639"
+    },
+    {
+      "id": "6682842",
+      "name": "Ibuki",
+      "brewery": "Varvar",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6682842"
+    },
+    {
+      "id": "6682817",
+      "name": "Sugar Moon",
+      "brewery": "Varvar",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6682817"
+    },
+    {
+      "id": "5313825",
+      "name": "DDF M*rs",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5313825"
+    },
+    {
+      "id": "6596050",
+      "name": "Stoopid: Passionfruit, Apricot, Mango & Coconut",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6596050"
+    },
+    {
+      "id": "6697856",
+      "name": "Gloop Sour - Strawberries & Cookies & Cream",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6697856"
+    },
+    {
+      "id": "123035",
+      "name": "Pils",
+      "brewery": "Wagner Merkendorf",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/123035"
+    },
+    {
+      "id": "6701989",
+      "name": "King of Kosciuszko",
+      "brewery": "Warpigs",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6701989"
+    },
+    {
+      "id": "6654623",
+      "name": "Western Rapture",
+      "brewery": "Warpigs",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6654623"
+    },
+    {
+      "id": "5738868",
+      "name": "End of the Rainboba",
+      "brewery": "WeldWerks",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5738868"
+    },
+    {
+      "id": "6072792",
+      "name": "Medianoche Nieve",
+      "brewery": "WeldWerks",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6072792"
+    },
+    {
+      "id": "6637173",
+      "name": "Cuckoo for Coffee Beans",
+      "brewery": "Willibald",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6637173"
+    },
+    {
+      "id": "6645809",
+      "name": "Autotune",
+      "brewery": "Willibald",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6645809"
+    },
+    {
+      "id": "6619849",
+      "name": "Third Phase",
+      "brewery": "Wills",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6619849"
+    },
+    {
+      "id": "6444258",
+      "name": "Baby Ghost",
+      "brewery": "Wills",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6444258"
+    },
+    {
+      "id": "6690184",
+      "name": "Pine Tips",
+      "brewery": "Wunderkammer Biermanufaktur",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6690184"
+    },
+    {
+      "id": "6654765",
+      "name": "Synesthesia",
+      "brewery": "Wunderkammer Biermanufaktur",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6654765"
+    },
+    {
+      "id": "6681816",
+      "name": "BA Nu Metal Magic (2026)",
+      "brewery": "Xul",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6681816"
+    },
+    {
+      "id": "6640104",
+      "name": "The Art of Partying",
+      "brewery": "Xul",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6640104"
+    },
+    {
+      "id": "6569916",
+      "name": "Blackout Cuvée 2026",
+      "brewery": "Y Not",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6569916"
+    },
+    {
+      "id": "6657951",
+      "name": "Artistic Freedom",
+      "brewery": "Y Not",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6657951"
+    },
+    {
+      "id": "6674991",
+      "name": "Dream State",
+      "brewery": "ÅBEN",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6674991"
+    },
+    {
+      "id": "5899814",
+      "name": "Slice Town",
+      "brewery": "ÅBEN",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5899814"
+    }
+  ],
+  "green": [
+    {
+      "id": "6493284",
+      "name": "Cuvée Miel (Honey Geuze) (season 24|25 - Blend No. 34)",
+      "brewery": "3 Fonteinen",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6493284"
+    },
+    {
+      "id": "6641084",
+      "name": "Riesling (3 Fonteinen x Harth+Harth) (season 24|25 - Blend No. 15)",
+      "brewery": "3 Fonteinen",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6641084"
+    },
+    {
+      "id": "6668430",
+      "name": "Vintage Nectar (2026)",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6668430"
+    },
+    {
+      "id": "6643749",
+      "name": "Out of Order - Coconut Key Lime Pie",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6643749"
+    },
+    {
+      "id": "6648906",
+      "name": "Happy Anniversary - 7 Year",
+      "brewery": "3 Sons",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6648906"
+    },
+    {
+      "id": "4300998",
+      "name": "Boss Robot",
+      "brewery": "Alder",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4300998"
+    },
+    {
+      "id": "6619696",
+      "name": "Pralina",
+      "brewery": "Alder",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6619696"
+    },
+    {
+      "id": "6691114",
+      "name": "Kid Curry (Golden Edition)",
+      "brewery": "Amager",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691114"
+    },
+    {
+      "id": "6691112",
+      "name": "Reaping Raven",
+      "brewery": "Amager",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691112"
+    },
+    {
+      "id": "6672034",
+      "name": "QDH Hand-Selected Cryo Mosaic X Cryo Citra X Riwaka X Nelson Sauvin QIPA",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672034"
+    },
+    {
+      "id": "6491844",
+      "name": "8 Year Anniversary Tropical Smoothie Sour",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6491844"
+    },
+    {
+      "id": "6639661",
+      "name": "Apple X Banana X Mango X Vanilla Smoothie Sour",
+      "brewery": "Arpus",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6639661"
+    },
+    {
+      "id": "6221900",
+      "name": "Ad Mortem Alba",
+      "brewery": "Bad Seed",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6221900"
+    },
+    {
+      "id": "3121886",
+      "name": "Neu Pilsner",
+      "brewery": "Bad Seed",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/3121886"
+    },
+    {
+      "id": "6613098",
+      "name": "Buried By Time",
+      "brewery": "Barrel Theory",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6613098"
+    },
+    {
+      "id": "6603154",
+      "name": "Both Things Can Be True",
+      "brewery": "Barrel Theory",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6603154"
+    },
+    {
+      "id": "6698890",
+      "name": "Affine",
+      "brewery": "Beak",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6698890"
+    },
+    {
+      "id": "6686463",
+      "name": "Rituals",
+      "brewery": "Beak",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6686463"
+    },
+    {
+      "id": "6666673",
+      "name": "Super Gay Horse - Prysma Edition",
+      "brewery": "Benchwarmers",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6666673"
+    },
+    {
+      "id": "6666671",
+      "name": "Purple Mayhem",
+      "brewery": "Benchwarmers",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6666671"
+    },
+    {
+      "id": "6691576",
+      "name": "Aligote Cider Cuvee",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691576"
+    },
+    {
+      "id": "6691581",
+      "name": "Telti Kuruk Cider Cuvee",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691581"
+    },
+    {
+      "id": "6691580",
+      "name": "Rye kvass with mint, melissa & lemon",
+      "brewery": "Berryland",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691580"
+    },
+    {
+      "id": "55792",
+      "name": "Bibock",
+      "brewery": "Birrificio Italiano",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/55792"
+    },
+    {
+      "id": "4031627",
+      "name": "Sogno Lucido",
+      "brewery": "Birrificio Italiano",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4031627"
+    },
+    {
+      "id": "6708684",
+      "name": "Zomerkriek 2023",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6708684"
+    },
+    {
+      "id": "6515320",
+      "name": "On Her Majesty’s Secret Service 2021",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6515320"
+    },
+    {
+      "id": "6514730",
+      "name": "Captain E. Muscat 2022",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6514730"
+    },
+    {
+      "id": "6247832",
+      "name": "Friendship (Wings Brewing Company)",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6247832"
+    },
+    {
+      "id": "6707629",
+      "name": "Lady in Red 2025",
+      "brewery": "Bofkont",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6707629"
+    },
+    {
+      "id": "6641398",
+      "name": "Dissimulator",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6641398"
+    },
+    {
+      "id": "6633523",
+      "name": "Tmavé Pivo 13º",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6633523"
+    },
+    {
+      "id": "6639080",
+      "name": "Double Barrel Party Crashers",
+      "brewery": "Boiler",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6639080"
+    },
+    {
+      "id": "3680188",
+      "name": "Hypa #11",
+      "brewery": "Brasserie du Bas-Canada",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3680188"
+    },
+    {
+      "id": "3209588",
+      "name": "#gatineauistrending",
+      "brewery": "Brasserie du Bas-Canada",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3209588"
+    },
+    {
+      "id": "6534044",
+      "name": "Roasted Paradox 2025 - Colombia Sebastian Gomez Caturra",
+      "brewery": "Bravoure",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6534044"
+    },
+    {
+      "id": "6516437",
+      "name": "Trifecta B.A.",
+      "brewery": "Bravoure",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6516437"
+    },
+    {
+      "id": "6647879",
+      "name": "Proto 131",
+      "brewery": "Brewski",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6647879"
+    },
+    {
+      "id": "6536827",
+      "name": "Bear Favor",
+      "brewery": "Brewski",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6536827"
+    },
+    {
+      "id": "6515969",
+      "name": "Chula Vista Especial",
+      "brewery": "Chula Vista",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6515969"
+    },
+    {
+      "id": "6672368",
+      "name": "Fiesta De Noche: Serapes",
+      "brewery": "Chula Vista",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6672368"
+    },
+    {
+      "id": "6672899",
+      "name": "Yeah Tea",
+      "brewery": "Cloudwater",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672899"
+    },
+    {
+      "id": "6682875",
+      "name": "Stellae Radius",
+      "brewery": "Cloudwater",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6682875"
+    },
+    {
+      "id": "6702201",
+      "name": "Party Starter",
+      "brewery": "Crooked Moon",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6702201"
+    },
+    {
+      "id": "6447496",
+      "name": "Deuce V2",
+      "brewery": "Crooked Moon",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6447496"
+    },
+    {
+      "id": "6561762",
+      "name": "Double Dose of Superdelic",
+      "brewery": "DankHouse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6561762"
+    },
+    {
+      "id": "6581196",
+      "name": "Sand Not Included",
+      "brewery": "DankHouse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6581196"
+    },
+    {
+      "id": "6092711",
+      "name": "Cashin' Czechs",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6092711"
+    },
+    {
+      "id": "4504673",
+      "name": "Bussin",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4504673"
+    },
+    {
+      "id": "6646649",
+      "name": "4 Danes",
+      "brewery": "Dimensional",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6646649"
+    },
+    {
+      "id": "6717805",
+      "name": "Petroleum Cryo Fresh #2 Simcoe",
+      "brewery": "Ebeltoft",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6717805"
+    },
+    {
+      "id": "6698886",
+      "name": "NGP 3",
+      "brewery": "Ebeltoft",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6698886"
+    },
+    {
+      "id": "6643319",
+      "name": "Wormhole One",
+      "brewery": "Elmeleven",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6643319"
+    },
+    {
+      "id": "6491462",
+      "name": "Fractal",
+      "brewery": "Elmeleven",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6491462"
+    },
+    {
+      "id": "6620032",
+      "name": "Slavic Dill Pickle Sour",
+      "brewery": "ExperiMENTAL Brews",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6620032"
+    },
+    {
+      "id": "6606573",
+      "name": "Pjotr",
+      "brewery": "Fair Isle",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6606573"
+    },
+    {
+      "id": "6142508",
+      "name": "Nels",
+      "brewery": "Fair Isle",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6142508"
+    },
+    {
+      "id": "6696310",
+      "name": "Wool Socks",
+      "brewery": "Fast Fashion",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6696310"
+    },
+    {
+      "id": "5020441",
+      "name": "Crop Top",
+      "brewery": "Fast Fashion",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5020441"
+    },
+    {
+      "id": "3709752",
+      "name": "Ecosystem",
+      "brewery": "Finback",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/3709752"
+    },
+    {
+      "id": "2928558",
+      "name": "Rolling in Clouds",
+      "brewery": "Finback",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2928558"
+    },
+    {
+      "id": "560377",
+      "name": "Opal",
+      "brewery": "Firestone Walker",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/560377"
+    },
+    {
+      "id": "6448149",
+      "name": "Gooey Valves",
+      "brewery": "Firestone Walker",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6448149"
+    },
+    {
+      "id": "6621213",
+      "name": "Immortal Blossom",
+      "brewery": "Flatland",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6621213"
+    },
+    {
+      "id": "6568409",
+      "name": "Helles - Golden Lager",
+      "brewery": "Flatland",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6568409"
+    },
+    {
+      "id": "4301963",
+      "name": "Dinosour",
+      "brewery": "Flying Couch",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4301963"
+    },
+    {
+      "id": "3419179",
+      "name": "Golden Axe",
+      "brewery": "Flying Couch",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/3419179"
+    },
+    {
+      "id": "6381738",
+      "name": "Danski Treats",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6381738"
+    },
+    {
+      "id": "4155602",
+      "name": "Methode’ Push*Pop: Road Rally",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4155602"
+    },
+    {
+      "id": "6482021",
+      "name": "Shrunken Heads",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6482021"
+    },
+    {
+      "id": "5833238",
+      "name": "Blackberry Braggot",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5833238"
+    },
+    {
+      "id": "6381819",
+      "name": "Fungizzzzz",
+      "brewery": "Forager",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6381819"
+    },
+    {
+      "id": "6558418",
+      "name": "Tropic Pancake",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6558418"
+    },
+    {
+      "id": "6381741",
+      "name": "Cakeob",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6381741"
+    },
+    {
+      "id": "6406064",
+      "name": "Ski-Brew",
+      "brewery": "Friends Company",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6406064"
+    },
+    {
+      "id": "6571651",
+      "name": "Batch #1000",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6571651"
+    },
+    {
+      "id": "6645611",
+      "name": "Gelato XTREME: Green Fluff",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6645611"
+    },
+    {
+      "id": "6631870",
+      "name": "Barrel Aged Normal Things",
+      "brewery": "Funky Fluid",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6631870"
+    },
+    {
+      "id": "6691574",
+      "name": "Cargo Cult MBCC Blend 2026",
+      "brewery": "Galway Bay",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6691574"
+    },
+    {
+      "id": "4960915",
+      "name": "Flaggy Shore",
+      "brewery": "Galway Bay",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4960915"
+    },
+    {
+      "id": "1330972",
+      "name": "Inhume",
+      "brewery": "Ghost Town",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1330972"
+    },
+    {
+      "id": "4425055",
+      "name": "Lurker",
+      "brewery": "Ghost Town",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4425055"
+    },
+    {
+      "id": "6623211",
+      "name": "Debút 2025",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6623211"
+    },
+    {
+      "id": "6455103",
+      "name": "Nievesman II",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6455103"
+    },
+    {
+      "id": "2555830",
+      "name": "Caballo Blanco",
+      "brewery": "Hercules",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/2555830"
+    },
+    {
+      "id": "6655582",
+      "name": "Just Scandalous #2",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655582"
+    },
+    {
+      "id": "6291754",
+      "name": "Zebra III",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6291754"
+    },
+    {
+      "id": "6655572",
+      "name": "TNT",
+      "brewery": "Hoppy People",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655572"
+    },
+    {
+      "id": "4660098",
+      "name": "Tmavy 13º",
+      "brewery": "Human Robot",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/4660098"
+    },
+    {
+      "id": "6430295",
+      "name": "Noble Coast",
+      "brewery": "Human Robot",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6430295"
+    },
+    {
+      "id": "6640157",
+      "name": "9 for 9",
+      "brewery": "Humble Sea",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6640157"
+    },
+    {
+      "id": "6607173",
+      "name": "Riwaka Lobster",
+      "brewery": "Humble Sea",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6607173"
+    },
+    {
+      "id": "6128713",
+      "name": "Zwickel Hell",
+      "brewery": "Keesmann",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/6128713"
+    },
+    {
+      "id": "1672",
+      "name": "Herren Pils",
+      "brewery": "Keesmann",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/1672"
+    },
+    {
+      "id": "88225",
+      "name": "Doppelbock",
+      "brewery": "Krenkerup",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/88225"
+    },
+    {
+      "id": "6663565",
+      "name": "Alcohol Free Pilsner",
+      "brewery": "Krenkerup",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6663565"
+    },
+    {
+      "id": "6699194",
+      "name": "Off the Rack American Whiskey 2025",
+      "brewery": "Lervig",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6699194"
+    },
+    {
+      "id": "6563122",
+      "name": "Coconut and Chocolate Cake",
+      "brewery": "Lervig",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6563122"
+    },
+    {
+      "id": "4914989",
+      "name": "Lunar Handshake",
+      "brewery": "Lesser-Known",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4914989"
+    },
+    {
+      "id": "6589417",
+      "name": "Coatna",
+      "brewery": "Lesser-Known",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6589417"
+    },
+    {
+      "id": "4601596",
+      "name": "Say Yes",
+      "brewery": "Lua",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4601596"
+    },
+    {
+      "id": "6651267",
+      "name": "Push 2026",
+      "brewery": "Lua",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6651267"
+    },
+    {
+      "id": "6667880",
+      "name": "What Do You Hold",
+      "brewery": "Lyric",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667880"
+    },
+    {
+      "id": "6667873",
+      "name": "Colours on the Street",
+      "brewery": "Lyric",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667873"
+    },
+    {
+      "id": "6667756",
+      "name": "Fanal+ (2025)",
+      "brewery": "Marlobobo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6667756"
+    },
+    {
+      "id": "6667751",
+      "name": "Bourbon BA Wildberry Doofus II - Double Vanilla",
+      "brewery": "Marlobobo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6667751"
+    },
+    {
+      "id": "6458887",
+      "name": "Passage Temporaire Erable",
+      "brewery": "Messorem",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6458887"
+    },
+    {
+      "id": "6647654",
+      "name": "Dysfonctio Cordis",
+      "brewery": "Messorem",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6647654"
+    },
+    {
+      "id": "6671222",
+      "name": "Bourbon BA George 2026",
+      "brewery": "Mikkeller",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6671222"
+    },
+    {
+      "id": "6400080",
+      "name": "Guldøl",
+      "brewery": "Mikkeller",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6400080"
+    },
+    {
+      "id": "6647186",
+      "name": "Heaps of... Manilita",
+      "brewery": "Mikkeller London",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6647186"
+    },
+    {
+      "id": "6647187",
+      "name": "White Iverson",
+      "brewery": "Mikkeller London",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6647187"
+    },
+    {
+      "id": "68192",
+      "name": "Yuzu White",
+      "brewery": "Minoh",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/68192"
+    },
+    {
+      "id": "47240",
+      "name": "Minoh Pilsner",
+      "brewery": "Minoh",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/47240"
+    },
+    {
+      "id": "6681555",
+      "name": "Specularity",
+      "brewery": "Moksa",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6681555"
+    },
+    {
+      "id": "6663102",
+      "name": "Mutuality XXVI",
+      "brewery": "Moksa",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6663102"
+    },
+    {
+      "id": "6122748",
+      "name": "Close to the Edge (2025)",
+      "brewery": "Monkey Brew",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6122748"
+    },
+    {
+      "id": "6691100",
+      "name": "Zevs",
+      "brewery": "Monkey Brew",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6691100"
+    },
+    {
+      "id": "5110338",
+      "name": "Hydra Fusion",
+      "brewery": "Mortalis",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5110338"
+    },
+    {
+      "id": "6619806",
+      "name": "Petasos",
+      "brewery": "Mortalis",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6619806"
+    },
+    {
+      "id": "49150",
+      "name": "Mühlen Kölsch",
+      "brewery": "Mühlen Kölsch",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/49150"
+    },
+    {
+      "id": "6577180",
+      "name": "Irrefutable Logic: Dark Confection",
+      "brewery": "Ology",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6577180"
+    },
+    {
+      "id": "2375164",
+      "name": "Wonder Wall",
+      "brewery": "Ology",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/2375164"
+    },
+    {
+      "id": "6699184",
+      "name": "\"Festival Edition\" Extra Vanilla Hopewell",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699184"
+    },
+    {
+      "id": "6629197",
+      "name": "Opera Omnia",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6629197"
+    },
+    {
+      "id": "6699175",
+      "name": "🍦Soft Serve™️ Vanilla Peanut Butter Smoothie®",
+      "brewery": "Omnipollo",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699175"
+    },
+    {
+      "id": "4548672",
+      "name": "We Jammin'",
+      "brewery": "One Drop",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4548672"
+    },
+    {
+      "id": "6666332",
+      "name": "Walk It Out",
+      "brewery": "One Drop",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6666332"
+    },
+    {
+      "id": "4808540",
+      "name": "Whiz",
+      "brewery": "Other Half",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4808540"
+    },
+    {
+      "id": "1941131",
+      "name": "Broccoli",
+      "brewery": "Other Half",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/1941131"
+    },
+    {
+      "id": "6590389",
+      "name": "Deepest Steepest",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6590389"
+    },
+    {
+      "id": "4747377",
+      "name": "Nuclear Powder",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4747377"
+    },
+    {
+      "id": "6590388",
+      "name": "Cloud 9",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6590388"
+    },
+    {
+      "id": "5273965",
+      "name": "Mountain Magic",
+      "brewery": "Outer Range",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/5273965"
+    },
+    {
+      "id": "5565065",
+      "name": "Mjørkareinsarin",
+      "brewery": "Oy",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/5565065"
+    },
+    {
+      "id": "6699682",
+      "name": "Sjokuláta",
+      "brewery": "Oy",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6699682"
+    },
+    {
+      "id": "6604039",
+      "name": "Essence",
+      "brewery": "PINTA Barrel",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6604039"
+    },
+    {
+      "id": "6647192",
+      "name": "Substance - Single Barrel Edition (Cognac)",
+      "brewery": "PINTA Barrel",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6647192"
+    },
+    {
+      "id": "1637747",
+      "name": "100 Hops Hidden Deep",
+      "brewery": "Peiping Machine",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/1637747"
+    },
+    {
+      "id": "2894353",
+      "name": "Dragon Well Spring Tea Wheat",
+      "brewery": "Peiping Machine",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/2894353"
+    },
+    {
+      "id": "6691194",
+      "name": "Bumle",
+      "brewery": "Philwill Brew",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6691194"
+    },
+    {
+      "id": "6656772",
+      "name": "Saison du Val’de Rød",
+      "brewery": "Philwill Brew",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6656772"
+    },
+    {
+      "id": "6667378",
+      "name": "Stellar Care",
+      "brewery": "Pleasanti Street",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667378"
+    },
+    {
+      "id": "6667210",
+      "name": "Pastry Street",
+      "brewery": "Pleasanti Street",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6667210"
+    },
+    {
+      "id": "6151627",
+      "name": "Kask",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6151627"
+    },
+    {
+      "id": "769283",
+      "name": "Põhja Konn",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/769283"
+    },
+    {
+      "id": "6619576",
+      "name": "Kaja",
+      "brewery": "Pohjala",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6619576"
+    },
+    {
+      "id": "6577343",
+      "name": "8th Birthday Danish Pastry Imperial Stout",
+      "brewery": "Polly's",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6577343"
+    },
+    {
+      "id": "6674229",
+      "name": "Driftwalker",
+      "brewery": "Polly's",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6674229"
+    },
+    {
+      "id": "5742777",
+      "name": "Dimma",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5742777"
+    },
+    {
+      "id": "5791458",
+      "name": "Tears in the Rain",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5791458"
+    },
+    {
+      "id": "6690941",
+      "name": "Guldmyr",
+      "brewery": "Pomologik",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6690941"
+    },
+    {
+      "id": "6672762",
+      "name": "TIPA DDH - Nectaron / Simcoe / Mosaic",
+      "brewery": "Popihn",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6672762"
+    },
+    {
+      "id": "6414781",
+      "name": "Petite Saison de Foudre (2025)",
+      "brewery": "Popihn",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6414781"
+    },
+    {
+      "id": "6284106",
+      "name": "Red Velvet",
+      "brewery": "Puhaste",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6284106"
+    },
+    {
+      "id": "6526037",
+      "name": "Mardus",
+      "brewery": "Puhaste",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6526037"
+    },
+    {
+      "id": "6622835",
+      "name": "Joint Custody",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6622835"
+    },
+    {
+      "id": "5625400",
+      "name": "Whatever",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5625400"
+    },
+    {
+      "id": "6471911",
+      "name": "Lingonberry Mojito",
+      "brewery": "Pulpit Rock",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6471911"
+    },
+    {
+      "id": "6438833",
+      "name": "Bourbon Barrel Aged Ego Death Salted Cashew Cluster",
+      "brewery": "Resident Culture",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6438833"
+    },
+    {
+      "id": "6707916",
+      "name": "Palm Tree Dreams",
+      "brewery": "Resident Culture",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6707916"
+    },
+    {
+      "id": "6604879",
+      "name": "There We Are",
+      "brewery": "Rivington",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6604879"
+    },
+    {
+      "id": "6588357",
+      "name": "Only Conversation",
+      "brewery": "Rivington",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6588357"
+    },
+    {
+      "id": "6683495",
+      "name": "Welcome Danger",
+      "brewery": "Ruse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6683495"
+    },
+    {
+      "id": "3277171",
+      "name": "Mystic Visions",
+      "brewery": "Ruse",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/3277171"
+    },
+    {
+      "id": "6681725",
+      "name": "Sitting Duck",
+      "brewery": "Salikatt",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6681725"
+    },
+    {
+      "id": "6589686",
+      "name": "Resonance",
+      "brewery": "Salikatt",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6589686"
+    },
+    {
+      "id": "6346984",
+      "name": "Lod Chong Cheesecake",
+      "brewery": "Samata",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6346984"
+    },
+    {
+      "id": "5963416",
+      "name": "Mango Sticky Rice",
+      "brewery": "Samata",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5963416"
+    },
+    {
+      "id": "4584260",
+      "name": "Beam of Light",
+      "brewery": "Sapwood Cellars",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4584260"
+    },
+    {
+      "id": "6641293",
+      "name": "Cinnamon'd",
+      "brewery": "Sapwood Cellars",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6641293"
+    },
+    {
+      "id": "1036259",
+      "name": "Alexandr",
+      "brewery": "Schilling",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/1036259"
+    },
+    {
+      "id": "6647595",
+      "name": "Jelen",
+      "brewery": "Schilling",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6647595"
+    },
+    {
+      "id": "471",
+      "name": "Aecht Schlenkerla Rauchbier - Märzen",
+      "brewery": "Schlenkerla",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/471"
+    },
+    {
+      "id": "19475",
+      "name": "Eiche",
+      "brewery": "Schlenkerla",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/19475"
+    },
+    {
+      "id": "4258366",
+      "name": "Heller Bock",
+      "brewery": "Schönramer",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/4258366"
+    },
+    {
+      "id": "87641",
+      "name": "Schönramer Hell",
+      "brewery": "Schönramer",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/87641"
+    },
+    {
+      "id": "5421016",
+      "name": "Bakeneko Yuzu Lager",
+      "brewery": "Seven Island",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5421016"
+    },
+    {
+      "id": "5633828",
+      "name": "Doombringer",
+      "brewery": "Seven Island",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5633828"
+    },
+    {
+      "id": "6417130",
+      "name": "Auster Double IPA",
+      "brewery": "Sigma Brau",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6417130"
+    },
+    {
+      "id": "5132747",
+      "name": "Auster Oatmeal Milk Stout",
+      "brewery": "Sigma Brau",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5132747"
+    },
+    {
+      "id": "6688959",
+      "name": "Midnight Club",
+      "brewery": "Soma",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6688959"
+    },
+    {
+      "id": "6688962",
+      "name": "Free Fall",
+      "brewery": "Soma",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6688962"
+    },
+    {
+      "id": "6479562",
+      "name": "Porcelæn",
+      "brewery": "Stauning Whisky",
+      "location": "",
+      "url": "https://untappd.com/beer/6479562"
+    },
+    {
+      "id": "6690112",
+      "name": "Test of Time",
+      "brewery": "Stauning Whisky",
+      "location": "",
+      "url": "https://untappd.com/beer/6690112"
+    },
+    {
+      "id": "5331102",
+      "name": "Jopejskie BBA Plum & Mulberry",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/5331102"
+    },
+    {
+      "id": "6671155",
+      "name": "Savage Lagoon",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6671155"
+    },
+    {
+      "id": "6665285",
+      "name": "Imperial Stout Maple Barrel Aged | Bacon & Maple Syrup",
+      "brewery": "Stu Mostow",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6665285"
+    },
+    {
+      "id": "4317430",
+      "name": "Mulberry White",
+      "brewery": "Superstition",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4317430"
+    },
+    {
+      "id": "6605024",
+      "name": "Cinnamingle",
+      "brewery": "Superstition",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6605024"
+    },
+    {
+      "id": "1249880",
+      "name": "Spitsbergen Stout",
+      "brewery": "Svalbard",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1249880"
+    },
+    {
+      "id": "1266050",
+      "name": "Spitsbergen Pilsner",
+      "brewery": "Svalbard",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/1266050"
+    },
+    {
+      "id": "6689706",
+      "name": "Black Forest Cake Imperial Stout",
+      "brewery": "Taihu",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6689706"
+    },
+    {
+      "id": "3725250",
+      "name": "Taihu High Beer",
+      "brewery": "Taihu",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/3725250"
+    },
+    {
+      "id": "6655105",
+      "name": "Into the Murk",
+      "brewery": "Tall Trees",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655105"
+    },
+    {
+      "id": "6655125",
+      "name": "Astral Canopy",
+      "brewery": "Tall Trees",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6655125"
+    },
+    {
+      "id": "6297730",
+      "name": "Shadows in the Dark 2025",
+      "brewery": "The Attic",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6297730"
+    },
+    {
+      "id": "6297734",
+      "name": "Nova 2025",
+      "brewery": "The Attic",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6297734"
+    },
+    {
+      "id": "6697554",
+      "name": "Zen Garden",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6697554"
+    },
+    {
+      "id": "6613047",
+      "name": "Mash Test Yummies - BA 2026",
+      "brewery": "To Øl",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6613047"
+    },
+    {
+      "id": "6648389",
+      "name": "MBCC Assassin 2026",
+      "brewery": "Toppling Goliath",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6648389"
+    },
+    {
+      "id": "4948070",
+      "name": "Berry Patch Fandango",
+      "brewery": "Toppling Goliath",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/4948070"
+    },
+    {
+      "id": "6653724",
+      "name": "Duskphobia",
+      "brewery": "Totopia",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6653724"
+    },
+    {
+      "id": "6679555",
+      "name": "Neonphobia",
+      "brewery": "Totopia",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6679555"
+    },
+    {
+      "id": "6623924",
+      "name": "Hop It Over",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6623924"
+    },
+    {
+      "id": "6618491",
+      "name": "Powder Prowler II",
+      "brewery": "Tripping Animals",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6618491"
+    },
+    {
+      "id": "6557147",
+      "name": "Echoes of Consciousness",
+      "brewery": "Uchu",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6557147"
+    },
+    {
+      "id": "4908168",
+      "name": "Otaku",
+      "brewery": "Uchu",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/4908168"
+    },
+    {
+      "id": "4326443",
+      "name": "Jasmine Rice Lager",
+      "brewery": "Vana",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/4326443"
+    },
+    {
+      "id": "6562719",
+      "name": "Pomegranate Wheat",
+      "brewery": "Vana",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/6562719"
+    },
+    {
+      "id": "6681623",
+      "name": "Spice Siren",
+      "brewery": "Varvar",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6681623"
+    },
+    {
+      "id": "6682853",
+      "name": "City Cake’26",
+      "brewery": "Varvar",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6682853"
+    },
+    {
+      "id": "6620399",
+      "name": "Giant Rhubarb & Custard",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6620399"
+    },
+    {
+      "id": "6431020",
+      "name": "GLOOP - Chocolate Fudge Brownie",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6431020"
+    },
+    {
+      "id": "6637075",
+      "name": "Dripping in Berries",
+      "brewery": "Vault City",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6637075"
+    },
+    {
+      "id": "123035",
+      "name": "Pils",
+      "brewery": "Wagner Merkendorf",
+      "location": "Lagerland",
+      "url": "https://untappd.com/beer/123035"
+    },
+    {
+      "id": "1041479",
+      "name": "Big Drunk Baby",
+      "brewery": "Warpigs",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/1041479"
+    },
+    {
+      "id": "6605584",
+      "name": "Smoldering Holes 2025",
+      "brewery": "Warpigs",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6605584"
+    },
+    {
+      "id": "2832049",
+      "name": "El Dorado DDH Juicy Bits",
+      "brewery": "WeldWerks",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/2832049"
+    },
+    {
+      "id": "3702865",
+      "name": "Lemon Meringue Pie",
+      "brewery": "WeldWerks",
+      "location": "Area 1",
+      "url": "https://untappd.com/beer/3702865"
+    },
+    {
+      "id": "6645794",
+      "name": "Hop Death",
+      "brewery": "Willibald",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6645794"
+    },
+    {
+      "id": "6315747",
+      "name": "Supreme",
+      "brewery": "Willibald",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6315747"
+    },
+    {
+      "id": "6646782",
+      "name": "Tropicalia",
+      "brewery": "Wills",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6646782"
+    },
+    {
+      "id": "6670039",
+      "name": "Réfractaire (Café)",
+      "brewery": "Wills",
+      "location": "Area 2",
+      "url": "https://untappd.com/beer/6670039"
+    },
+    {
+      "id": "6663659",
+      "name": "La Crescent",
+      "brewery": "Wunderkammer Biermanufaktur",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6663659"
+    },
+    {
+      "id": "6586573",
+      "name": "Dreams2",
+      "brewery": "Wunderkammer Biermanufaktur",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6586573"
+    },
+    {
+      "id": "5431993",
+      "name": "PB&J Mixtape: Raspberry",
+      "brewery": "Xul",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/5431993"
+    },
+    {
+      "id": "6623187",
+      "name": "BA In Death We're All the Same (2026)",
+      "brewery": "Xul",
+      "location": "Area 3",
+      "url": "https://untappd.com/beer/6623187"
+    },
+    {
+      "id": "6654045",
+      "name": "Citra 3-Ways",
+      "brewery": "Y Not",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6654045"
+    },
+    {
+      "id": "6654031",
+      "name": "Majestic Cuvée",
+      "brewery": "Y Not",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6654031"
+    },
+    {
+      "id": "6674988",
+      "name": "Costa del Fanø",
+      "brewery": "ÅBEN",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6674988"
+    },
+    {
+      "id": "6614304",
+      "name": "Louche",
+      "brewery": "ÅBEN",
+      "location": "Area 4",
+      "url": "https://untappd.com/beer/6614304"
+    }
+  ]
+}

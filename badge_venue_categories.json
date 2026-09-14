@@ -1,0 +1,607 @@
+{
+  "_source": "https://badges.untappd.com/ — public Untappd badge catalog, VENUE BADGES category, fetched 2026-09-06",
+  "_note": "Each entry's 'categories' array lists the exact Foursquare-style venue category names Untappd's own badge rules require a check-in venue to match (from each badge's own 'How to earn it' text). Not every VENUE BADGES-tagged badge names a specific category (some are behavioral/frequency/social/meta badges) — those are omitted from 'badges' below and listed separately in '_non_category_venue_badges'. Added 2026-09-12: 'count' (distinct qualifying venue check-ins needed per level, from each badge's own detail page at https://badges.untappd.com/[id]-[slug]) and 'levels' (max level shown on its catalog page, confirmed per-badge rather than assumed). All 44 badges here use count=5/levels=100 except 'Brew Crawl' and 'Last Call', which are single-level (levels=1) badges requiring 3 qualifying check-ins within a single occasion (same night / after 1AM) rather than a cumulative, repeating count — see their 'note' fields. No badge in this file exhibited the 'first_level_count' quirk seen in some badge_beer_categories.json entries.",
+  "badges": [
+    {
+      "badge": "Adventurer",
+      "categories": [
+        "Amusement Park"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_adventurer_md.jpg",
+      "url": "https://badges.untappd.com/39-adventurer"
+    },
+    {
+      "badge": "Ahoy Matey!",
+      "categories": [
+        "Boat / Ferry",
+        "Cruise",
+        "Harbor / Marina",
+        "Marine Terminal",
+        "Pier",
+        "Port"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ahoyMatey_md.jpg",
+      "url": "https://badges.untappd.com/43-ahoy-matey"
+    },
+    {
+      "badge": "All the Meats",
+      "categories": [
+        "BBQ Joint",
+        "Steakhouse",
+        "Churrascaria"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_AllTheMeats_2020_md.jpg",
+      "url": "https://badges.untappd.com/417185-all-the-meats"
+    },
+    {
+      "badge": "At the Top",
+      "categories": [
+        "Mountain",
+        "Hill"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_AtTheTop_Core_md.jpg",
+      "url": "https://badges.untappd.com/460237-at-the-top"
+    },
+    {
+      "badge": "Beach Bum",
+      "categories": [
+        "Beach",
+        "Beach Bar",
+        "Surf Spot"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_beachBum_md.jpg",
+      "url": "https://badges.untappd.com/46-beach-bum"
+    },
+    {
+      "badge": "Beer Foodie",
+      "categories": [
+        "Restaurant"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerFoodie_md.jpg",
+      "url": "https://badges.untappd.com/12058-beer-foodie"
+    },
+    {
+      "badge": "Beerspotting",
+      "categories": [
+        "Train",
+        "Train Station"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerSpotting_md.jpg",
+      "url": "https://badges.untappd.com/761-beerspotting"
+    },
+    {
+      "badge": "Big Game on the Big Screen",
+      "categories": [
+        "Sports Bar"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SportsBar_md.jpg",
+      "url": "https://badges.untappd.com/4003-big-game-on-the-big-screen"
+    },
+    {
+      "badge": "Bowl-A-Rama",
+      "categories": [
+        "Bowling Alley"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_bowlARama_md.jpg",
+      "url": "https://badges.untappd.com/74-bowl-a-rama"
+    },
+    {
+      "badge": "Bratwurst und Bier",
+      "categories": [
+        "German Restaurant",
+        "Bavarian Restaurant",
+        "Franconian Restaurant",
+        "Swabian Restaurant",
+        "Palatine Restaurant",
+        "Rhenisch Restaurant",
+        "Silesian Restaurant",
+        "Apple Wine Pub",
+        "Schnitzel Restaurant",
+        "Currywurst Joint",
+        "Bratwurst Joint",
+        "German Pop-Up Restaurant"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_bratwurst-und-bier_md.jpg",
+      "url": "https://badges.untappd.com/346218-bratwurst-und-bier"
+    },
+    {
+      "badge": "Breakfast of Champions",
+      "categories": [
+        "Breakfast Spot"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BreakfastofChampions_md.jpg",
+      "url": "https://badges.untappd.com/481583-breakfast-of-champions"
+    },
+    {
+      "badge": "Brew at the Zoo",
+      "categories": [
+        "Zoo"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_brew-at-the-zoo_md.jpg",
+      "url": "https://badges.untappd.com/345717-brew-at-the-zoo"
+    },
+    {
+      "badge": "Brew Crawl",
+      "categories": [
+        "Bar"
+      ],
+      "count": 3,
+      "levels": 1,
+      "icon": "https://assets.untappd.com/badges/bdg_brewCrawl_md.jpg",
+      "note": "Not a repeating/leveling badge: its own 'How to earn it' text requires 3 different Bar check-ins in a single night (not a cumulative distinct-venue count across time like the other venue badges).",
+      "url": "https://badges.untappd.com/24-brew-crawl"
+    },
+    {
+      "badge": "Brew Ha Ha",
+      "categories": [
+        "Comedy Club"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ComedyClub_md.jpg",
+      "url": "https://badges.untappd.com/4957-brew-ha-ha"
+    },
+    {
+      "badge": "Brush Hour",
+      "categories": [
+        "Museum",
+        "Art Gallery",
+        "Art Museum",
+        "Science Museum",
+        "History Museum"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/promo/cf27e1a4f5_UTC-Museum-Badge_1000x1000.png",
+      "url": "https://badges.untappd.com/788826-brush-hour"
+    },
+    {
+      "badge": "Burger Heaven",
+      "categories": [
+        "Burger Joint"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BurgerHeaven_md.jpg",
+      "url": "https://badges.untappd.com/12158-burger-heaven"
+    },
+    {
+      "badge": "By The Campfire",
+      "categories": [
+        "Great Outdoors"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ByTheCampfire_md.jpg",
+      "url": "https://badges.untappd.com/3673-by-the-campfire"
+    },
+    {
+      "badge": "By the Wing",
+      "categories": [
+        "Wing Joint",
+        "Fried Chicken"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ByTheWing_md.jpg",
+      "url": "https://badges.untappd.com/12558-by-the-wing"
+    },
+    {
+      "badge": "Can in One",
+      "categories": [
+        "Golf Course",
+        "Disc Golf",
+        "Golf Driving Range",
+        "Mini Golf Course"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_golf_md.jpg",
+      "url": "https://badges.untappd.com/444-can-in-one"
+    },
+    {
+      "badge": "Catch of the Day",
+      "categories": [
+        "Seafood Restaurant",
+        "Fish and Chips Shop"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_seafood.png",
+      "url": "https://badges.untappd.com/645395-catch-of-the-day"
+    },
+    {
+      "badge": "Disc Jockey",
+      "categories": [
+        "Disc Golf Course",
+        "Disc Golf"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/promo/0d36ea1d34_UTC-DiscGolf-Badge_1000x1000.png",
+      "url": "https://badges.untappd.com/678237-disc-jockey"
+    },
+    {
+      "badge": "Find the Source",
+      "categories": [
+        "Brewery",
+        "Meadery",
+        "Cidery"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_findSource_md.jpg",
+      "url": "https://badges.untappd.com/72-find-the-source"
+    },
+    {
+      "badge": "Hidden in Plain View",
+      "categories": [
+        "Speakeasy"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_HiddenInPlainView_md.jpg",
+      "url": "https://badges.untappd.com/5913-hidden-in-plain-view"
+    },
+    {
+      "badge": "Hitting the Slopes",
+      "categories": [
+        "Ski Area"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_slopes_md.jpg",
+      "url": "https://badges.untappd.com/51-hitting-the-slopes"
+    },
+    {
+      "badge": "Hotel Hopper",
+      "categories": [
+        "Hotel"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_HotelHopper_md.jpg",
+      "url": "https://badges.untappd.com/188-hotel-hopper"
+    },
+    {
+      "badge": "Last Call",
+      "categories": [
+        "Dining and Drinking"
+      ],
+      "count": 3,
+      "levels": 1,
+      "icon": "https://assets.untappd.com/badges/bdg_lastCall_md.jpg",
+      "note": "Not a repeating/leveling badge: its own 'How to earn it' text requires 3 brews after 1AM on a Friday or Saturday at a Dining and Drinking venue (a same-occasion time-window requirement, not a cumulative distinct-venue count like the other venue badges).",
+      "url": "https://badges.untappd.com/19-last-call"
+    },
+    {
+      "badge": "Layover",
+      "categories": [
+        "Airport"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_layover_md.jpg",
+      "url": "https://badges.untappd.com/45-layover"
+    },
+    {
+      "badge": "On a Roll!",
+      "categories": [
+        "Sushi Restaurant"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_OnARoll_md.jpg",
+      "url": "https://badges.untappd.com/5166-on-a-roll"
+    },
+    {
+      "badge": "On The Right Track",
+      "categories": [
+        "Race Track",
+        "Racecourse"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/promo/18e615ea3c_UTC-RaceTrack-Badge_1000x1000.png",
+      "url": "https://badges.untappd.com/814533-on-the-right-track"
+    },
+    {
+      "badge": "On With The Show",
+      "categories": [
+        "Movie Theatre",
+        "Theatre"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_theater_md.jpg",
+      "url": "https://badges.untappd.com/867-on-with-the-show"
+    },
+    {
+      "badge": "Parks & Beer",
+      "categories": [
+        "Park",
+        "State / Provincial Park"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ParksBeer_v2_Core_md.jpg",
+      "url": "https://badges.untappd.com/460337-parks-beer"
+    },
+    {
+      "badge": "Pass the Guac",
+      "categories": [
+        "Mexican Restaurant",
+        "Tex-Mex Restaurant",
+        "Burrito Place",
+        "Taco Place"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_pass_the_guac_md.jpg",
+      "url": "https://badges.untappd.com/386688-pass-the-guac"
+    },
+    {
+      "badge": "Pew Pew!",
+      "categories": [
+        "Arcade"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_PewPew_md.jpg",
+      "url": "https://badges.untappd.com/5714-pew-pew"
+    },
+    {
+      "badge": "Pint of Pride",
+      "categories": [
+        "Gay Bar"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_PintOfPride_md.png",
+      "url": "https://badges.untappd.com/5266-pint-of-pride"
+    },
+    {
+      "badge": "Pizza & Brew",
+      "categories": [
+        "Pizza Place",
+        "Italian Restaurant",
+        "Trattoria"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_PizzaAndBrew_md.jpg",
+      "url": "https://badges.untappd.com/12458-pizza-brew"
+    },
+    {
+      "badge": "Pure Garden Bliss",
+      "categories": [
+        "Beer Garden"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_pure-garden-bliss_md.jpg",
+      "url": "https://badges.untappd.com/345317-pure-garden-bliss"
+    },
+    {
+      "badge": "S'more Beer, Please",
+      "categories": [
+        "Campground"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SmoreBeerPlease_md.jpg",
+      "url": "https://badges.untappd.com/481683-smore-beer-please"
+    },
+    {
+      "badge": "Tailgater",
+      "categories": [
+        "Sporting Area",
+        "Stadium"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_tailgater_md.jpg",
+      "url": "https://badges.untappd.com/30-tailgater"
+    },
+    {
+      "badge": "Taking a Dive",
+      "categories": [
+        "Dive Bar"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_DiveBar_md.jpg",
+      "url": "https://badges.untappd.com/4385-taking-a-dive"
+    },
+    {
+      "badge": "Taste the Music",
+      "categories": [
+        "Music Venue"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_ConcertVenue_md.jpg",
+      "url": "https://badges.untappd.com/189-taste-the-music"
+    },
+    {
+      "badge": "The Gambler",
+      "categories": [
+        "Casino"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_gambler_md.jpg",
+      "url": "https://badges.untappd.com/434-the-gambler"
+    },
+    {
+      "badge": "Visit the Beer Tent",
+      "categories": [
+        "Convention Center",
+        "Fair",
+        "Event Space",
+        "Festival",
+        "Music Festival",
+        "Beer Festival"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_BeerGarden_md.jpg",
+      "url": "https://badges.untappd.com/771-visit-the-beer-tent"
+    },
+    {
+      "badge": "Ye Olde Pub",
+      "categories": [
+        "Pub",
+        "Irish Pub",
+        "Gastropub"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_pub_md.jpg",
+      "url": "https://badges.untappd.com/288525-ye-olde-pub"
+    },
+    {
+      "badge": "啤 (Chinese Restaurant badge)",
+      "categories": [
+        "Chinese Restaurant"
+      ],
+      "count": 5,
+      "levels": 100,
+      "note": "Seen only in the initial catalog scrape text ('That's 5 different venues with the category of Chines...'); its detail-page URL could not be located this session (missing from both the DOM link scrape and in-page search) - category name may be incomplete/unverified.",
+      "url": "https://badges.untappd.com/417285"
+    }
+  ],
+  "_non_category_venue_badges": [
+    "Bar Explorer (any 5 distinct venues, no specific category)",
+    "Beer Gathering (10+ people within 5 hours, any venue)",
+    "Beer Party (4+ people within 2 hours, any venue)",
+    "Brew Traveler (5+ states/countries, not venue-category)",
+    "Happy Hour Hound (time-of-day + location, any category)",
+    "Here Comes the Brew (comment tag 'Wedding', not category)",
+    "Local Flavor (brewery proximity, not a venue category)",
+    "Night Out (time-of-day + location, any category)",
+    "The Regular (15 check-ins/month at the same place, any category)",
+    "To Go Please (a tagged 'purchased location', not a venue category)",
+    "Verified Adventure (any Untappd-verified venue, not a specific category)",
+    "Verified Good Time (an event at a verified venue, not a specific category)"
+  ],
+  "all_categories_flat": [
+    "Amusement Park",
+    "Boat / Ferry",
+    "Cruise",
+    "Harbor / Marina",
+    "Marine Terminal",
+    "Pier",
+    "Port",
+    "BBQ Joint",
+    "Steakhouse",
+    "Churrascaria",
+    "Mountain",
+    "Hill",
+    "Beach",
+    "Beach Bar",
+    "Surf Spot",
+    "Restaurant",
+    "Train",
+    "Train Station",
+    "Sports Bar",
+    "Bowling Alley",
+    "German Restaurant",
+    "Bavarian Restaurant",
+    "Franconian Restaurant",
+    "Swabian Restaurant",
+    "Palatine Restaurant",
+    "Rhenisch Restaurant",
+    "Silesian Restaurant",
+    "Apple Wine Pub",
+    "Schnitzel Restaurant",
+    "Currywurst Joint",
+    "Bratwurst Joint",
+    "German Pop-Up Restaurant",
+    "Breakfast Spot",
+    "Zoo",
+    "Bar",
+    "Comedy Club",
+    "Museum",
+    "Art Gallery",
+    "Art Museum",
+    "Science Museum",
+    "History Museum",
+    "Burger Joint",
+    "Great Outdoors",
+    "Wing Joint",
+    "Fried Chicken",
+    "Golf Course",
+    "Disc Golf",
+    "Golf Driving Range",
+    "Mini Golf Course",
+    "Seafood Restaurant",
+    "Fish and Chips Shop",
+    "Disc Golf Course",
+    "Brewery",
+    "Meadery",
+    "Cidery",
+    "Speakeasy",
+    "Ski Area",
+    "Hotel",
+    "Dining and Drinking",
+    "Airport",
+    "Sushi Restaurant",
+    "Race Track",
+    "Racecourse",
+    "Movie Theatre",
+    "Theatre",
+    "Park",
+    "State / Provincial Park",
+    "Mexican Restaurant",
+    "Tex-Mex Restaurant",
+    "Burrito Place",
+    "Taco Place",
+    "Arcade",
+    "Gay Bar",
+    "Pizza Place",
+    "Italian Restaurant",
+    "Trattoria",
+    "Beer Garden",
+    "Campground",
+    "Sporting Area",
+    "Stadium",
+    "Dive Bar",
+    "Music Venue",
+    "Casino",
+    "Convention Center",
+    "Fair",
+    "Event Space",
+    "Festival",
+    "Music Festival",
+    "Beer Festival",
+    "Pub",
+    "Irish Pub",
+    "Gastropub",
+    "Chinese Restaurant"
+  ]
+}

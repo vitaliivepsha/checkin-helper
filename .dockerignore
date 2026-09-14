@@ -1,0 +1,29 @@
+.env
+*.pyc
+__pycache__/
+.git/
+.idea/
+.vscode/
+
+# Logs
+bot_log.txt
+bot_log_old_broken.txt
+*.log
+
+# Secrets and per-user runtime data - lives on the Fly volume (BOT_DATA_DIR),
+# never belongs baked into the image (was previously only partially
+# excluded here - untappd_tokens.json, containing live Untappd access
+# tokens, was missing entirely)
+untappd_tokens.json
+had_it_index.json
+venue_index.json
+badge_index.json
+auto_toast.json
+comment_watch.json
+event_log.json
+festival_watch.json
+checkin_queue.json
+checkins.json
+pinned.json
+pinned_status.json
+status.json

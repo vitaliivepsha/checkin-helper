@@ -1,0 +1,8 @@
+requests
+python-telegram-bot==21.*
+anthropic
+httpx
+beautifulsoup4
+rapidfuzz
+python-dotenv
+aiohttp
