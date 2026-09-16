@@ -11,6 +11,21 @@
   const NOT_CONNECTED_MSG = "Спершу підключіть свій Untappd — напишіть /connect_untappd боту в приваті.";
   const DEFAULT_LABEL_URL = "https://assets.untappd.com/site/assets/images/temp/badge-beer-default.png";
 
+  // Flat-design icon set (inline SVG, currentColor-driven - see style.css's
+  // own .icon/.icon-filled utility classes) replacing the old ad-hoc emoji
+  // used throughout this file's dynamically-built row/button markup.
+  // Reference the same <symbol> definitions as index.html's own sprite
+  // block (see its comment) - one shape per icon, shared by both this
+  // file's dynamic HTML and index.html's static buttons.
+  const ICON_CLOSE = '<svg class="icon"><use href="#icon-close"/></svg>';
+  const ICON_LINK = '<svg class="icon"><use href="#icon-external-link"/></svg>';
+  const ICON_CHECK = '<svg class="icon"><use href="#icon-check"/></svg>';
+  const ICON_CLIPBOARD = '<svg class="icon"><use href="#icon-clipboard-list"/></svg>';
+  const ICON_PIN = '<svg class="icon"><use href="#icon-pin"/></svg>';
+  const ICON_COMPASS = '<svg class="icon"><use href="#icon-compass"/></svg>';
+  const ICON_CHAT = '<svg class="icon"><use href="#icon-chat"/></svg>';
+  const ICON_TROPHY = '<svg class="icon"><use href="#icon-trophy"/></svg>';
+
   // Escape valve for the Untappd MCP quota (100/rolling-hour per access
   // token, confirmed live via get_untappd_api_usage) - opening the beer's
   // real Untappd page costs nothing on our side, so it's always available
@@ -25,6 +40,30 @@
     }
   }
 
+  // Android-Gallery-style long-press-to-select (queue + "Мій список") -
+  // Pointer Events unify touch/mouse so this also works with a held-down
+  // mouse click during desktop testing. Cancels on real movement (a scroll
+  // drag) or an early release, so it only fires on a genuine press-and-hold.
+  function bindLongPress(el, onLongPress) {
+    const LONG_PRESS_MS = 500;
+    const MOVE_CANCEL_PX = 10;
+    let timer = null;
+    let startX = 0;
+    let startY = 0;
+    const cancel = () => { clearTimeout(timer); timer = null; };
+    el.addEventListener("pointerdown", (e) => {
+      startX = e.clientX;
+      startY = e.clientY;
+      cancel();
+      timer = setTimeout(() => { timer = null; onLongPress(); }, LONG_PRESS_MS);
+    });
+    el.addEventListener("pointerup", cancel);
+    el.addEventListener("pointercancel", cancel);
+    el.addEventListener("pointermove", (e) => {
+      if (timer && (Math.abs(e.clientX - startX) > MOVE_CANCEL_PX || Math.abs(e.clientY - startY) > MOVE_CANCEL_PX)) cancel();
+    });
+  }
+
   const state = {
     selectedBeer: null,
     rating: 4,
@@ -34,21 +73,158 @@
     lastKnownLocation: null, // cached after a successful "Локації поруч" tap - reused to geo-bias text search
     lastVenueSearch: null,   // {type:"nearby",lat,lng} | {type:"query",query} - replayed when a filter checkbox toggles
     queue: [],          // shared, server-backed - everyone in the group sees the same list
+    wishlist: [],       // personal - own items merged server-side with the user's Google Sheet rows
     currentSession: null, // which session's drill-down list is currently open
     origin: "search",    // where to return after rate/confirm: "search", "queue" or "session-beers"
     queueItemId: null,   // the server's item id, not an array index (another phone can remove items)
     badgesRaw: [],       // last /api/checkin/badges/get fetch - re-filtered/sorted client-side, no re-fetch needed
     badgesSort: "level_desc",
     selectedBadge: null, // drill-down target for screen-badge-detail
+    festivalMode: false,        // mirrors festival_mode.py - gates festival-only UI, see applyFestivalModeUI
+    autoToastAvailable: false,  // combined with festivalMode below - see updateAutoToastRowVisibility
+    festivalMap: { zones: {}, bonusCategories: {} }, // shared, server-backed - see festival_map.py
   };
+  let festivalMapEditMode = false;
+  let mapDragActive = false; // true while a pointer drag is in progress - blocks fetchFestivalMap's re-render
 
   function $(id) { return document.getElementById(id); }
 
+  // Wraps a search input with a right-aligned "x" clear button, shown only
+  // once there's text. Clearing dispatches a real "input" event so each
+  // field's own existing listener (debounced fetch, live filter, whatever
+  // it already does on typing) fires exactly as if the user had cleared it
+  // by hand - no per-field special-casing needed here.
+  function addSearchClearButton(inputId) {
+    const input = $(inputId);
+    const wrap = document.createElement("div");
+    wrap.className = "search-field-wrap";
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "search-clear-btn hidden";
+    clearBtn.setAttribute("aria-label", "Очистити");
+    clearBtn.innerHTML = ICON_CLOSE;
+    wrap.appendChild(clearBtn);
+
+    const syncVisibility = () => clearBtn.classList.toggle("hidden", !input.value);
+    input.addEventListener("input", syncVisibility);
+    syncVisibility();
+
+    clearBtn.addEventListener("click", () => {
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    });
+  }
+
+  // Festival mode toggles which UI even makes sense: the festival-specific
+  // tools (progress/sessions, the festival-priority search filter) are
+  // clutter on a normal day and only relevant while actually AT a
+  // festival, while auto-toast (a passive day-to-day feature) is the one
+  // thing that's actively paused server-side during festival mode (see
+  // festival_mode.py) - so its settings row is hidden right along with it
+  // rather than left showing a now-inert toggle. Also flips the whole
+  // app's accent color (see style.css's body.festival-mode-active) as an
+  // at-a-glance "you're in festival mode" cue.
+  function applyFestivalModeUI() {
+    document.body.classList.toggle("festival-mode-active", state.festivalMode);
+    $("stats-bar-btn").classList.toggle("hidden", !state.festivalMode);
+    $("festival-priority-label").classList.toggle("hidden", !state.festivalMode);
+    // The festival map is only relevant while actually at the festival -
+    // its bottom-nav tab takes the Badges tab's slot while festival mode is
+    // on, the same trade-off stats-bar-btn already makes the other way
+    // (festival-only tools aren't worth a spot the rest of the year).
+    $("badges-bar-btn").classList.toggle("hidden", state.festivalMode);
+    $("festival-map-bar-btn").classList.toggle("hidden", !state.festivalMode);
+    // Mirrors festivalMode exactly, both ways: turning festival mode ON
+    // should turn festival-priority search back on too (that's the whole
+    // point of the checkbox), and turning it OFF shouldn't leave an
+    // invisible checkbox silently still boosting festival results.
+    const festivalCheckbox = $("festival-priority-checkbox");
+    if (festivalCheckbox.checked !== state.festivalMode) {
+      festivalCheckbox.checked = state.festivalMode;
+      rerunSearchIfActive();
+    }
+    updateAutoToastRowVisibility();
+  }
+
+  function updateAutoToastRowVisibility() {
+    $("settings-row-autotoast").classList.toggle("hidden", !state.autoToastAvailable || state.festivalMode);
+  }
+
+  // Search row's "..." overflow menu (wishlist toggle + Untappd link) - a
+  // single shared, body-level element (see index.html's own comment on it)
+  // repositioned/repopulated per row on each "..." tap, rather than one
+  // nested inside every row: nesting it in a dimmed .result-row.had-it
+  // made it visibly inherit that row's opacity, with no CSS way for the
+  // menu to opt back out of an ancestor's opacity via its own opacity:1.
+  const sharedRowMenu = $("shared-row-menu");
+  const sharedRowMenuWishlistBtn = $("shared-row-menu-wishlist");
+  const sharedRowMenuLinkBtn = $("shared-row-menu-link");
+  let openRowMenuActions = null; // the .row-actions currently owning the shared menu, if any
+
+  function closeAllRowMenus() {
+    sharedRowMenu.classList.remove("open");
+    openRowMenuActions = null;
+  }
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".row-menu") && !e.target.closest(".row-menu-btn")) closeAllRowMenus();
+  });
+
+  function openRowMenu(beer, actionsEl) {
+    if (openRowMenuActions === actionsEl) { closeAllRowMenus(); return; }
+    const menuBtn = actionsEl.querySelector(".row-menu-btn");
+    setWishlistBtnState(sharedRowMenuWishlistBtn, actionsEl.dataset.wishlistItemId || null);
+    sharedRowMenuWishlistBtn.onclick = async (e) => {
+      e.stopPropagation();
+      await toggleWishlistOnRow(beer, actionsEl);
+    };
+    sharedRowMenuLinkBtn.onclick = (e) => {
+      openUntappdBeer(beer.beerId, e);
+      closeAllRowMenus();
+    };
+    const rect = menuBtn.getBoundingClientRect();
+    sharedRowMenu.style.top = `${rect.top + window.scrollY}px`;
+    sharedRowMenu.style.left = `${rect.right + window.scrollX}px`;
+    sharedRowMenu.classList.add("open");
+    openRowMenuActions = actionsEl;
+  }
+
   let queuePollHandle = null;
   let statsPollHandle = null;
+  let mapPollHandle = null;
+  // Screens don't map 1:1 to bottom-nav tabs (e.g. session-beers/badge-
+  // detail are drill-downs with no tab of their own) - this maps only the
+  // ones that DO have an obvious "you're in this section" tab.
+  const NAV_TAB_FOR_SCREEN = {
+    search: "home-bar-btn",
+    queue: "queue-bar-btn",
+    stats: "stats-bar-btn",
+    "session-beers": "stats-bar-btn",
+    wishlist: "wishlist-bar-btn",
+    badges: "badges-bar-btn",
+    "badge-detail": "badges-bar-btn",
+    "festival-map": "festival-map-bar-btn",
+  };
+
   function showScreen(name) {
     document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
     $("screen-" + name).classList.add("active");
+    document.querySelectorAll(".nav-tab.active").forEach((el) => el.classList.remove("active"));
+    const activeTabId = NAV_TAB_FOR_SCREEN[name];
+    if (activeTabId) $(activeTabId).classList.add("active");
+    // Long-press selection mode (queue/wishlist) shouldn't survive leaving
+    // (or re-entering) that screen - stale selected ids from a previous
+    // visit would otherwise silently carry over.
+    if (queueSelectionMode) exitQueueSelectionMode();
+    if (wishlistSelectionMode) exitWishlistSelectionMode();
+    // The shared row menu (see openRowMenu) lives at body level, outside
+    // every .screen - it wouldn't get hidden by the .screen swap above on
+    // its own, so a menu left open on the way out of search would keep
+    // floating over whatever screen comes next.
+    closeAllRowMenus();
     if (name === "queue") {
       fetchQueue();
       if (!queuePollHandle) queuePollHandle = setInterval(fetchQueue, 5000);
@@ -68,6 +244,12 @@
     if (name === "session-beers") {
       fetchSessionBeers();
     }
+    if (name === "brewery-beers") {
+      fetchBreweryBeers();
+    }
+    if (name === "wishlist") {
+      fetchWishlist();
+    }
     if (name === "autotoast") {
       fetchAutoToastFriends();
     }
@@ -85,6 +267,15 @@
     }
     if (name === "badge-detail") {
       renderBadgeDetail();
+    }
+    if (name === "festival-map") {
+      fetchFestivalMap();
+      // Same 5s cadence as the queue - the precedent for "live shared state."
+      if (!mapPollHandle) mapPollHandle = setInterval(fetchFestivalMap, 5000);
+    } else if (mapPollHandle) {
+      clearInterval(mapPollHandle);
+      mapPollHandle = null;
+      clearActiveSearchHighlight(); // leaving the map entirely - the "selected from search" marker shouldn't survive that
     }
     // Telegram's native BackButton, not just a UI convenience: on Android it
     // replaces the system back button/gesture too (which otherwise just
@@ -134,19 +325,64 @@
     renderQueueList();
   }
 
+  function notify(message) {
+    if (tg && tg.showAlert) tg.showAlert(message);
+    else alert(message);
+  }
+
+  // Small corner badge on every beer row (search/session-beers/brewery-
+  // beers/wishlist) answering "have I already queued this?" before
+  // tapping "+" again - queueStatus comes from _annotate_queue_status
+  // (webapp_server.py), "active" for a beer currently in this viewer's
+  // own queue view, "was_in_queue" for one they've since hidden or
+  // completed. Same tooltip text either way, tap-triggered (not CSS
+  // hover) since that's the only reliable way to show it inside
+  // Telegram's mobile WebView.
+  function queueStatusCornerHtml(beer) {
+    if (beer.queueStatus === "active") {
+      return `<span class="queue-status-corner active">${ICON_CLIPBOARD}</span>`;
+    }
+    if (beer.queueStatus === "was_in_queue") {
+      return `<span class="queue-status-corner was">${ICON_CLIPBOARD}</span>`;
+    }
+    return "";
+  }
+  function bindQueueStatusCorner(row) {
+    const el = row.querySelector(".queue-status-corner");
+    if (!el) return;
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      notify("В черзі (або вже було в черзі)");
+    });
+  }
+
   async function addToQueue(beer, btn) {
     const { ok, data } = await apiPost("/api/checkin/queue/add", beer);
-    if (ok && data.ok) {
-      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
-      if (btn) {
-        const original = btn.textContent;
-        btn.textContent = "✓";
-        setTimeout(() => { btn.textContent = original; }, 1000);
-      }
-      updateQueueCountOnly();
-    } else {
-      alert("Не вдалося додати у чергу. Спробуйте ще раз.");
+    if (!ok || !data.ok) {
+      notify("Не вдалося додати у чергу. Спробуйте ще раз.");
+      return;
     }
+    // See checkin_queue.add_item's own docstring for what each status means -
+    // "already_active" is a plain duplicate tap (nothing to do), the two
+    // "revived_from_*" cases did change something (the beer is back in this
+    // user's own queue view) so they still get the success flash below, just
+    // with an explanation of why it wasn't a fresh add.
+    if (data.status === "already_active") {
+      notify("Це пиво вже в черзі.");
+      return;
+    }
+    if (data.status === "revived_from_completed") {
+      notify("Ви вже пили це пиво на цьому фестивалі. Додано в чергу знову.");
+    } else if (data.status === "revived_from_hidden") {
+      notify("Ви вже видаляли це пиво з черги. Додано знову.");
+    }
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+    if (btn) {
+      const original = btn.textContent;
+      btn.textContent = "✓";
+      setTimeout(() => { btn.textContent = original; }, 1000);
+    }
+    updateQueueCountOnly();
   }
 
   async function updateQueueCountOnly() {
@@ -160,9 +396,37 @@
     $("queue-bar-btn").classList.toggle("hidden", total === 0);
   }
 
+  // Long-press-to-select ("delete selected") - see bindLongPress's own
+  // comment. Entering/leaving mode just flips this state and re-renders
+  // (cheap, no network); toggleQueueSelected auto-exits once the set empties.
+  let queueSelectionMode = false;
+  const queueSelectedIds = new Set();
+
+  function enterQueueSelectionMode(firstId) {
+    queueSelectionMode = true;
+    queueSelectedIds.clear();
+    queueSelectedIds.add(firstId);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("medium");
+    renderQueueList();
+  }
+  function exitQueueSelectionMode() {
+    queueSelectionMode = false;
+    queueSelectedIds.clear();
+    renderQueueList();
+  }
+  function toggleQueueSelected(id) {
+    if (queueSelectedIds.has(id)) queueSelectedIds.delete(id); else queueSelectedIds.add(id);
+    if (queueSelectedIds.size === 0) { exitQueueSelectionMode(); return; }
+    renderQueueList();
+  }
+
   function renderQueueList() {
     const listEl = $("queue-list");
     listEl.innerHTML = "";
+    listEl.classList.toggle("selection-mode", queueSelectionMode);
+    $("queue-header-normal").classList.toggle("hidden", queueSelectionMode);
+    $("queue-selection-bar").classList.toggle("hidden", !queueSelectionMode);
+    $("queue-selection-count").textContent = `${queueSelectedIds.size} обрано`;
     $("queue-count").textContent = String(state.queue.length);
     $("queue-bar-btn").classList.toggle("hidden", (state.queueTotal || 0) === 0);
     $("queue-status").textContent = state.queue.length
@@ -172,24 +436,28 @@
         : "Черга порожня — додайте пиво кнопкою «+» у результатах пошуку.");
     state.queue.forEach((beer, idx) => {
       const row = document.createElement("div");
-      row.className = "result-row queue-row" + (beer.hadIt ? " had-it" : "");
+      const checked = queueSelectedIds.has(beer.id);
       const addedBy = beer.addedBy && beer.addedBy.name ? beer.addedBy.name : "?";
+      row.className = "result-row queue-row" + (beer.hadIt ? " had-it" : "");
       row.innerHTML = `
+        <span class="row-checkbox${checked ? " checked" : ""}">${checked ? "✓" : ""}</span>
         <div class="queue-number">${idx + 1}</div>
         <div class="result-main">
-          <div class="result-name">${beer.hadIt ? '<span class="badge">✅</span>' : ""}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
+          <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
           ${metaLine(beer.brewery)}
           ${metaLine(beer.style)}
           <div class="result-meta">додав(-ла) ${escapeHtml(addedBy)}</div>
         </div>
         <div class="row-actions">
-          <button class="queue-remove-btn" data-id="${beer.id}">✕</button>
-          <button class="untappd-link-btn" title="Відкрити в Untappd">🔗</button>
+          <button class="queue-remove-btn" data-id="${beer.id}">${ICON_CLOSE}</button>
+          <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
         </div>`;
       row.addEventListener("click", (e) => {
+        if (queueSelectionMode) { toggleQueueSelected(beer.id); return; }
         if (e.target.closest(".queue-remove-btn") || e.target.closest(".untappd-link-btn")) return;
         selectBeer(beer, { origin: "queue", queueItemId: beer.id });
       });
+      bindLongPress(row, () => { if (!queueSelectionMode) enterQueueSelectionMode(beer.id); });
       row.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(beer.beerId, e));
       listEl.appendChild(row);
     });
@@ -202,15 +470,205 @@
     });
   }
 
+  $("home-bar-btn").addEventListener("click", () => showScreen("search"));
   $("queue-bar-btn").addEventListener("click", () => showScreen("queue"));
 
-  $("queue-clear-btn").addEventListener("click", async () => {
-    const { ok, data } = await apiPost("/api/checkin/queue/clear", {});
-    if (ok && data.ok && tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
-    fetchQueue();
+  $("queue-clear-btn").addEventListener("click", () => {
+    const doClear = async () => {
+      const { ok, data } = await apiPost("/api/checkin/queue/clear", {});
+      if (ok && data.ok && tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+      fetchQueue();
+    };
+    // Telegram's own confirm dialog when running as a real Mini App (matches
+    // the host's UI instead of a browser-native prompt); plain confirm() as
+    // a fallback for local/non-Telegram testing.
+    if (tg && tg.showConfirm) {
+      tg.showConfirm("Очистити всю чергу?", (confirmed) => { if (confirmed) doClear(); });
+    } else if (confirm("Очистити всю чергу?")) {
+      doClear();
+    }
   });
 
+  $("queue-selection-delete-btn").addEventListener("click", async () => {
+    for (const id of queueSelectedIds) {
+      await apiPost("/api/checkin/queue/remove", { id });
+    }
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+    exitQueueSelectionMode();
+    fetchQueue();
+  });
+  $("queue-selection-cancel-btn").addEventListener("click", exitQueueSelectionMode);
+
   updateQueueCountOnly();
+
+  // ---- Personal editable wishlist ("Мій список") ----
+  // Per-user, unlike the shared queue above - own items (wishlist_items.py,
+  // added/removed here) merged server-side with the user's registered
+  // Google Sheet rows (wishlist_sheets.py), which show up read-only since
+  // this app only ever reads that CSV, never writes it. Distinct from the
+  // ❤️ "вішліст" search checkbox/badge, which boosts Untappd's own classic
+  // Wishlist in search results - hence this uses 📝 everywhere instead.
+
+  async function fetchWishlist() {
+    const { ok, data } = await apiPost("/api/checkin/wishlist/list", {});
+    state.wishlist = ok ? (data.items || []) : [];
+    renderWishlistList();
+  }
+
+  function setWishlistBtnState(btn, itemId) {
+    if (itemId) {
+      btn.dataset.itemId = itemId;
+      btn.innerHTML = `${ICON_CHECK} У списку`;
+      btn.classList.add("active");
+    } else {
+      delete btn.dataset.itemId;
+      btn.innerHTML = `${ICON_CLIPBOARD} Додати у список`;
+      btn.classList.remove("active");
+    }
+  }
+
+  // Patches a still-mounted search-result row (DOM persists across screens
+  // - see .screen{display:none}) when this beer's list membership changes
+  // from elsewhere (e.g. removed via the "Мій список" tab) - without this,
+  // navigating back to search after removing there kept showing the old
+  // "in list" state until the next fresh search.
+  function syncSearchRowWishlistState(beerId, itemId) {
+    const actions = document.querySelector(`.row-actions[data-beer-id="${beerId}"]`);
+    if (!actions) return;
+    actions.dataset.wishlistItemId = itemId || "";
+    const menuBtn = actions.querySelector(".row-menu-btn");
+    if (menuBtn) menuBtn.classList.toggle("has-wishlist-item", !!itemId);
+  }
+
+  // Toggle, not a one-way add: a row remembers whether it's already a
+  // native list item via its own .row-actions[data-wishlist-item-id] (kept
+  // in sync here and by syncSearchRowWishlistState), so a second tap
+  // removes it again instead of being a same-bid no-op (see
+  // wishlist_items.add_item's own dedupe).
+  async function toggleWishlistOnRow(beer, actionsEl) {
+    const currentItemId = actionsEl.dataset.wishlistItemId || "";
+    const removing = !!currentItemId;
+    const { ok, data } = removing
+      ? await apiPost("/api/checkin/wishlist/remove", { id: currentItemId })
+      : await apiPost("/api/checkin/wishlist/add", beer);
+    if (!ok || !data.ok) {
+      alert(removing ? "Не вдалося видалити зі списку. Спробуйте ще раз." : "Не вдалося додати у список. Спробуйте ще раз.");
+      return;
+    }
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+    const newItemId = removing ? null : data.item.id;
+    syncSearchRowWishlistState(beer.beerId, newItemId);
+    setWishlistBtnState(sharedRowMenuWishlistBtn, newItemId);
+    closeAllRowMenus();
+  }
+
+  function wishlistMatchesQuery(beer, query) {
+    if (!query) return true;
+    return `${beer.name || ""} ${beer.brewery || ""}`.toLowerCase().includes(query);
+  }
+
+  // Long-press-to-select, same mechanism as the queue's own (see its
+  // comment above) - only native items participate (id set), since a
+  // Google-Sheet-sourced row already has no remove button of its own to
+  // begin with (see wishlist_items.py/_get_my_list_items).
+  let wishlistSelectionMode = false;
+  const wishlistSelectedIds = new Set();
+
+  function enterWishlistSelectionMode(firstId) {
+    wishlistSelectionMode = true;
+    wishlistSelectedIds.clear();
+    wishlistSelectedIds.add(firstId);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("medium");
+    renderWishlistList();
+  }
+  function exitWishlistSelectionMode() {
+    wishlistSelectionMode = false;
+    wishlistSelectedIds.clear();
+    renderWishlistList();
+  }
+  function toggleWishlistSelected(id) {
+    if (wishlistSelectedIds.has(id)) wishlistSelectedIds.delete(id); else wishlistSelectedIds.add(id);
+    if (wishlistSelectedIds.size === 0) { exitWishlistSelectionMode(); return; }
+    renderWishlistList();
+  }
+
+  function renderWishlistList() {
+    const query = $("wishlist-search-input").value.trim().toLowerCase();
+    const items = state.wishlist.filter((beer) => wishlistMatchesQuery(beer, query));
+    const listEl = $("wishlist-list");
+    listEl.innerHTML = "";
+    listEl.classList.toggle("selection-mode", wishlistSelectionMode);
+    $("wishlist-header-normal").classList.toggle("hidden", wishlistSelectionMode);
+    $("wishlist-selection-bar").classList.toggle("hidden", !wishlistSelectionMode);
+    $("wishlist-selection-count").textContent = `${wishlistSelectedIds.size} обрано`;
+    if (!state.wishlist.length) {
+      $("wishlist-status").textContent = "Список порожній — додайте пиво кнопкою «📝» у результатах пошуку.";
+    } else {
+      $("wishlist-status").textContent = items.length ? "" : "Нічого не знайдено.";
+    }
+    items.forEach((beer) => {
+      const row = document.createElement("div");
+      const isNative = beer.source === "native";
+      const checked = isNative && wishlistSelectedIds.has(beer.id);
+      row.className = "result-row" + (beer.hadIt ? " had-it" : "");
+      row.innerHTML = `
+        ${isNative ? `<span class="row-checkbox${checked ? " checked" : ""}">${checked ? "✓" : ""}</span>` : ""}
+        <div class="thumb">
+          <img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt="">
+          ${beer.hadIt ? `<span class="had-it-corner">${ICON_CHECK}</span>` : ""}
+          ${queueStatusCornerHtml(beer)}
+        </div>
+        <div class="result-main">
+          <div class="result-name"><span class="result-name-text">${escapeHtml(beer.name || "")}</span>${ratingBadge(beer)}</div>
+          ${metaLine(beer.brewery)}
+          ${metaLine(beer.style, beer.abv != null ? beer.abv + "%" : null)}
+        </div>
+        <div class="row-actions">
+          ${isNative
+            ? `<button class="wishlist-remove-btn" data-id="${beer.id}" data-beer-id="${beer.beerId}">${ICON_CLOSE}</button>`
+            : `<span class="wishlist-sheet-tag" title="Додано через Google Sheet — видаліть рядок у таблиці">з таблиці</span>`}
+          <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
+        </div>`;
+      row.addEventListener("click", (e) => {
+        if (wishlistSelectionMode) { if (isNative) toggleWishlistSelected(beer.id); return; }
+        if (e.target.closest(".wishlist-remove-btn") || e.target.closest(".untappd-link-btn") || e.target.closest(".queue-status-corner")) return;
+        selectBeer(beer, { origin: "wishlist" });
+      });
+      if (isNative) {
+        bindLongPress(row, () => { if (!wishlistSelectionMode) enterWishlistSelectionMode(beer.id); });
+      }
+      row.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(beer.beerId, e));
+      bindQueueStatusCorner(row);
+      listEl.appendChild(row);
+    });
+    listEl.querySelectorAll(".wishlist-remove-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        await apiPost("/api/checkin/wishlist/remove", { id: btn.dataset.id });
+        syncSearchRowWishlistState(Number(btn.dataset.beerId), null);
+        fetchWishlist();
+      });
+    });
+  }
+
+  $("wishlist-bar-btn").addEventListener("click", () => showScreen("wishlist"));
+  $("wishlist-search-input").addEventListener("input", renderWishlistList);
+
+  $("wishlist-selection-delete-btn").addEventListener("click", async () => {
+    // Same reason the single-item remove handler above calls this: a
+    // still-mounted search row (DOM persists across screens) needs to be
+    // told this beer is no longer listed, or navigating back to search
+    // keeps showing the stale "in list" state.
+    const toDelete = state.wishlist.filter((b) => wishlistSelectedIds.has(b.id));
+    for (const beer of toDelete) {
+      await apiPost("/api/checkin/wishlist/remove", { id: beer.id });
+      syncSearchRowWishlistState(beer.beerId, null);
+    }
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+    exitWishlistSelectionMode();
+    fetchWishlist();
+  });
+  $("wishlist-selection-cancel-btn").addEventListener("click", exitWishlistSelectionMode);
 
   // ---- Festival progress screen ----
   // Personal, like the rest of the app's had-it-driven features - counts
@@ -262,6 +720,7 @@
   // badge_stats.py) ----
 
   $("badges-bar-btn").addEventListener("click", () => showScreen("badges"));
+  $("festival-map-bar-btn").addEventListener("click", () => showScreen("festival-map"));
 
   async function fetchBadgeStats() {
     $("badges-status").textContent = "Завантажую…";
@@ -420,7 +879,8 @@
       row.innerHTML = `
         <div class="thumb">
           <img src="${DEFAULT_LABEL_URL}" alt="">
-          ${b.hadIt ? '<span class="had-it-corner">✅</span>' : ""}
+          ${b.hadIt ? `<span class="had-it-corner">${ICON_CHECK}</span>` : ""}
+          ${queueStatusCornerHtml(b)}
         </div>
         <div class="result-main">
           <div class="result-name"><span class="result-name-text">${escapeHtml(b.name || "")}</span>${ratingBadge(b)}</div>
@@ -428,13 +888,14 @@
           ${metaLine(b.style)}
         </div>
         <div class="row-actions">
-          <button class="untappd-link-btn" title="Відкрити в Untappd">🔗</button>
+          <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
         </div>`;
       row.addEventListener("click", (e) => {
-        if (e.target.closest(".untappd-link-btn")) return;
+        if (e.target.closest(".untappd-link-btn") || e.target.closest(".queue-status-corner")) return;
         selectBeer(b, { origin: "session-beers" });
       });
       row.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(b.beerId, e));
+      bindQueueStatusCorner(row);
       listEl.appendChild(row);
     });
   }
@@ -444,6 +905,91 @@
     clearTimeout(sessionSearchDebounce);
     sessionSearchDebounce = setTimeout(fetchSessionBeers, 350);
   });
+
+  // ---- Brewery drill-down (opened from a festival map pill) - beers
+  // grouped by session, each group showing a tried/total line ----
+
+  let currentBreweryBeers = null;
+
+  function openBreweryBeers(brewery) {
+    currentBreweryBeers = brewery;
+    $("brewery-beers-title").textContent = brewery;
+    showScreen("brewery-beers");
+  }
+
+  async function fetchBreweryBeers() {
+    if (!currentBreweryBeers) return;
+    $("brewery-beers-status").textContent = "Завантажую…";
+    const { ok, data } = await apiPost("/api/checkin/festival/brewery", { brewery: currentBreweryBeers });
+    if (!ok) {
+      $("brewery-beers-status").textContent = "Не вдалося завантажити список.";
+      return;
+    }
+    const beers = data.beers || [];
+    $("brewery-beers-status").textContent = beers.length ? "" : "Пива не знайдено.";
+    renderBreweryBeers(beers);
+  }
+
+  function breweryBeerRow(b) {
+    const row = document.createElement("div");
+    row.className = "result-row" + (b.hadIt ? " had-it" : "");
+    row.innerHTML = `
+      <div class="thumb">
+        <img src="${DEFAULT_LABEL_URL}" alt="">
+        ${b.hadIt ? `<span class="had-it-corner">${ICON_CHECK}</span>` : ""}
+        ${queueStatusCornerHtml(b)}
+      </div>
+      <div class="result-main">
+        <div class="result-name"><span class="result-name-text">${escapeHtml(b.name || "")}</span>${ratingBadge(b)}</div>
+        ${metaLine(b.style)}
+      </div>
+      <div class="row-actions">
+        <button class="add-queue-btn" title="Додати у чергу">+</button>
+        <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
+      </div>`;
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".add-queue-btn") || e.target.closest(".untappd-link-btn") || e.target.closest(".queue-status-corner")) return;
+      selectBeer(b, { origin: "brewery-beers" });
+    });
+    const addBtn = row.querySelector(".add-queue-btn");
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      addToQueue(b, addBtn);
+    });
+    row.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(b.beerId, e));
+    bindQueueStatusCorner(row);
+    return row;
+  }
+
+  // A beer poured across multiple sessions appears under each one it
+  // belongs to (see _beer_sessions' own docstring in webapp_server.py) -
+  // intentional here too, since a session's tried/total line should count
+  // every beer that's actually part of it.
+  function renderBreweryBeers(beers) {
+    const listEl = $("brewery-beers-list");
+    listEl.innerHTML = "";
+    const groups = new Map();
+    beers.forEach((b) => {
+      const sessions = b.sessions && b.sessions.length ? b.sessions : [null];
+      sessions.forEach((session) => {
+        if (!groups.has(session)) groups.set(session, []);
+        groups.get(session).push(b);
+      });
+    });
+    groups.forEach((groupBeers, session) => {
+      const color = sessionColorMap[session] || session;
+      const header = document.createElement("div");
+      header.className = "brewery-session-header";
+      header.textContent = session ? `${SESSION_EMOJI[color] || "🎪"} ${sessionLabel(session)}` : "Інше";
+      listEl.appendChild(header);
+      const tried = groupBeers.filter((b) => b.hadIt).length;
+      const stats = document.createElement("div");
+      stats.className = "hint brewery-session-stats";
+      stats.textContent = `Спробувано ${tried} з ${groupBeers.length}`;
+      listEl.appendChild(stats);
+      groupBeers.forEach((b) => listEl.appendChild(breweryBeerRow(b)));
+    });
+  }
 
   // ---- Search screen ----
 
@@ -465,8 +1011,10 @@
     if (q.length < 2) {
       $("results").innerHTML = "";
       $("search-status").textContent = "";
+      $("home-hero").classList.remove("hidden");
       return;
     }
+    $("home-hero").classList.add("hidden");
     $("search-status").textContent = "Шукаю…";
     searchDebounce = setTimeout(() => runSearch(q), 350);
   });
@@ -493,6 +1041,7 @@
     }
     const beers = data.beers || [];
     $("search-status").textContent = beers.length ? "" : "Нічого не знайдено.";
+    closeAllRowMenus(); // about to remove whatever row it was anchored to
     $("results").innerHTML = "";
     beers.forEach((b) => {
       const row = document.createElement("div");
@@ -500,27 +1049,33 @@
       row.innerHTML = `
         <div class="thumb">
           <img src="${b.labelUrl || DEFAULT_LABEL_URL}" alt="">
-          ${b.hadIt ? '<span class="had-it-corner">✅</span>' : ""}
+          ${b.hadIt ? `<span class="had-it-corner">${ICON_CHECK}</span>` : ""}
+          ${queueStatusCornerHtml(b)}
         </div>
         <div class="result-main">
           <div class="result-name">${sourceBadge(b)}<span class="result-name-text">${escapeHtml(b.name || "")}</span>${ratingBadge(b)}</div>
           ${metaLine(b.brewery)}
           ${metaLine(b.style, b.abv != null ? b.abv + "%" : null)}
         </div>
-        <div class="row-actions">
+        <div class="row-actions" data-beer-id="${b.beerId}" data-wishlist-item-id="${b.wishlistItemId || ""}">
           <button class="add-queue-btn" title="Додати у чергу">+</button>
-          <button class="untappd-link-btn" title="Відкрити в Untappd">🔗</button>
+          <button class="row-menu-btn${b.wishlistItemId ? " has-wishlist-item" : ""}" title="Ще">⋯</button>
         </div>`;
+      const actionsEl = row.querySelector(".row-actions");
       row.addEventListener("click", (e) => {
-        if (e.target.closest(".add-queue-btn") || e.target.closest(".untappd-link-btn")) return;
+        if (e.target.closest(".add-queue-btn") || e.target.closest(".row-menu-btn") || e.target.closest(".queue-status-corner")) return;
         selectBeer(b, { origin: "search" });
       });
-      row.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(b.beerId, e));
       const addBtn = row.querySelector(".add-queue-btn");
       addBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         addToQueue(b, addBtn);
       });
+      row.querySelector(".row-menu-btn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        openRowMenu(b, actionsEl);
+      });
+      bindQueueStatusCorner(row);
       $("results").appendChild(row);
     });
   }
@@ -574,7 +1129,7 @@
 
   function setSelectedVenueDisplay(text) {
     const el = $("venue-selected");
-    el.textContent = text || "";
+    el.innerHTML = text ? `${ICON_PIN} ${escapeHtml(text)}` : "";
     el.classList.toggle("hidden", !text);
   }
 
@@ -597,7 +1152,7 @@
     $("rating-readout").textContent = prevRating.toFixed(2);
     $("shout-input").value = "";
     $("venue-list").classList.add("hidden");
-    setSelectedVenueDisplay(state.lastVenue ? "📍 " + (state.lastVenue.name || "") : "");
+    setSelectedVenueDisplay(state.lastVenue ? (state.lastVenue.name || "") : "");
     updatePillHighlight();
     showScreen("rate");
   }
@@ -605,6 +1160,8 @@
   function screenForOrigin(origin) {
     if (origin === "queue") return "queue";
     if (origin === "session-beers") return "session-beers";
+    if (origin === "brewery-beers") return "brewery-beers";
+    if (origin === "wishlist") return "wishlist";
     return "search";
   }
 
@@ -658,7 +1215,7 @@
       item.innerHTML = html;
       item.addEventListener("click", () => {
         state.selectedVenue = v;
-        setSelectedVenueDisplay("📍 " + (v.name || "") + (v.category ? ` (${v.category})` : ""));
+        setSelectedVenueDisplay((v.name || "") + (v.category ? ` (${v.category})` : ""));
         listEl.classList.add("hidden");
       });
       listEl.appendChild(item);
@@ -688,15 +1245,15 @@
       return;
     }
     if (state.venues === null) {
-      $("venue-toggle-btn").textContent = "📍 Завантажую…";
+      $("venue-toggle-btn").innerHTML = `${ICON_PIN} Завантажую…`;
       const { ok, data } = await apiPost("/api/checkin/venues", {});
       if (!ok && data.error === "not_connected") {
         alert(NOT_CONNECTED_MSG);
-        $("venue-toggle-btn").textContent = "📍 Мої локації";
+        $("venue-toggle-btn").innerHTML = `${ICON_PIN} Мої локації`;
         return;
       }
       state.venues = ok ? (data.venues || []) : [];
-      $("venue-toggle-btn").textContent = "📍 Мої локації";
+      $("venue-toggle-btn").innerHTML = `${ICON_PIN} Мої локації`;
     }
     renderVenueList(state.venues);
   });
@@ -713,13 +1270,13 @@
     }
     const btn = $("venue-nearby-btn");
     btn.disabled = true;
-    btn.textContent = "🧭 Шукаю…";
+    btn.innerHTML = `${ICON_COMPASS} Шукаю…`;
 
     // Safety net: if getLocation's callback never fires for any reason
     // (a stuck permission prompt, a Telegram client quirk), don't leave
     // the button stuck on "Шукаю…" forever - reset after a timeout.
     let settled = false;
-    const resetBtn = () => { btn.disabled = false; btn.textContent = "🧭 Локації поруч"; };
+    const resetBtn = () => { btn.disabled = false; btn.innerHTML = `${ICON_COMPASS} Локації поруч`; };
     const timeoutId = setTimeout(() => {
       if (settled) return;
       settled = true;
@@ -799,26 +1356,10 @@
     renderVenueList(data.venues || []);
   }
 
-  $("to-confirm-btn").addEventListener("click", () => {
-    const b = state.selectedBeer;
-    const venue = state.selectedVenue;
-    const shout = $("shout-input").value.trim();
-    $("confirm-summary").innerHTML = `
-      <div><b>Пиво</b> ${escapeHtml(b.name || "")}</div>
-      <div><b>Броварня</b> ${escapeHtml(b.brewery || "")}</div>
-      <div><b>Оцінка</b> ${state.rating.toFixed(2)} ⭐</div>
-      <div><b>Локація</b> ${venue ? escapeHtml(venue.name || "") : "—"}</div>
-      <div><b>Коментар</b> ${shout ? escapeHtml(shout) : "—"}</div>`;
-    $("submit-status").textContent = "";
-    $("submit-btn").disabled = false;
-    $("submit-btn").textContent = "✅ Чекінити";
-    showScreen("confirm");
-  });
+  // ---- Submit (no separate confirm screen - rate screen submits directly) ----
 
-  // ---- Confirm / submit ----
-
-  $("submit-btn").addEventListener("click", async () => {
-    const btn = $("submit-btn");
+  $("to-confirm-btn").addEventListener("click", async () => {
+    const btn = $("to-confirm-btn");
     btn.disabled = true;
     btn.textContent = "Надсилаю…";
     $("submit-status").textContent = "";
@@ -843,7 +1384,7 @@
         // waiting for a reload/refetch of /api/checkin/usage.
         state.lastVenue = venue;
       }
-      btn.textContent = data.dryRun ? "✅ (dry-run) Готово" : "✅ Зачекінено!";
+      btn.innerHTML = data.dryRun ? `${ICON_CHECK} (dry-run) Готово` : `${ICON_CHECK} Зачекінено!`;
       $("submit-status").textContent = data.dryRun
         ? "Тестовий режим: реальний чекін не надіслано."
         : "Готово!";
@@ -857,7 +1398,7 @@
       }, state.origin === "queue" ? 1200 : 1500);
     } else {
       btn.disabled = false;
-      btn.textContent = "✅ Чекінити";
+      btn.innerHTML = `${ICON_CHECK} Чекінити`;
       if (data.error === "not_connected") {
         $("submit-status").textContent = NOT_CONNECTED_MSG;
       } else {
@@ -878,7 +1419,13 @@
 
   let autoToastFriends = [];
 
-  $("autotoast-bar-btn").addEventListener("click", () => showScreen("autotoast"));
+  // No standalone bottom-nav tab for this anymore - the settings row itself
+  // opens the full screen (friend search etc.), except a tap on the toggle
+  // switch, which should just flip on/off without navigating away.
+  $("settings-row-autotoast").addEventListener("click", (e) => {
+    if (e.target.closest(".toggle-switch")) return;
+    showScreen("autotoast");
+  });
 
   async function fetchAutoToastFriends() {
     $("autotoast-status").textContent = "Завантажую…";
@@ -951,7 +1498,12 @@
   // background (_check_festival_novelty, riding along on auto-toast's own
   // feed poll - see README.md for why it's coupled that way for now).
 
-  $("festival-watch-bar-btn").addEventListener("click", () => showScreen("festival-watch"));
+  // No standalone bottom-nav tab for this anymore - see the autotoast row's
+  // own comment above for why (same pattern, same reasoning).
+  $("settings-row-festivalwatch").addEventListener("click", (e) => {
+    if (e.target.closest(".toggle-switch")) return;
+    showScreen("festival-watch");
+  });
 
   async function fetchFestivalWatch() {
     const { ok, data } = await apiPost("/api/checkin/festival_watch/get", {});
@@ -995,12 +1547,12 @@
       return;
     }
     const btn = $("festival-watch-here-btn");
-    const originalText = btn.textContent;
+    const originalHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.textContent = "🧭 Шукаю…";
+    btn.innerHTML = `${ICON_COMPASS} Шукаю…`;
 
     let settled = false;
-    const reset = () => { btn.disabled = false; btn.textContent = originalText; };
+    const reset = () => { btn.disabled = false; btn.innerHTML = originalHtml; };
     const timeoutId = setTimeout(() => {
       if (settled) return;
       settled = true;
@@ -1058,6 +1610,534 @@
     listEl.classList.remove("hidden");
   }
 
+  // ---- Festival map screen (a festival's brewery zones, live/shared) ----
+  // Same "shared, server-backed, poll-refreshed" idea as the queue - every
+  // connected phone sees (and can edit) the same layout, seeded once from
+  // the festival JSON's real per-brewery Area N location rather than
+  // alphabetically. Zone names/count come from the server on every fetch
+  // (see webapp_server.py's _festival_editable_zone_names) rather than
+  // being hardcoded here - MBCC has 4, another festival might have just
+  // one, or a dozen. Bonus categories (MBCC's "Lagerland") are shown for
+  // reference only - not part of the editable zones, never sent to the
+  // move endpoint.
+
+  let MAP_ZONES = []; // populated from the server on every fetchFestivalMap()
+
+  function findZoneEl(zone) {
+    return [...document.querySelectorAll(".map-zone")].find((el) => el.dataset.zone === zone);
+  }
+
+  $("settings-row-festivalmap").addEventListener("click", () => {
+    showScreen("festival-map");
+  });
+
+  async function fetchFestivalMap() {
+    if (mapDragActive) return; // don't yank a pill mid-gesture on an incoming poll tick
+    const { ok, data } = await apiPost("/api/checkin/festival_map/get", {});
+    if (!ok) {
+      $("festival-map-status").textContent = "Не вдалося завантажити карту.";
+      return;
+    }
+    $("festival-map-status").textContent = "";
+    MAP_ZONES = data.zoneOrder || [];
+    state.festivalMap = { zones: data.zones || {}, bonusCategories: data.bonusCategories || {} };
+    renderFestivalMap();
+  }
+
+  // The .map-zone card structure (header, dot-preview, perimeter-grid) used
+  // to be 4 copies of static HTML - now built once per zone here, since the
+  // zone list isn't known until the server reports it.
+  function buildZoneCard(zone) {
+    const card = document.createElement("div");
+    card.className = "map-zone";
+    card.dataset.zone = zone;
+    card.innerHTML = `
+      <div class="map-zone-header">
+        <span class="map-zone-label">${escapeHtml(zone)}</span>
+        <span class="map-zone-count"></span>
+      </div>
+      <div class="map-zone-pills preview" data-zone="${escapeHtml(zone)}"></div>
+      <div class="perimeter-grid">
+        <div class="perimeter-top"></div>
+        <div class="perimeter-left"></div>
+        <div class="perimeter-mid">🍺</div>
+        <div class="perimeter-right"></div>
+        <div class="perimeter-bottom"></div>
+      </div>`;
+    return card;
+  }
+
+  function makeBreweryPill(brewery, draggable) {
+    const pill = document.createElement("div");
+    pill.className = "brewery-pill";
+    pill.textContent = brewery;
+    pill.dataset.brewery = brewery;
+    if (draggable) {
+      pill.addEventListener("pointerdown", onMapPillPointerDown);
+    } else {
+      // Non-draggable pills only ever show up in read-only contexts (the
+      // zone detail view, Lagerland) - editing has its own drag gesture and
+      // deliberately doesn't also open this on a stray tap.
+      pill.classList.add("brewery-pill-clickable");
+      pill.addEventListener("click", () => openBreweryBeers(brewery));
+    }
+    return pill;
+  }
+
+  const MAP_SIDES = ["top", "left", "right", "bottom"];
+
+  function zoneTotal(zoneSides) {
+    return MAP_SIDES.reduce((sum, side) => sum + (zoneSides[side] || []).length, 0);
+  }
+
+  // Overview cards are too small to show 20-28 readable pills, so outside
+  // edit mode they show a dense grid of blank dots (just a glanceable
+  // "how full is this zone") - tapping the card opens the full-screen
+  // detail view instead, which is where the real pill list lives.
+  function renderZonePreviewDots(container, count) {
+    for (let i = 0; i < count; i++) {
+      const dot = document.createElement("div");
+      dot.className = "brewery-pill-preview";
+      container.appendChild(dot);
+    }
+  }
+
+  function perimeterSections(rootEl) {
+    return {
+      top: rootEl.querySelector(".perimeter-top"),
+      left: rootEl.querySelector(".perimeter-left"),
+      right: rootEl.querySelector(".perimeter-right"),
+      bottom: rootEl.querySelector(".perimeter-bottom"),
+    };
+  }
+
+  // The real venue layout runs breweries along the whole perimeter of a
+  // rectangle - a short top row, tall left/right columns, a short bottom
+  // row - not a flat grid. Each side is stored and edited as its own
+  // independent list (see festival_map.py's module docstring for why: a
+  // flat list re-split by position parity on every render meant dragging
+  // one brewery a few slots could silently flip unrelated breweries into
+  // the other column), so rendering is a direct 1:1 pass, no splitting.
+  function renderPerimeterPills(rootEl, zoneSides, draggable) {
+    const sections = perimeterSections(rootEl);
+    MAP_SIDES.forEach((side) => {
+      const container = sections[side];
+      container.innerHTML = "";
+      (zoneSides[side] || []).forEach((brewery) => {
+        container.appendChild(makeBreweryPill(brewery, draggable));
+      });
+    });
+  }
+
+  let festivalMapDetailZone = null; // which zone (if any) the full-screen detail view is showing
+
+  function renderFestivalMap() {
+    // Wipe-and-rebuild, same philosophy as the pill contents inside each
+    // zone already use - this data changes rarely enough that rebuilding a
+    // handful of zone cards per poll tick is cheap, and it's the only way
+    // to handle a zone count that isn't known until the server replies.
+    const zonesContainer = $("festival-map-zones");
+    zonesContainer.innerHTML = "";
+    // Edit mode's 2-per-row column count depends on how many zones this
+    // festival has (ceil(N/2) - 1 column for a single zone, 2 for 3-4,
+    // etc.) - see style.css's own comment on why this is set here instead
+    // of as a fixed rule. Cleared outside edit mode so the overview's own
+    // auto-fit rule (a plain CSS class, lower priority than any inline
+    // style) actually takes effect instead of being overridden by this.
+    if (festivalMapEditMode) {
+      const editColumns = Math.max(1, Math.ceil(MAP_ZONES.length / 2));
+      zonesContainer.style.gridTemplateColumns = `repeat(${editColumns}, calc(100vw - 30px))`;
+    } else {
+      zonesContainer.style.gridTemplateColumns = "";
+    }
+    MAP_ZONES.forEach((zone) => {
+      const zoneSides = state.festivalMap.zones[zone] || {};
+      const total = zoneTotal(zoneSides);
+      const zoneEl = buildZoneCard(zone);
+      zonesContainer.appendChild(zoneEl);
+      const dotsContainer = zoneEl.querySelector(".map-zone-pills.preview");
+      renderZonePreviewDots(dotsContainer, total);
+      renderPerimeterPills(zoneEl.querySelector(".perimeter-grid"), zoneSides, true);
+      zoneEl.querySelector(".map-zone-count").textContent = total;
+      zoneEl.addEventListener("click", () => {
+        if (festivalMapEditMode) return;
+        openFestivalMapDetail(zone);
+      });
+    });
+    const bonusContainer = $("festival-map-bonus-categories");
+    bonusContainer.innerHTML = "";
+    Object.entries(state.festivalMap.bonusCategories).forEach(([name, breweries]) => {
+      const section = document.createElement("div");
+      section.className = "festival-map-lagerland";
+      section.innerHTML = `<div class="map-zone-label">🍺 ${escapeHtml(name)} <span class="hint">— ця зона не редагується</span></div>`;
+      const pillsEl = document.createElement("div");
+      pillsEl.className = "lagerland-pills";
+      breweries.forEach((brewery) => pillsEl.appendChild(makeBreweryPill(brewery, false)));
+      section.appendChild(pillsEl);
+      bonusContainer.appendChild(section);
+    });
+    if (festivalMapDetailZone) renderFestivalMapDetail();
+    applyActiveSearchHighlight(); // re-apply after a poll/mode-switch rebuild - see its own docstring
+  }
+
+  function renderFestivalMapDetail() {
+    const zoneSides = state.festivalMap.zones[festivalMapDetailZone] || {};
+    $("festival-map-detail-label").textContent = festivalMapDetailZone;
+    $("festival-map-detail-count").textContent = zoneTotal(zoneSides);
+    renderPerimeterPills($("festival-map-detail-pills"), zoneSides, false);
+    applyActiveSearchHighlight();
+  }
+
+  function openFestivalMapDetail(zone, highlightBrewery) {
+    festivalMapDetailZone = zone;
+    $("festival-map-overview").classList.add("hidden");
+    $("festival-map-edit-btn").classList.add("hidden");
+    $("festival-map-detail").classList.remove("hidden");
+    renderFestivalMapDetail();
+    if (highlightBrewery) {
+      highlightBreweryPill(highlightBrewery);
+      flashZoneLabel();
+    }
+  }
+
+  function closeFestivalMapDetail() {
+    festivalMapDetailZone = null;
+    $("festival-map-detail").classList.add("hidden");
+    $("festival-map-overview").classList.remove("hidden");
+    $("festival-map-edit-btn").classList.remove("hidden");
+  }
+
+  $("festival-map-detail-back").addEventListener("click", closeFestivalMapDetail);
+
+  // A search result stays marked as the "active" pick (a persistent ring,
+  // not the fading flash below) until a different brewery is searched or
+  // the map screen is left entirely (see showScreen's teardown). Re-applied
+  // after every render since polling/mode switches rebuild the pills fresh.
+  let activeSearchBrewery = null;
+
+  function clearActiveSearchHighlight() {
+    activeSearchBrewery = null;
+    document.querySelectorAll(".brewery-pill-active").forEach((el) => el.classList.remove("brewery-pill-active"));
+  }
+
+  function applyActiveSearchHighlight() {
+    if (!activeSearchBrewery) return;
+    const pill = [...document.querySelectorAll(".brewery-pill")]
+      .find((el) => el.dataset.brewery === activeSearchBrewery && el.offsetParent !== null);
+    if (pill) pill.classList.add("brewery-pill-active");
+  }
+
+  // Brief, non-persistent flash on the open zone's "Area N" label - just a
+  // visual cue that this is the zone search jumped to, unlike the pill's
+  // active marker which sticks around.
+  function flashZoneLabel() {
+    const label = $("festival-map-detail-label");
+    label.classList.remove("map-zone-label-flash");
+    void label.offsetWidth;
+    label.classList.add("map-zone-label-flash");
+    setTimeout(() => label.classList.remove("map-zone-label-flash"), 1600);
+  }
+
+  // Flashes and scrolls to a brewery's pill wherever it's currently
+  // visible (the detail view's own list, or the Lagerland row - overview
+  // cards only show dots, never a real named pill, so this naturally never
+  // matches one of those), and marks it as the active search result.
+  function highlightBreweryPill(brewery) {
+    clearActiveSearchHighlight();
+    activeSearchBrewery = brewery;
+    const pill = [...document.querySelectorAll(".brewery-pill")]
+      .find((el) => el.dataset.brewery === brewery && el.offsetParent !== null);
+    if (!pill) return;
+    pill.scrollIntoView({ behavior: "smooth", block: "center" });
+    pill.classList.add("brewery-pill-active");
+    pill.classList.remove("brewery-pill-highlight");
+    // Force a reflow so re-adding the class restarts the CSS animation even
+    // if the same brewery was just highlighted a moment ago.
+    void pill.offsetWidth;
+    pill.classList.add("brewery-pill-highlight");
+    setTimeout(() => pill.classList.remove("brewery-pill-highlight"), 1600);
+  }
+
+  // ---- Festival map search (finds a brewery across all 4 zones + Lagerland,
+  // jumping straight to it) ----
+  function allMapBreweries() {
+    const list = [];
+    MAP_ZONES.forEach((zone) => {
+      const sides = state.festivalMap.zones[zone] || {};
+      MAP_SIDES.forEach((side) => {
+        (sides[side] || []).forEach((brewery) => list.push({ brewery, zone }));
+      });
+    });
+    Object.entries(state.festivalMap.bonusCategories).forEach(([category, breweries]) => {
+      breweries.forEach((brewery) => list.push({ brewery, zone: null, category }));
+    });
+    return list;
+  }
+
+  function selectFestivalMapSearchResult(match) {
+    $("festival-map-search-input").value = "";
+    $("festival-map-search-results").classList.add("hidden");
+    $("festival-map-search-results").innerHTML = "";
+    if (match.zone) {
+      openFestivalMapDetail(match.zone, match.brewery);
+    } else {
+      highlightBreweryPill(match.brewery); // a bonus category - already visible on the overview
+    }
+  }
+
+  $("festival-map-search-input").addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const resultsEl = $("festival-map-search-results");
+    resultsEl.innerHTML = "";
+    if (!q) {
+      resultsEl.classList.add("hidden");
+      return;
+    }
+    const matches = allMapBreweries()
+      .filter((it) => it.brewery.toLowerCase().includes(q))
+      .slice(0, 20);
+    matches.forEach((match) => {
+      const item = document.createElement("div");
+      item.className = "venue-item";
+      item.textContent = `${match.brewery} — ${match.zone || match.category}`;
+      item.addEventListener("click", () => selectFestivalMapSearchResult(match));
+      resultsEl.appendChild(item);
+    });
+    resultsEl.classList.toggle("hidden", matches.length === 0);
+  });
+
+  // Tapping anywhere on a collapsed overview card opens its full-screen
+  // detail view (wired per-card in renderFestivalMap, since cards are
+  // built dynamically now); in edit mode the card is a drag surface
+  // instead, so the tap-to-open behavior is disabled there.
+
+  function updateFestivalMapEditIcon() {
+    const btn = $("festival-map-edit-btn");
+    btn.innerHTML = festivalMapEditMode
+      ? '<svg class="icon"><use href="#icon-check"/></svg>'
+      : '<svg class="icon"><use href="#icon-edit"/></svg>';
+    btn.setAttribute("aria-label", festivalMapEditMode ? "Зберегти" : "Редагувати");
+  }
+
+  $("festival-map-edit-btn").addEventListener("click", () => {
+    cancelMapDrag();
+    closeFestivalMapDetail(); // edit mode uses its own scrollable overview layout, not the single-zone detail view
+    festivalMapEditMode = !festivalMapEditMode;
+    document.body.classList.toggle("map-edit-mode", festivalMapEditMode);
+    updateFestivalMapEditIcon();
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+    renderFestivalMap();
+  });
+
+  // Pointer-Events-based drag (not native HTML5 drag-and-drop, which never
+  // fires on touch in Telegram's mobile WebView - the primary target here).
+  // The dragged pill itself becomes a `position:fixed` element that follows
+  // the pointer, and a placeholder slot takes its place in the list -
+  // dragging the placeholder between containers (via plain DOM insertBefore)
+  // is what makes the other pills visibly shift out of the way as you move,
+  // Telegram-chat-reorder style, animated with a FLIP transform pass.
+  let mapDrag = null; // { brewery, pill, placeholder, lastZone, lastSide, lastContainer, lastIndex }
+
+  // Defensive cleanup for a drag session that never got a matching
+  // pointerup/pointercancel (seen in practice - a stray extra pointerdown
+  // before the previous drag finished used to overwrite `mapDrag`, leaking
+  // the old floating pill/placeholder on screen forever and leaving its
+  // listeners attached).
+  function cancelMapDrag() {
+    document.querySelectorAll(".map-zone.drag-over").forEach((el) => el.classList.remove("drag-over"));
+    if (mapDrag) {
+      mapDrag.pill.remove();
+      mapDrag.placeholder.remove();
+    }
+    document.removeEventListener("pointermove", onMapPillPointerMove);
+    document.removeEventListener("pointerup", onMapPillPointerUp);
+    document.removeEventListener("pointercancel", onMapPillPointerUp);
+    mapDrag = null;
+    mapDragActive = false;
+  }
+
+  // Animates the pills inside #festival-map-zones sliding into their new
+  // positions after `mutate` reorders the DOM (FLIP: record rects, mutate,
+  // measure the delta, animate away from it). Scoped to all 4 zones so
+  // cross-zone moves animate correctly too.
+  function flipReorder(mutate) {
+    const pills = document.querySelectorAll("#festival-map-zones .brewery-pill");
+    const firstRects = new Map();
+    pills.forEach((el) => firstRects.set(el, el.getBoundingClientRect()));
+    mutate();
+    firstRects.forEach((first, el) => {
+      if (!el.isConnected) return;
+      const last = el.getBoundingClientRect();
+      const dx = first.left - last.left;
+      const dy = first.top - last.top;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+      el.style.transition = "none";
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+      el.getBoundingClientRect(); // force layout so the transform above is committed before transitioning away from it
+      requestAnimationFrame(() => {
+        el.style.transition = "transform 0.18s ease";
+        el.style.transform = "";
+      });
+    });
+  }
+
+  // Moves the placeholder to sit after `index` real pills within
+  // `container` (native insertBefore relocates it from wherever it
+  // currently is, so this works the same whether it's already in this
+  // container or arriving from a different one).
+  function placePlaceholderAt(container, index) {
+    const { placeholder } = mapDrag;
+    const siblings = [...container.children].filter((el) => el !== placeholder);
+    const refNode = siblings[index] || null;
+    if (refNode) container.insertBefore(placeholder, refNode);
+    else container.appendChild(placeholder);
+  }
+
+  function sideOf(container) {
+    return MAP_SIDES.find((s) => container.classList.contains(`perimeter-${s}`));
+  }
+
+  function onMapPillPointerDown(e) {
+    if (!festivalMapEditMode) return;
+    // A previous drag that never got a matching pointerup/pointercancel
+    // (happens in practice - e.g. the WebView swallows it) used to just
+    // block every future pointerdown forever once `mapDrag` was left
+    // non-null. Self-heal instead: treat a fresh pointerdown as proof the
+    // old gesture is over and clean it up before starting the new one.
+    if (mapDrag) cancelMapDrag();
+    e.preventDefault();
+    const pill = e.currentTarget;
+    const rect = pill.getBoundingClientRect();
+    const originalContainer = pill.parentElement;
+    const originalZone = originalContainer.closest(".map-zone").dataset.zone;
+    const originalIndex = [...originalContainer.children].indexOf(pill);
+
+    const placeholder = document.createElement("div");
+    placeholder.className = "brewery-pill-placeholder";
+    originalContainer.insertBefore(placeholder, pill);
+
+    // Best-effort only: pointer capture keeping events targeted at `pill`
+    // is what dragging into a *different* zone used to rely on, and a
+    // capture failure (seen in practice in Telegram's WebView) silently
+    // broke cross-zone drags entirely, since a pill-scoped listener stops
+    // getting events once the pointer leaves it. Listening on `document`
+    // below is the real fix - capture is now just a minor assist, so a
+    // failure here is harmless.
+    try { pill.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    mapDragActive = true;
+    pill.classList.add("map-pill-floating");
+    pill.style.width = `${rect.width}px`;
+    pill.style.left = `${e.clientX}px`;
+    pill.style.top = `${e.clientY}px`;
+    document.body.appendChild(pill);
+
+    mapDrag = {
+      brewery: pill.dataset.brewery,
+      pill,
+      placeholder,
+      lastZone: originalZone,
+      lastSide: sideOf(originalContainer),
+      lastContainer: originalContainer,
+      lastIndex: originalIndex,
+    };
+    document.addEventListener("pointermove", onMapPillPointerMove);
+    document.addEventListener("pointerup", onMapPillPointerUp);
+    document.addEventListener("pointercancel", onMapPillPointerUp);
+  }
+
+  // Finds which zone the pointer is over, then which of that zone's 4
+  // independent side-lists (top/left/right/bottom) is closest - by rect
+  // distance, so dropping in the empty decorative middle still resolves to
+  // whichever side is nearest instead of missing entirely.
+  function findDropTarget(x, y) {
+    for (const zone of MAP_ZONES) {
+      const zoneEl = findZoneEl(zone);
+      const rect = zoneEl.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        const sections = perimeterSections(zoneEl);
+        let side = null;
+        let sideContainer = null;
+        let bestDist = Infinity;
+        MAP_SIDES.forEach((s) => {
+          const sRect = sections[s].getBoundingClientRect();
+          const dx = Math.max(sRect.left - x, 0, x - sRect.right);
+          const dy = Math.max(sRect.top - y, 0, y - sRect.bottom);
+          const dist = Math.hypot(dx, dy);
+          if (dist < bestDist) {
+            bestDist = dist;
+            side = s;
+            sideContainer = sections[s];
+          }
+        });
+        return { zone, zoneEl, side, sideContainer };
+      }
+    }
+    return null;
+  }
+
+  // Each side is its own independent, directly-rendered list (see
+  // renderPerimeterPills), so this only ever needs to look at that one
+  // container's children - no cross-section index bookkeeping. Top/bottom
+  // read left-to-right so "before/after" compares x; left/right are
+  // vertical columns so it compares y.
+  function insertionIndex(container, x, y, excludeEl, horizontal) {
+    const pills = [...container.children].filter((el) => el !== excludeEl);
+    let closestIndex = pills.length;
+    let closestDist = Infinity;
+    pills.forEach((el, i) => {
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dist = Math.hypot(x - cx, y - cy);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestIndex = (horizontal ? x < cx : y < cy) ? i : i + 1;
+      }
+    });
+    return closestIndex;
+  }
+
+  function onMapPillPointerMove(e) {
+    if (!mapDrag) return;
+    mapDrag.pill.style.left = `${e.clientX}px`;
+    mapDrag.pill.style.top = `${e.clientY}px`;
+    document.querySelectorAll(".map-zone.drag-over").forEach((el) => el.classList.remove("drag-over"));
+    const target = findDropTarget(e.clientX, e.clientY);
+    if (!target) return; // hovering outside any zone - leave the placeholder at its last valid slot
+    target.zoneEl.classList.add("drag-over");
+    const horizontal = target.side === "top" || target.side === "bottom";
+    const index = insertionIndex(target.sideContainer, e.clientX, e.clientY, mapDrag.placeholder, horizontal);
+    if (target.sideContainer === mapDrag.lastContainer && index === mapDrag.lastIndex) return;
+    mapDrag.lastZone = target.zone;
+    mapDrag.lastSide = target.side;
+    mapDrag.lastContainer = target.sideContainer;
+    mapDrag.lastIndex = index;
+    flipReorder(() => placePlaceholderAt(target.sideContainer, index));
+  }
+
+  async function onMapPillPointerUp() {
+    if (!mapDrag) return;
+    const { brewery, lastZone, lastSide, lastIndex } = mapDrag;
+    cancelMapDrag();
+
+    // Optimistic local move so nothing snaps back while the request is in
+    // flight, then let the next poll reconcile with the server. Only the
+    // one side list being dropped into is ever spliced - every other side,
+    // in every zone, is left completely untouched.
+    MAP_ZONES.forEach((zone) => {
+      const zoneSides = state.festivalMap.zones[zone];
+      if (!zoneSides) return;
+      MAP_SIDES.forEach((side) => {
+        zoneSides[side] = (zoneSides[side] || []).filter((b) => b !== brewery);
+      });
+    });
+    const targetSides = state.festivalMap.zones[lastZone];
+    targetSides[lastSide].splice(lastIndex, 0, brewery);
+    renderFestivalMap();
+
+    await apiPost("/api/checkin/festival_map/move", { brewery, zone: lastZone, side: lastSide, index: lastIndex });
+  }
+
   // ---- Settings screen (⚙️) - quick on/off for the three watch features ----
   // Each toggle reads/writes that feature's own existing config directly;
   // this screen doesn't own any state itself, just surfaces the three
@@ -1067,15 +2147,18 @@
 
   async function fetchSettingsStatus() {
     $("settings-status").textContent = "Завантажую…";
-    const [autotoast, festivalWatch, commentWatch] = await Promise.all([
+    const [autotoast, festivalWatch, commentWatch, festivalMode] = await Promise.all([
       apiPost("/api/checkin/autotoast/status", {}),
       apiPost("/api/checkin/festival_watch/get", {}),
       apiPost("/api/checkin/comment_watch/get", {}),
+      apiPost("/api/checkin/festival_mode/get", {}),
     ]);
-    $("settings-row-autotoast").classList.toggle("hidden", !(autotoast.ok && autotoast.data.available));
+    state.autoToastAvailable = !!(autotoast.ok && autotoast.data.available);
+    updateAutoToastRowVisibility();
     $("settings-autotoast-toggle").checked = !!(autotoast.ok && autotoast.data.enabled);
     $("settings-festivalwatch-toggle").checked = !!(festivalWatch.ok && festivalWatch.data.enabled);
     $("settings-commentwatch-toggle").checked = !!(commentWatch.ok && commentWatch.data.enabled);
+    $("settings-festivalmode-toggle").checked = !!(festivalMode.ok && festivalMode.data.enabled);
     $("settings-status").textContent = "";
   }
 
@@ -1090,6 +2173,38 @@
   $("settings-commentwatch-toggle").addEventListener("change", async (e) => {
     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
     await apiPost("/api/checkin/comment_watch/toggle", { enabled: e.target.checked });
+  });
+  $("settings-festivalmode-toggle").addEventListener("change", async (e) => {
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+    state.festivalMode = e.target.checked;
+    applyFestivalModeUI();
+    await apiPost("/api/checkin/festival_mode/toggle", { enabled: e.target.checked });
+  });
+
+  // Settings-screen "forget my test check-ins" - clears this user's own
+  // completedBy markers (see checkin_queue.reset_user), so a pre-festival
+  // test check-in through the queue stops being reported as "already had
+  // this at the festival" the next time they search for that beer.
+  // Deliberately does NOT bring anything back into the active queue view
+  // (reset_user moves it to hiddenBy instead of just clearing it) - beers
+  // hidden on purpose are left untouched either way.
+  $("settings-row-queue-reset").addEventListener("click", () => {
+    const doReset = async () => {
+      const { ok, data } = await apiPost("/api/checkin/queue/reset_personal", {});
+      if (!ok || !data.ok) {
+        notify("Не вдалося скинути позначки. Спробуйте ще раз.");
+        return;
+      }
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+      notify(data.reset > 0
+        ? `Забуто тестові чекіни на ${data.reset} пивах - у чергу вони не повернулись.`
+        : "Нічого забувати - тестових чекінів через чергу немає.");
+    };
+    if (tg && tg.showConfirm) {
+      tg.showConfirm("Забути твої тестові чекіни в черзі? У чергу пива не повернуться.", (confirmed) => { if (confirmed) doReset(); });
+    } else if (confirm("Забути твої тестові чекіни в черзі? У чергу пива не повернуться.")) {
+      doReset();
+    }
   });
 
   // ---- Events screen (🔔) - recent auto-toast/comment/novelty activity ----
@@ -1129,26 +2244,12 @@
           <div class="event-row-time">${timeAgo(ev.at)}</div>
         </div>
         <div class="row-actions">
-          ${ev.beerId ? '<button class="untappd-link-btn" title="Відкрити в Untappd">🔗</button>' : ""}
-          ${ev.kind === "comment" && ev.checkinId ? '<button class="event-reply-toggle-btn" title="Відповісти">💬</button>' : ""}
-          ${ev.kind === "toast" && ev.username ? '<button class="event-remove-target-btn" title="Прибрати з авто-тосту">✕</button>' : ""}
+          ${ev.beerId ? `<button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>` : ""}
+          ${ev.kind === "comment" && ev.checkinId ? `<button class="event-reply-toggle-btn" title="Відповісти">${ICON_CHAT}</button>` : ""}
         </div>
       `;
       if (ev.beerId) {
         mainRow.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(ev.beerId, e));
-      }
-      if (ev.kind === "toast" && ev.username) {
-        mainRow.querySelector(".event-remove-target-btn").addEventListener("click", async () => {
-          const confirmed = confirm(`Прибрати ${ev.username} зі списку авто-тосту?`);
-          if (!confirmed) return;
-          const { ok: removeOk } = await apiPost("/api/checkin/autotoast/remove_target", { username: ev.username });
-          if (removeOk) {
-            if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
-            row.remove();
-          } else {
-            alert("Не вдалося прибрати.");
-          }
-        });
       }
       row.appendChild(mainRow);
 
@@ -1223,6 +2324,19 @@
     }
   }
 
+  // ---- Search field clear buttons (loaded once on start) ----
+
+  [
+    "search-input",
+    "wishlist-search-input",
+    "session-search-input",
+    "autotoast-search-input",
+    "festival-watch-search-input",
+    "festival-map-search-input",
+    "badges-search-input",
+    "venue-search-input",
+  ].forEach(addSearchClearButton);
+
   // ---- Usage badge (loaded once on start) ----
 
   apiPost("/api/checkin/usage", {}).then(({ ok, data }) => {
@@ -1232,12 +2346,12 @@
     if (ok && data.lastVenue) {
       state.lastVenue = data.lastVenue;
     }
-    // Auto-toast is still a personal test feature (see bot.py's
-    // AUTO_TOAST_OWNER_ID) - hide the tab entirely for everyone else,
-    // rather than showing a screen that'll just 403 on every action.
-    if (!ok || !data.isAutoToastOwner) {
-      $("autotoast-bar-btn").classList.add("hidden");
-    }
+  });
+
+  // ---- Festival mode (loaded once on start) - see applyFestivalModeUI ----
+  apiPost("/api/checkin/festival_mode/get", {}).then(({ ok, data }) => {
+    state.festivalMode = !!(ok && data.enabled);
+    applyFestivalModeUI();
   });
 
   // ---- Session color map (loaded once on start) ----

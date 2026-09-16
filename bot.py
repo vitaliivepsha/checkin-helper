@@ -30,9 +30,12 @@ from i18n import t
 import had_it_index
 import untappd_mcp
 import user_tokens
+import wishlist_sheets
 import auto_toast
 import festival_watch
 import comment_watch
+import badge_stats
+import beer_match
 
 # ── Persistent data directory ────────────────────────────────────────────────
 # Most container hosts have an ephemeral root filesystem. Mount a persistent
@@ -47,6 +50,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 # if the owner's account ever changes).
 AUTO_TOAST_OWNER_ID = os.environ.get("AUTO_TOAST_OWNER_ID", "402733193")
 user_tokens.init(DATA_DIR)
+wishlist_sheets.init(DATA_DIR)
 # Also (idempotently) init'd by webapp_server.start_webapp_server, but that
 # only runs when the Mini App is enabled (UNTAPPD_MCP_URL + PUBLIC_BASE_URL
 # set) - /import_history below needs had_it_index regardless of whether the
@@ -180,6 +184,18 @@ def clear_pending_untappd_token(context, user_id, chat_id):
     context.user_data.pop(f"pending_untappd_token:{_pk(user_id, chat_id)}", None)
 
 
+def get_pending_wishlist_sheet(context, user_id, chat_id) -> dict | None:
+    return context.user_data.get(f"pending_wishlist_sheet:{_pk(user_id, chat_id)}")
+
+
+def set_pending_wishlist_sheet(context, user_id, chat_id, data: dict):
+    context.user_data[f"pending_wishlist_sheet:{_pk(user_id, chat_id)}"] = data
+
+
+def clear_pending_wishlist_sheet(context, user_id, chat_id):
+    context.user_data.pop(f"pending_wishlist_sheet:{_pk(user_id, chat_id)}", None)
+
+
 def get_pending_festival_watch_location(context, user_id, chat_id) -> dict | None:
     return context.user_data.get(f"pending_festival_watch_location:{_pk(user_id, chat_id)}")
 
@@ -214,6 +230,18 @@ def set_pending_import_history(context, user_id, chat_id, data: dict):
 
 def clear_pending_import_history(context, user_id, chat_id):
     context.user_data.pop(f"pending_import_history:{_pk(user_id, chat_id)}", None)
+
+
+def get_pending_scan(context, user_id, chat_id) -> dict | None:
+    return context.user_data.get(f"pending_scan:{_pk(user_id, chat_id)}")
+
+
+def set_pending_scan(context, user_id, chat_id, data: dict):
+    context.user_data[f"pending_scan:{_pk(user_id, chat_id)}"] = data
+
+
+def clear_pending_scan(context, user_id, chat_id):
+    context.user_data.pop(f"pending_scan:{_pk(user_id, chat_id)}", None)
 
 def get_pending_find_data(context, user_id, chat_id) -> dict | None:
     """Return pending /find state.
@@ -639,6 +667,84 @@ IGNORE: "contains nuts", "contain nuts", "contains allergens", "contains milk" �
 Return ONLY valid JSON array:
 [{"brewery": "Lua Brewing", "beer": "Weathered", "style": "Imperial Stout Barrel Aged", "abv": "16.4"}]
 If NO valid beers found: []"""
+
+
+SCAN_VISION_PROMPT = """RESPOND WITH VALID JSON ARRAY ONLY. NO TEXT BEFORE OR AFTER. NO EXPLANATIONS.
+
+You are analyzing a photo of a beer bottle, can, or shelf label taken in a
+store (NOT a festival tap card - do not expect handwritten "BEER #1"/"BEER #2"
+slots or STYLE/ABV labels).
+
+Identify the brewery name and the beer's FULL product name, exactly as it
+would be officially listed (this is the part most likely to go wrong - read
+carefully):
+
+NEVER INVENT A FLAVOR/HOP/INGREDIENT SUBTITLE. Only include one if you can
+actually see it printed on the label in this exact photo. Do not complete a
+plausible-sounding subtitle from genre conventions or common naming patterns
+for this style of beer (e.g. do not add "Citra & Galaxy" to a hazy IPA, or
+"Mango & Papaya" to a fruited sour, just because those are typical for the
+style) - if you cannot read a subtitle, leave the beer name as just the
+base name you can actually see, even if that feels incomplete. A guessed
+subtitle that happens to be wrong is worse than a shorter, accurate name.
+
+Many modern breweries, especially pastry-sour/fruited lines, sell an entire
+SERIES of beers under one shared base name, each a different flavor variant
+- e.g. a can with "Wonders" printed large and "Passionfruit, Banana &
+Coconut Cream" printed smaller just below it is NOT simply "Wonders" - its
+real, distinct product name is "Wonders - Passionfruit, Banana & Coconut
+Cream", a completely different beer from "Wonders - Thai Mango Lassi" or any
+other flavor sold under the same "Wonders" line. Returning just the base
+name is WRONG and will not identify a specific beer.
+- If the label shows a large base name AND a smaller flavor/ingredient list
+  directly below or beside it (e.g. "Beauty Extreme" + "Carrot, Pineapple,
+  Calamansi & Ginger"), the beer name is BOTH parts combined: "Beauty
+  Extreme - Carrot, Pineapple, Calamansi & Ginger". Transcribe the flavor
+  list exactly as printed - do not paraphrase, reorder, or drop an
+  ingredient, and do not guess one from memory of a similar-sounding beer.
+- If the label shows only ONE name with nothing that reads as a separate
+  flavor/ingredient list (e.g. "Velvet", "Arriba!", "Tomato Deluxe"), that
+  single name IS the complete beer name - do not append anything else to it.
+- This is not only about fruit: a named hop variety or key ingredient can be
+  just as much a part of the official name. A can reading "English IPA" with
+  "With East Kent Goldings Hops" printed just below is officially named
+  "English IPA With East Kent Goldings Hops" - dropping that subtitle is the
+  same mistake as dropping a fruit flavor.
+- The hard part is a subtitle that MIXES a real name word with a trailing
+  STYLE-CATEGORY word/phrase on one line, e.g. a label reading "ROSE MILK
+  STOUT" under "SWEET COW": here "Rose" is part of the actual name ("Sweet
+  Cow Rose") but "Milk Stout" is the beer style, NOT part of the name - stop
+  transcribing as soon as you reach a generic style-category word (Stout,
+  Porter, IPA, Lager, Pils/Pilsner, Ale, Sour, Gose, Saison, Wheat, and
+  similar) and do not include it or anything after it. When genuinely
+  unsure whether a trailing word is a style category or a real name word,
+  prefer to drop it rather than include it.
+- A STYLE label on its own line ("Pastry Sour", "IPA - Quadruple", "Russian
+  Imperial Stout") or a slogan/tagline is NOT part of the name - only
+  include text that names actual ingredients/flavors/hop varieties of THIS
+  beer, per the rule above.
+- Brewery name is the producer's name, usually near a logo on the same
+  label - do not confuse it with the base product-line name (e.g. brewery
+  "Magic Road", product line "Wonders").
+- If multiple distinct beers are visible (e.g. a shelf of different
+  bottles), return one JSON object per clearly readable beer.
+- If brewery is not visible/legible, use "".
+
+SHELF PRICE TAGS: The photo may also show small printed price tags/shelf
+labels below or beside the cans/bottles (often abbreviated, e.g. "FF ARRIBA"
+or "M.R. PASSIONFRUIT"). If a tag is clearly positioned under/next to a
+specific can, read it and use it to CONFIRM or CORRECT what you read on the
+can - a can's own stylized/cursive/small-print text can be genuinely
+ambiguous (e.g. "Oak" vs "Cake", or one flavor's script looking similar to a
+different flavor in the same line), while printed price tags are usually
+unambiguous, though often abbreviated - use a tag only to disambiguate what
+you read on the can, not as a replacement for reading the can. Only use a
+tag for a can you can actually match to it by position - do not guess a
+pairing.
+
+Return ONLY valid JSON array:
+[{"brewery": "Lua Brewing", "beer": "Weathered"}, {"brewery": "Magic Road", "beer": "Wonders - Passionfruit, Banana & Coconut Cream"}, {"brewery": "Nepo Brewing", "beer": "English IPA With East Kent Goldings Hops"}, {"brewery": "AleBrowar", "beer": "Sweet Cow Rose"}]
+If NO beer found: []"""
 
 
 def _simple_norm_for_hint(text: str) -> str:
@@ -1175,6 +1281,13 @@ async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     set_pending_find(context, user_id, chat_id, False)
 
+    # A stale pending_scan would otherwise silently swallow the NEXT real
+    # photo this user sends (e.g. a festival tap card) as a store-beer scan
+    # instead - unlike the other pending_* flows above, this one gates the
+    # bot's main, high-traffic photo handler, so it's worth clearing here
+    # even though /cancel doesn't currently reach every other pending flow.
+    clear_pending_scan(context, user_id, chat_id)
+
     await delete_message_if_possible(
         context,
         chat_id,
@@ -1427,8 +1540,10 @@ def _is_retryable_vision_error(exc: Exception) -> bool:
     return any(part in name for part in retryable_names) or any(part in text for part in retryable_text)
 
 
-async def _recognize_one_photo(photo_b64: str, caption_hint: str, original_caption: str = "") -> list[dict]:
-    vision_text = _build_vision_text(caption_hint, original_caption)
+async def _call_claude_vision_with_retry(photo_b64: str, vision_text: str) -> str:
+    """Shared retry loop around _call_claude_vision - used by both the
+    festival tap-card recognizer (_recognize_one_photo) and /scan's
+    store-label recognizer, so the retry/backoff behavior only lives once."""
     last_exc: Exception | None = None
 
     for attempt in range(1, VISION_MAX_ATTEMPTS + 1):
@@ -1437,10 +1552,7 @@ async def _recognize_one_photo(photo_b64: str, caption_hint: str, original_capti
                 asyncio.to_thread(_call_claude_vision, photo_b64, vision_text),
                 timeout=VISION_REQUEST_TIMEOUT_SECONDS,
             )
-            raw = (raw or "").strip()
-            logger.info(f"Claude raw ({len(raw)}): {repr(raw[:300])}")
-            detected = _parse_claude_json(raw)
-            return _dedupe_detected(detected)
+            return (raw or "").strip()
 
         except Exception as exc:
             last_exc = exc
@@ -1466,6 +1578,14 @@ async def _recognize_one_photo(photo_b64: str, caption_hint: str, original_capti
             await asyncio.sleep(delay)
 
     raise last_exc or RuntimeError("Vision recognition failed")
+
+
+async def _recognize_one_photo(photo_b64: str, caption_hint: str, original_caption: str = "") -> list[dict]:
+    vision_text = _build_vision_text(caption_hint, original_caption)
+    raw = await _call_claude_vision_with_retry(photo_b64, vision_text)
+    logger.info(f"Claude raw ({len(raw)}): {repr(raw[:300])}")
+    detected = _parse_claude_json(raw)
+    return _dedupe_detected(detected)
 
 
 def _prepare_photo_bytes_for_vision(photo_bytes: bytes | bytearray) -> bytes:
@@ -1600,6 +1720,13 @@ async def _process_media_group_later(context: ContextTypes.DEFAULT_TYPE, key: st
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message
     lng = lang(update)
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+
+    if get_pending_scan(context, user_id, chat_id) is not None:
+        clear_pending_scan(context, user_id, chat_id)
+        await handle_scan_photo(message, context, lng, user_id)
+        return
 
     media_group_id = getattr(message, "media_group_id", None)
     if media_group_id:
@@ -1616,6 +1743,149 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await _process_photo_messages(message, [message], context, lng)
+
+
+SCAN_MAX_BADGES_SHOWN = 8  # cap reply length for a beer that hits many still-open badges
+SCAN_MAX_BEERS_PER_PHOTO = 5  # cap Untappd lookups per photo - a shelf can show far more distinct beers than one /scan is worth spending quota on
+
+
+async def _build_scan_beer_text(token: str, user_id: int, lng: str, beer_name: str, brewery_name: str) -> str:
+    """Look up one detected beer on Untappd (via beer_match.resolve_beer)
+    and build its /scan reply text (had-it status + not-yet-closed style/
+    country badges this beer would count toward). Raises
+    untappd_mcp.UntappdMCPError on failure so the caller can decide how to
+    surface it without aborting sibling beers from the same photo."""
+    result = await beer_match.resolve_beer(token, user_id, beer_name, brewery_name)
+    if not result["matched"]:
+        return t(lng, "scan_no_match", beer=h(beer_name), brewery=h(brewery_name))
+
+    bid = result["bid"]
+    style = result["style"]
+    abv = result["abv"]
+    had_it = result["hadIt"]
+
+    beers = await had_it_index.get_all_beers(user_id)
+    profile = await user_tokens.get_profile(user_id)
+    is_supporter = bool((profile or {}).get("is_supporter"))
+    rows = badge_stats.compute_progress(beers, is_supporter=is_supporter)
+    matching_badges = badge_stats.badges_matching_beer(rows, style, result["country"])
+
+    text = t(lng, "scan_result_header", beer=h(result["name"]), brewery=h(result["brewery"]))
+    if style:
+        abv_str = f" ({abv}%)" if abv else ""
+        text += f"\n🏷 {h(style)}{h(abv_str)}"
+    rating = result["rating"]
+    if rating:
+        text += f"\n{t(lng, 'scan_rating', rating=f'{rating:.2f}', count=result['ratingCount'] or 0)}"
+    if bid is not None:
+        text += f"\n🔗 {result['url']}"
+
+    if had_it is True:
+        text += f"\n{t(lng, 'scan_had_it_yes')}"
+    elif had_it is False:
+        text += f"\n{t(lng, 'scan_had_it_no')}"
+    else:
+        text += f"\n{t(lng, 'scan_had_it_unknown')}"
+
+    if matching_badges:
+        text += f"\n\n{t(lng, 'scan_badges_header')}"
+        for row in matching_badges[:SCAN_MAX_BADGES_SHOWN]:
+            # row["icon"] is a badges.untappd.com IMAGE URL (see
+            # badge_beer_categories.json), not an emoji - printing it
+            # directly here used to dump the raw link into the message.
+            progress = f"{row['current']}/{row['nextThreshold']}" if row.get("nextThreshold") else str(row["current"])
+            text += f"\n🏅 {h(row['name'])} — {progress}"
+        extra = len(matching_badges) - SCAN_MAX_BADGES_SHOWN
+        if extra > 0:
+            text += f"\n… +{extra}"
+    else:
+        text += f"\n\n{t(lng, 'scan_badges_none')}"
+
+    return text
+
+
+def _scan_again_keyboard(user_id: int, lng: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton(t(lng, "btn_scan_again"), callback_data=f"scan_again:{user_id}")
+    ]])
+
+
+async def handle_scan_photo(message, context: ContextTypes.DEFAULT_TYPE, lng: str, user_id: int):
+    """/scan's photo step - identify every beer label visible in a
+    store-shelf photo (not a festival tap card), then report had-it status
+    plus every not-yet-maxed style/country badge each one would count
+    toward. Gated to a private chat with a connected Untappd token by
+    scan_cmd before pending_scan is ever set. The LAST message of the
+    batch (whichever branch it ends up being - an error, "nothing found",
+    or the last beer result) carries a "scan another" button so the user
+    isn't forced to retype /scan for every photo."""
+    progress_msg = await message.reply_text(t(lng, "recognizing"))
+    chat_id = message.chat_id
+    again_kb = _scan_again_keyboard(user_id, lng)
+
+    photo_b64 = await _download_photo_b64(context, message)
+    try:
+        raw = await _call_claude_vision_with_retry(photo_b64, SCAN_VISION_PROMPT)
+    except Exception as exc:
+        logger.error(f"Scan vision error: {exc}")
+        await progress_msg.edit_text(t(lng, "scan_error"), reply_markup=again_kb)
+        return
+
+    logger.info(f"Scan Claude raw ({len(raw)}): {repr(raw[:500])}")
+    detected = _dedupe_detected(_parse_claude_json(raw))
+    if not detected:
+        await progress_msg.edit_text(t(lng, "scan_not_found_photo"), reply_markup=again_kb)
+        return
+
+    skipped_over_limit = max(0, len(detected) - SCAN_MAX_BEERS_PER_PHOTO)
+    detected = detected[:SCAN_MAX_BEERS_PER_PHOTO]
+    # Pre-filter (rather than `continue`-skipping inside the send loop) so
+    # we know up front which entry is actually the LAST message this photo
+    # will produce, and only that one gets the "scan another" button.
+    valid_entries = [e for e in detected if (e.get("beer") or "").strip()]
+    token = await user_tokens.get_token(user_id)
+    first_result_message_used = False
+
+    # Same "reuse the progress message for the first result, send new
+    # messages for the rest" convention as _send_detected_results - a scan
+    # of a shelf full of beers shouldn't leave the "recognizing..." message
+    # dangling once results start coming in.
+    for idx, entry in enumerate(valid_entries):
+        beer_name = (entry.get("beer") or "").strip()
+        brewery_name = (entry.get("brewery") or "").strip()
+
+        try:
+            text = await _build_scan_beer_text(token, user_id, lng, beer_name, brewery_name)
+        except untappd_mcp.UntappdRateLimited:
+            text = t(lng, "untappd_token_rate_limited")
+        except untappd_mcp.UntappdMCPError as exc:
+            logger.error(f"Scan lookup failed for {brewery_name!r} {beer_name!r}: {exc}")
+            text = t(lng, "scan_error")
+
+        is_last_message = idx == len(valid_entries) - 1 and not skipped_over_limit
+        markup = again_kb if is_last_message else None
+
+        if not first_result_message_used:
+            await progress_msg.edit_text(text, parse_mode="HTML", disable_web_page_preview=True, reply_markup=markup)
+            first_result_message_used = True
+        else:
+            await resilient_send_message(
+                context, chat_id=chat_id, text=text,
+                parse_mode="HTML", disable_web_page_preview=True, reply_markup=markup,
+            )
+
+    if not first_result_message_used:
+        # Every detected entry lacked a beer name (shouldn't happen given
+        # the vision prompt's own schema, but _dedupe_detected only checks
+        # this same condition, not the caller) - the "recognizing..."
+        # message would otherwise be left stuck forever.
+        await progress_msg.edit_text(t(lng, "scan_not_found_photo"), reply_markup=again_kb)
+    elif skipped_over_limit:
+        await resilient_send_message(
+            context, chat_id=chat_id,
+            text=t(lng, "scan_too_many", count=skipped_over_limit, max=SCAN_MAX_BEERS_PER_PHOTO),
+            reply_markup=again_kb,
+        )
 
 
 async def _send_detected_results(
@@ -1825,6 +2095,27 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await save_checkins(data_store)
         await query.answer()
         await query.edit_message_text(t(lng, "cleared", count=count))
+        return
+
+    elif data.startswith("scan_again:"):
+        # Same owner-check convention as clear_confirm - /scan is private-
+        # chat only so this is mostly defense-in-depth, not a realistic
+        # cross-user collision.
+        owner_id = data.split(":", 1)[1]
+        if str(user_id) != owner_id:
+            await query.answer(t(lng, "scan_not_yours"), show_alert=True)
+            return
+        chat_id = query.message.chat_id
+        if not await user_tokens.get_token(user_id):
+            await query.answer(t(lng, "scan_not_connected"), show_alert=True)
+            return
+        set_pending_scan(context, user_id, chat_id, {})
+        await query.answer()
+        try:
+            await query.edit_message_reply_markup(reply_markup=None)
+        except TelegramError as e:
+            logger.info(f"scan_again: could not clear old keyboard: {e}")
+        await resilient_send_message(context, chat_id=chat_id, text=t(lng, "scan_prompt"))
         return
 
     elif data == "delete_msg":
@@ -2214,6 +2505,29 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    # Handle wishlist sheet URL paste reply (/wishlist_sheet)
+    pending_sheet = get_pending_wishlist_sheet(context, user_id, chat_id)
+    if pending_sheet is not None:
+        lng = lang(update)
+        text = update.message.text.strip()
+        if text.startswith("/cancel"):
+            clear_pending_wishlist_sheet(context, user_id, chat_id)
+            await update.message.reply_text(t(lng, "connect_untappd_cancelled"))
+            return
+        if text.startswith("/"):
+            return
+        clear_pending_wishlist_sheet(context, user_id, chat_id)
+        if text == "-":
+            await wishlist_sheets.clear_csv_url(user_id)
+            await update.message.reply_text(t(lng, "wishlist_sheet_cleared"))
+            return
+        if not text.startswith("https://") or "output=csv" not in text.lower():
+            await update.message.reply_text(t(lng, "wishlist_sheet_invalid"))
+            return
+        await wishlist_sheets.set_csv_url(user_id, text)
+        await update.message.reply_text(t(lng, "wishlist_sheet_connected"))
+        return
+
     # Handle a reply to a "💬 Відповісти" comment-watch notification
     pending_comment_reply = get_pending_comment_reply(context, user_id, chat_id)
     if pending_comment_reply is not None:
@@ -2497,6 +2811,23 @@ async def connect_untappd_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.reply_text(t(lng, "connect_untappd_prompt"))
 
 
+async def wishlist_sheet_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Start pairing a personal Google Sheet as a stand-in for Untappd's own
+    unreachable "Lists" feature (private chats only) - see
+    wishlist_sheets.py's own module docstring."""
+    lng = lang(update)
+    if update.effective_chat.type != "private":
+        await update.message.reply_text(t(lng, "connect_untappd_group_hint"))
+        return
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    current = await wishlist_sheets.get_csv_url(user_id)
+    set_pending_wishlist_sheet(context, user_id, chat_id, {})
+    await update.message.reply_text(
+        t(lng, "wishlist_sheet_prompt", current=t(lng, "wishlist_sheet_current", url=current) if current else "")
+    )
+
+
 async def import_history_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Seed had_it_index instantly from an official Untappd data export
     (CSV/JSON, Insider-only "Export Your Data" feature) instead of waiting
@@ -2512,6 +2843,29 @@ async def import_history_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
     set_pending_import_history(context, user_id, chat_id, {})
     await update.message.reply_text(t(lng, "import_history_prompt"))
+
+
+async def scan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Photograph a beer's label in a store to check whether it's already
+    had, and which not-yet-maxed style/country badges it would count
+    toward (see handle_scan_photo). Private chats only, same connected-
+    account gating as /import_history - plus the same personal-test-feature
+    owner gate as /auto_toast (see AUTO_TOAST_OWNER_ID) until vision
+    recognition accuracy on store labels is good enough for other accounts."""
+    lng = lang(update)
+    if update.effective_chat.type != "private":
+        await update.message.reply_text(t(lng, "scan_group_hint"))
+        return
+    user_id = update.effective_user.id
+    if str(user_id) != AUTO_TOAST_OWNER_ID:
+        await update.message.reply_text(t(lng, "scan_owner_only"))
+        return
+    chat_id = update.effective_chat.id
+    if not await user_tokens.get_token(user_id):
+        await update.message.reply_text(t(lng, "scan_not_connected"))
+        return
+    set_pending_scan(context, user_id, chat_id, {})
+    await update.message.reply_text(t(lng, "scan_prompt"))
 
 
 IMPORT_HISTORY_MAX_FILE_SIZE = 20 * 1024 * 1024  # Telegram's own bot-download ceiling
@@ -2840,13 +3194,16 @@ def private_commands_for(lng: str, *, include_auto_toast: bool = False):
         BotCommand("cancel", t(lng, "cmd_cancel")),
         BotCommand("checkin", t(lng, "cmd_checkin")),
         BotCommand("connect_untappd", t(lng, "cmd_connect_untappd")),
+        BotCommand("wishlist_sheet", t(lng, "cmd_wishlist_sheet")),
         BotCommand("import_history", t(lng, "cmd_import_history")),
     ]
-    # Auto-toast is a personal test feature (see AUTO_TOAST_OWNER_ID) - only
-    # listed in the owner's own command menu (BotCommandScopeChat in
-    # post_init), not the default menu every private chat gets.
+    # Auto-toast and /scan are personal test features (see
+    # AUTO_TOAST_OWNER_ID) - only listed in the owner's own command menu
+    # (BotCommandScopeChat in post_init), not the default menu every
+    # private chat gets.
     if include_auto_toast:
         commands.append(BotCommand("auto_toast", t(lng, "cmd_auto_toast")))
+        commands.append(BotCommand("scan", t(lng, "cmd_scan")))
     commands += [
         BotCommand("festival_watch", t(lng, "cmd_festival_watch")),
         BotCommand("comment_watch", t(lng, "cmd_comment_watch")),
@@ -2917,7 +3274,9 @@ def main():
     app.add_handler(CommandHandler("cancel", cancel_cmd))
     app.add_handler(CommandHandler("checkin", checkin_webapp_cmd))
     app.add_handler(CommandHandler("connect_untappd", connect_untappd_cmd))
+    app.add_handler(CommandHandler("wishlist_sheet", wishlist_sheet_cmd))
     app.add_handler(CommandHandler("import_history", import_history_cmd))
+    app.add_handler(CommandHandler("scan", scan_cmd))
     app.add_handler(CommandHandler("auto_toast", auto_toast_cmd))
     app.add_handler(CommandHandler("festival_watch", festival_watch_cmd))
     app.add_handler(CommandHandler("comment_watch", comment_watch_cmd))

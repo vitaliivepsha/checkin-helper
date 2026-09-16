@@ -65,21 +65,32 @@ def _tier(current: int, count: int, levels: int, first_level_count: int | None =
 
 def _split_style_matchers(styles: list[str]) -> tuple[set[str], list[str]]:
     """Splits a catalog styles[] list into (exact, substring) matchers. A
-    "=" prefix means EXACT match only - see badge_beer_categories.json's
-    own _note: a catalog style already shaped like a complete real
-    "Category - Subcategory" leaf name (e.g. "IPA - Session") can otherwise
-    also substring-match a DIFFERENT, more specific sibling real style that
-    happens to extend it with extra words (e.g. "IPA - Session New England
-    / Hazy" - a distinct leaf style, not a "Session" sub-variant) - proven
-    live (Session Life showed level 93 instead of the real 86 from exactly
-    this). Genuinely broad/umbrella catalog entries (bare words like
-    "Stout", "Imperial / Double") are never marked "=" and keep matching
-    via substring, which is the correct, intended behavior for those."""
+    catalog style already shaped like a complete real "Category -
+    Subcategory" leaf name (i.e. it contains " - ") is ALWAYS treated as
+    EXACT match, whether or not it carries an explicit "=" prefix (that
+    prefix still works too, kept for bare-word entries someone wants exact
+    for some other reason) - proven live TWICE independently: "Session
+    Life" showed level 93 instead of the real 86 (40 extra beers from the
+    different real style "IPA - Session New England / Hazy" substring-
+    matching catalog style "IPA - Session"), and "Tripping on TIPAs"
+    showed level 71 instead of a real ~18 (269 of 358 counted beers were
+    "IPA - Triple New England / Hazy", a distinct sibling leaf style, not
+    a "Triple" sub-variant) - both are the SAME general pattern: a
+    "Category - Subcategory" string is always a complete, specific leaf in
+    Untappd's real two-level taxonomy, never a prefix another leaf
+    legitimately extends, so substring-matching it can only ever pick up
+    an unrelated sibling by accident. Genuinely broad/umbrella catalog
+    entries (bare words with no " - ", like "Stout", "Non-Alcoholic",
+    "Imperial / Double") keep matching via substring, which is the
+    correct, intended behavior for those - they're deliberately not a
+    full leaf name."""
     exact: set[str] = set()
     substring: list[str] = []
     for s in styles:
         if s.startswith("="):
             exact.add(s[1:].lower())
+        elif " - " in s:
+            exact.add(s.lower())
         else:
             substring.append(s.lower())
     return exact, substring
@@ -160,6 +171,45 @@ def compute_venue_progress(visited_categories: list[list[str]]) -> list[dict]:
     return rows
 
 
+def badges_matching_beer(rows: list[dict], style: str, country: str) -> list[dict]:
+    """Given already-computed `rows` (from compute_progress) and a
+    hypothetical new beer's style/country, return the NOT-DONE style/country
+    rows this beer would count toward - for /scan's "should I get this"
+    check. Re-matches against the raw catalog matchers (_style_badges/
+    _country_badges) via _style_matches rather than against rows' own
+    already-"="-stripped `tags`, so the exact-vs-substring distinction isn't
+    silently lost (see _split_style_matchers's own note on why that
+    distinction matters). Venue badges are never included - a store-shelf
+    scan has no venue/check-in context."""
+    not_done_by_name = {
+        r["name"]: r for r in rows
+        if r.get("kind") in ("style", "country") and not r.get("done")
+    }
+    matches: list[dict] = []
+
+    style_norm = (style or "").strip()
+    if style_norm:
+        for badge in _style_badges:
+            row = not_done_by_name.get(badge["badge"])
+            if not row:
+                continue
+            exact, substring = _split_style_matchers(badge.get("styles", []))
+            if _style_matches(style_norm, exact, substring):
+                matches.append(row)
+
+    country_norm = (country or "").strip().lower()
+    if country_norm:
+        for badge in _country_badges:
+            row = not_done_by_name.get(badge["badge"])
+            if not row:
+                continue
+            wanted = {c.lower() for c in badge.get("countries", [])}
+            if country_norm in wanted:
+                matches.append(row)
+
+    return matches
+
+
 def _row(badge: dict, current: int, kind: str, tags: list[str]) -> dict:
     level, level_start, next_threshold = _tier(
         current, badge["count"], badge.get("levels", 1), badge.get("first_level_count"),
@@ -184,5 +234,24 @@ def _row(badge: dict, current: int, kind: str, tags: list[str]) -> dict:
         "kind": kind,
         "tags": tags,
         "countPerLevel": badge["count"],
+        "levels": badge.get("levels", 1),
+        "firstLevelCount": badge.get("first_level_count"),
         "url": badge.get("url"),
     }
+
+
+def level_floor(count: int, levels: int, level: int, first_level_count: int | None = None) -> tuple[int, int | None]:
+    """(level_start, next_threshold) for a GIVEN confirmed level, the
+    inverse of _tier's own math - used by webapp_server.py's
+    handle_badges_get when badge_index.py's ground-truth level (straight
+    from Untappd's own check-in data) is higher than what our own style/
+    country counting computed: we can't know the real current count behind
+    that confirmed level, only that it's at least level_start, so pct is
+    shown as 0 (just reached) rather than fabricating a fraction our own
+    undercounted `current` can't support."""
+    first = first_level_count or count
+    if level <= 0:
+        return 0, first
+    level_start = first + (level - 1) * count
+    next_threshold = None if level >= levels else level_start + count
+    return level_start, next_threshold

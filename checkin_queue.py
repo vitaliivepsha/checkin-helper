@@ -57,13 +57,52 @@ async def list_items() -> list[dict]:
         return _load()
 
 
-async def add_item(beer: dict, added_by: dict) -> tuple[dict, bool]:
-    """Returns (item, added). added=False if this beerId was already queued."""
+async def add_item(beer: dict, added_by: dict) -> tuple[dict, str]:
+    """Returns (item, status). status is one of:
+    - "added": a genuinely new shared item was created.
+    - "already_active": this beerId is already in the shared queue *and*
+      already visible in the caller's own view - a plain duplicate tap.
+    - "revived_from_hidden": the caller had personally removed ("✕") this
+      item before; it's now back in their view.
+    - "revived_from_completed": the caller had already checked this item in
+      *through the queue* before; it's now back in their view.
+
+    Hiding or completing an item is personal, not a delete (see the module
+    docstring) - the item stays in the shared queue for everyone else. If
+    the same user deliberately adds that beer again, drop them from
+    hiddenBy/completedBy so it actually reappears in *their* view too -
+    without this, re-adding silently did nothing forever, since the item
+    they were staring at "already existed" but was still filtered out of
+    their own list by the very hidden/completed markers add_item never
+    touched. The distinct revived_from_* statuses exist so the caller can
+    tell the user *why* ("you'd already had this at the festival" vs "you'd
+    removed it") instead of a single generic "already queued" message.
+
+    Also drops the user from testForgottenBy (see reset_user) - a genuine,
+    deliberate re-add means this is real festival activity again, so the
+    "was in queue" badge (webapp_server.py's _annotate_queue_status) should
+    resume tracking it instead of staying silenced from a pre-festival
+    reset."""
     async with _lock:
         items = _load()
         existing = next((it for it in items if it.get("beerId") == beer.get("beerId")), None)
         if existing:
-            return existing, False
+            user_id = added_by.get("userId")
+            hidden = existing.get("hiddenBy") or []
+            completed = existing.get("completedBy") or []
+            forgotten = existing.get("testForgottenBy") or []
+            if user_id in forgotten:
+                existing["testForgottenBy"] = [uid for uid in forgotten if uid != user_id]
+            if user_id in hidden:
+                existing["hiddenBy"] = [uid for uid in hidden if uid != user_id]
+                _save(items)
+                return existing, "revived_from_hidden"
+            if user_id in completed:
+                existing["completedBy"] = [uid for uid in completed if uid != user_id]
+                _save(items)
+                return existing, "revived_from_completed"
+            _save(items)
+            return existing, "already_active"
         item = {
             "id": uuid.uuid4().hex,
             "beerId": beer.get("beerId"),
@@ -77,10 +116,11 @@ async def add_item(beer: dict, added_by: dict) -> tuple[dict, bool]:
             "addedAt": int(time.time()),
             "completedBy": [],
             "hiddenBy": [],
+            "testForgottenBy": [],
         }
         items.append(item)
         _save(items)
-        return item, True
+        return item, "added"
 
 
 async def remove_item(item_id: str) -> bool:
@@ -144,3 +184,51 @@ async def hide_all(user_id: int) -> int:
         if newly_hidden:
             _save(items)
         return newly_hidden
+
+
+async def reset_user(user_id: int) -> int:
+    """Settings-screen "forget my test check-ins" action - for someone who
+    checked a few beers in *through the queue* before the real festival
+    started (testing the app) and doesn't want add_item's
+    revived_from_completed status telling them they "already had this at
+    the festival" for something that never happened at the festival.
+
+    Clears `user_id` from completedBy and moves them into hiddenBy instead
+    of just dropping the marker outright - a plain clear would make the
+    item reappear as active in their own queue view, which is exactly the
+    opposite of what a pre-festival cleanup should do (confirmed by the
+    user after an earlier version of this did just that: "я не хочу їх
+    повертати" - they explicitly do NOT want anything to reappear, only
+    the false "already had this at the festival" claim to go away).
+
+    Items the user only ever hid (never completed) are left alone - hiding
+    has nothing to do with the completed-at-the-festival claim, and
+    silently un-hiding a real, deliberate personal removal isn't this
+    button's job either.
+
+    Also marks the item in testForgottenBy, so webapp_server.py's
+    _annotate_queue_status stops showing the "was in queue" badge for it
+    too - without this, a beer whose test check-in was just "forgotten"
+    would still visibly claim it had been queued during the festival,
+    which is exactly the false impression this button exists to erase.
+
+    Per-user, like everything else here - doesn't touch anyone else's
+    markers. Returns how many items were touched."""
+    async with _lock:
+        items = _load()
+        changed = 0
+        for item in items:
+            completed = item.get("completedBy") or []
+            if user_id not in completed:
+                continue
+            item["completedBy"] = [uid for uid in completed if uid != user_id]
+            hidden = item.setdefault("hiddenBy", [])
+            if user_id not in hidden:
+                hidden.append(user_id)
+            forgotten = item.setdefault("testForgottenBy", [])
+            if user_id not in forgotten:
+                forgotten.append(user_id)
+            changed += 1
+        if changed:
+            _save(items)
+        return changed

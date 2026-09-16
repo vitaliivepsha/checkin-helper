@@ -61,6 +61,9 @@ def _entry(user_id: int) -> dict:
             "last_synced_at": None,
             "last_fetch_at": None,
             "last_error": None,
+            "quick_max_id": None,
+            "quick_checkins_seen": 0,
+            "last_quick_synced_at": None,
         }
     return data[key]
 
@@ -85,64 +88,98 @@ async def lookup_visited(user_id: int, foursquare_id: str) -> bool | None:
         return None
 
 
-async def record_page(
-    user_id: int, username: str, items: list[dict],
-    next_max_id: int | None, page_len: int, requested_limit: int,
-) -> None:
-    """Merges one fetched check-in feed page. Skips check-ins with no venue
-    at all. Never removes a previously-known venue. A short/empty page is
-    treated as "reached the end" (same good-enough heuristic already
-    accepted in had_it_index.py; the resync-after-cooldown in next_turn
-    self-heals any pagination drift this misjudges).
+def _merge_venues(entry: dict, items: list[dict]) -> None:
+    """Shared by record_page (full walk) and record_quick_page (daily
+    top-N recheck). Skips check-ins with no venue at all. Never removes a
+    previously-known venue.
 
     Each venue's Foursquare category names - needed for badge_stats.py's
     venue-badge progress - are captured for free from this same
     already-paid-for get_user_checkins page (same principle as had_it_index's
     style/brewery/country: never a dedicated per-venue lookup). A venue
     recorded before this field existed (or via record_checkin's immediate
-    insert, which has no category data available) stores {} until the next
-    resync happens to revisit it - an expected transient gap, not a bug."""
+    insert, which has no category data available) stores {} until a resync
+    happens to revisit it - an expected transient gap, not a bug."""
+    for it in items:
+        venue = it.get("venue") or {}
+        fsq = (venue.get("foursquare") or {}).get("foursquare_id")
+        if not fsq:
+            continue
+        record = entry["venues"].get(fsq)
+        if not isinstance(record, dict):
+            record = {}
+            entry["venues"][fsq] = record
+        categories = venue.get("categories") or []
+
+        if isinstance(categories, dict):
+            categories = categories.get("items") or []
+        elif isinstance(categories, str):
+            categories = [categories]
+
+        names = []
+        for category in categories:
+            if isinstance(category, dict):
+                name = category.get("category_name") or category.get("name")
+            elif isinstance(category, str):
+                name = category
+            else:
+                continue
+
+            if isinstance(name, str):
+                name = name.strip()
+
+            if name and name not in names:
+                names.append(name)
+        if names:
+            record["categories"] = names
+
+
+async def record_page(
+    user_id: int, username: str, items: list[dict],
+    next_max_id: int | None, page_len: int, requested_limit: int,
+) -> None:
+    """Merges one fetched check-in feed page (full-walk state - see
+    next_turn). A short/empty page is treated as "reached the end" (same
+    good-enough heuristic already accepted in had_it_index.py; the
+    resync-after-cooldown in next_turn self-heals any pagination drift
+    this misjudges)."""
     async with _lock:
         entry = _entry(user_id)
         entry["username"] = username
-        for it in items:
-            venue = it.get("venue") or {}
-            fsq = (venue.get("foursquare") or {}).get("foursquare_id")
-            if not fsq:
-                continue
-            record = entry["venues"].get(fsq)
-            if not isinstance(record, dict):
-                record = {}
-                entry["venues"][fsq] = record
-            categories = venue.get("categories") or []
-
-            if isinstance(categories, dict):
-                categories = categories.get("items") or []
-            elif isinstance(categories, str):
-                categories = [categories]
-
-            names = []
-            for category in categories:
-                if isinstance(category, dict):
-                    name = category.get("category_name") or category.get("name")
-                elif isinstance(category, str):
-                    name = category
-                else:
-                    continue
-
-                if isinstance(name, str):
-                    name = name.strip()
-
-                if name and name not in names:
-                    names.append(name)
-            if names:
-                record["categories"] = names
+        _merge_venues(entry, items)
         entry["next_max_id"] = next_max_id
         entry["last_fetch_at"] = time.time()
         entry["last_error"] = None
         if page_len == 0 or page_len < requested_limit:
             entry["fully_synced"] = True
             entry["last_synced_at"] = time.time()
+        _save()
+
+
+async def record_quick_page(
+    user_id: int, username: str, items: list[dict],
+    next_max_id: int | None, page_len: int, quick_limit: int,
+) -> None:
+    """Merges one page of the cheap daily top-N recheck (see next_turn's
+    "quick" branch) - same merge as record_page, but tracks its own
+    quick_checkins_seen/quick_max_id cursor and never touches
+    next_max_id/fully_synced, which stay reserved for the (now monthly)
+    full walk. A short page means this account's whole check-in history is
+    smaller than quick_limit - already fully covered, same as reaching it."""
+    async with _lock:
+        entry = _entry(user_id)
+        entry["username"] = username
+        _merge_venues(entry, items)
+        entry["last_fetch_at"] = time.time()
+        entry["last_error"] = None
+        seen = entry.get("quick_checkins_seen", 0) + page_len
+        if page_len == 0 or seen >= quick_limit:
+            entry["quick_max_id"] = None
+            entry["quick_checkins_seen"] = 0
+            entry["last_quick_synced_at"] = time.time()
+        else:
+            entry["quick_max_id"] = next_max_id
+            entry["quick_checkins_seen"] = seen
         _save()
 
 
@@ -187,10 +224,32 @@ async def get_visited_venue_categories(user_id: int) -> list[list[str]]:
 _rotation_cursor = 0
 
 
-async def next_turn(user_ids: list[int], resync_cooldown_seconds: float) -> tuple[int, int | None] | None:
+async def next_turn(
+    user_ids: list[int], full_resync_cooldown_seconds: float, quick_recheck_cooldown_seconds: float
+) -> tuple[int, int | None, str] | None:
     """Round-robin entry point for the backfill loop. Advances the rotation
     cursor on every call (even when nobody turns out to be eligible), so one
-    problem user can never wedge the rotation and starve everyone else."""
+    problem user can never wedge the rotation and starve everyone else.
+
+    Same 3-tier priority as had_it_index.next_turn (see its own docstring
+    for the full reasoning), adapted to this file's cursor-based (max_id,
+    newest-first) pagination: (1) an initial/in-progress full walk always
+    continues; (2) once fully synced, a full walk restarts after
+    full_resync_cooldown_seconds; (3) otherwise a cheap "quick" recheck of
+    the most recent check-ins runs (continuing mid-cycle, or starting a
+    fresh one from max_id=None after quick_recheck_cooldown_seconds).
+
+    Tier 1 has one carve-out: once this user has completed a full walk at
+    least once before (last_synced_at is set - true for a resync, false for
+    the very first walk), an overdue quick recheck still gets to interleave
+    in. Without this, a resync monopolizes every turn until it fully
+    finishes - confirmed to take well over a week on a large account - which
+    would silently stop badge_index.py's badge levels (and this module's own
+    "unique venue" data) from picking up anything new for that whole
+    stretch, every single resync cycle. A first-ever walk skips this: its
+    own newest-first pages already cover the same ground a quick recheck
+    would, so interleaving would just spend quota twice on the same
+    check-ins for zero freshness benefit."""
     global _rotation_cursor
     if not user_ids:
         return None
@@ -201,19 +260,29 @@ async def next_turn(user_ids: list[int], resync_cooldown_seconds: float) -> tupl
             idx = (_rotation_cursor + i) % n
             user_id = user_ids[idx]
             entry = _entry(user_id)
-            eligible = not entry.get("fully_synced")
-            due_for_resync = False
-            if not eligible:
-                last_synced = entry.get("last_synced_at") or 0
-                if now - last_synced > resync_cooldown_seconds:
-                    eligible = True
-                    due_for_resync = True
-            if eligible:
+
+            last_synced = entry.get("last_synced_at") or 0
+            has_baseline = last_synced > 0
+            quick_checkins_seen = entry.get("quick_checkins_seen", 0)
+            last_quick_synced = entry.get("last_quick_synced_at") or 0
+            quick_due = quick_checkins_seen > 0 or now - last_quick_synced > quick_recheck_cooldown_seconds
+
+            if not entry.get("fully_synced"):
+                if has_baseline and quick_due:
+                    _rotation_cursor = (idx + 1) % n
+                    return user_id, entry.get("quick_max_id"), "quick"
                 _rotation_cursor = (idx + 1) % n
-                if due_for_resync:
-                    entry["next_max_id"] = None
-                    entry["fully_synced"] = False
-                    _save()
-                return user_id, entry["next_max_id"]
+                return user_id, entry["next_max_id"], "full"
+
+            if now - last_synced > full_resync_cooldown_seconds:
+                entry["next_max_id"] = None
+                entry["fully_synced"] = False
+                _save()
+                _rotation_cursor = (idx + 1) % n
+                return user_id, entry["next_max_id"], "full"
+
+            if quick_due:
+                _rotation_cursor = (idx + 1) % n
+                return user_id, entry.get("quick_max_id"), "quick"
         _rotation_cursor = (_rotation_cursor + 1) % n
         return None

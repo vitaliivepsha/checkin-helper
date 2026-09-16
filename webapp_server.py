@@ -6,15 +6,21 @@ start_limited_background_tasks for the established pattern this mirrors.
 """
 
 import asyncio
+import csv
 import hashlib
 import hmac
 import html
+import io
 import json
 import logging
 import os
+import re
 import time
+from datetime import datetime
 from urllib.parse import parse_qsl
+from zoneinfo import ZoneInfo
 
+import aiohttp
 from aiohttp import web
 from rapidfuzz import fuzz, process
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -22,15 +28,20 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import auto_toast
 import badge_index
 import badge_stats
+import beer_match
 import checkin_queue
 import comment_watch
 import event_log
+import festival_map
+import festival_mode
 import festival_watch
 import foursquare
 import had_it_index
 import untappd_mcp
 import user_tokens
 import venue_index
+import wishlist_items
+import wishlist_sheets
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +96,12 @@ HAD_IT_BACKFILL_INTERVAL_SECONDS = float(os.environ.get("HAD_IT_BACKFILL_INTERVA
 HAD_IT_BACKFILL_IDLE_SLEEP_SECONDS = float(os.environ.get("HAD_IT_BACKFILL_IDLE_SLEEP_SECONDS", "600"))
 HAD_IT_BACKFILL_PAGE_SIZE = int(os.environ.get("HAD_IT_BACKFILL_PAGE_SIZE", "50"))
 HAD_IT_BACKFILL_MIN_REMAINING = int(os.environ.get("HAD_IT_BACKFILL_MIN_REMAINING", "20"))
-HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS = float(os.environ.get("HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS", str(24 * 60 * 60)))
+# Full walk only every 30 days now (was daily) - a cheap top-N "quick"
+# recheck (below) handles day-to-day catch-up far more cheaply; see
+# had_it_index.next_turn's own docstring for the full priority order.
+HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS = float(os.environ.get("HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS", str(30 * 24 * 60 * 60)))
+HAD_IT_QUICK_RECHECK_COOLDOWN_SECONDS = float(os.environ.get("HAD_IT_QUICK_RECHECK_COOLDOWN_SECONDS", str(24 * 60 * 60)))
+HAD_IT_QUICK_RECHECK_LIMIT = int(os.environ.get("HAD_IT_QUICK_RECHECK_LIMIT", "400"))
 
 _backfill_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
 
@@ -98,9 +114,33 @@ VENUE_BACKFILL_INTERVAL_SECONDS = float(os.environ.get("VENUE_BACKFILL_INTERVAL_
 VENUE_BACKFILL_IDLE_SLEEP_SECONDS = float(os.environ.get("VENUE_BACKFILL_IDLE_SLEEP_SECONDS", "600"))
 VENUE_BACKFILL_PAGE_SIZE = int(os.environ.get("VENUE_BACKFILL_PAGE_SIZE", "25"))
 VENUE_BACKFILL_MIN_REMAINING = int(os.environ.get("VENUE_BACKFILL_MIN_REMAINING", "25"))
-VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS = float(os.environ.get("VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS", str(24 * 60 * 60)))
+# Full walk only every 30 days now (was daily) - same reasoning as
+# HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS; a cheap daily "quick" recheck of
+# the most recent check-ins (below) handles day-to-day catch-up, including
+# keeping badge_index.py's ground-truth badge levels fresh.
+VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS = float(os.environ.get("VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS", str(30 * 24 * 60 * 60)))
+VENUE_QUICK_RECHECK_COOLDOWN_SECONDS = float(os.environ.get("VENUE_QUICK_RECHECK_COOLDOWN_SECONDS", str(24 * 60 * 60)))
+VENUE_QUICK_RECHECK_LIMIT = int(os.environ.get("VENUE_QUICK_RECHECK_LIMIT", "400"))
 
 _venue_backfill_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
+
+# Quiet-hours gate shared by both backfill loops - confines their quota use
+# to a low-activity window rather than ticking all day. Reuses the same
+# BOT_TIMEZONE/TZ convention untappd_mcp.py already established (default
+# Europe/Warsaw) so "14:30" means the same wall-clock time users see
+# elsewhere in this app, not server-local time.
+BACKFILL_WINDOW_START = os.environ.get("BACKFILL_WINDOW_START", "14:30")
+BACKFILL_WINDOW_END = os.environ.get("BACKFILL_WINDOW_END", "15:30")
+
+
+def _in_backfill_window() -> bool:
+    tz_name = os.getenv("BOT_TIMEZONE") or os.getenv("TZ") or "Europe/Warsaw"
+    try:
+        tz = ZoneInfo(tz_name)
+    except Exception:
+        tz = ZoneInfo("UTC")
+    now_hm = datetime.now(tz).strftime("%H:%M")
+    return BACKFILL_WINDOW_START <= now_hm < BACKFILL_WINDOW_END
 
 # Auto-toast pacing - see _auto_toast_loop. Its own independent quota
 # consumer, same reasoning as VENUE_BACKFILL_* above. Polls more eagerly
@@ -124,6 +164,38 @@ def _is_auto_toast_owner(user_id) -> bool:
     return str(user_id) == AUTO_TOAST_OWNER_ID
 
 _auto_toast_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
+
+# /api/lens/lookup - a browser userscript's "mark beers I've had on a shop's
+# own product page" (see README/session notes). No Telegram init_data is
+# possible here (a userscript on a third-party site has no way to produce
+# it), so this is gated by a personal long-lived shared-secret token instead
+# - the owner pastes it into their own userscript. Always acts as
+# AUTO_TOAST_OWNER_ID's connected account, same personal-test-feature
+# scoping as /scan and /auto_toast - not a multi-user endpoint.
+LENS_API_TOKEN = os.environ.get("LENS_API_TOKEN", "")
+LENS_MAX_ITEMS_PER_REQUEST = 60  # generous for one shop category page; still a bound against a runaway/malformed batch
+LENS_LOOKUP_CONCURRENCY = 6  # search_beers itself is quota-free, but no need to hammer its Algolia index at once
+
+# A personal Google Sheet (Файл → Поділитися → Опублікувати в інтернеті →
+# CSV), read-only, no Google credentials needed - a plain HTTP GET on the
+# published CSV URL. Stands in for Untappd's own "Lists" feature, which
+# has no API access at all through this app's Untappd MCP connection
+# (confirmed live - only the classic single Wishlist is reachable, not
+# custom named lists). Expected columns: Назва, Броварня, Посилання
+# (an untappd.com beer URL - REQUIRED, the bid is parsed out of it),
+# Стиль, ABV - only "Посилання" is actually read; the rest are for the
+# user's own reference. A "Статус" column may be added later to
+# distinguish rows (e.g. "хочу"/"уникати") - not yet present, so every row
+# currently means the same single "on this list" marker.
+#
+# Each user registers their own sheet via /wishlist_sheet (see
+# wishlist_sheets.py) - this env var is ONLY a fallback for
+# AUTO_TOAST_OWNER_ID specifically, for whoever set it up before that
+# command existed and hasn't re-registered the same URL through it yet.
+WISHLIST_SHEET_CSV_URL = os.environ.get("WISHLIST_SHEET_CSV_URL", "")
+_WISHLIST_SHEET_CACHE_TTL = 15 * 60  # seconds - same cadence as _WISHLIST_CACHE_TTL
+_wishlist_sheet_cache: dict[int, dict] = {}  # keyed by Telegram user_id, like _wishlist_cache
+_BEER_URL_ID_RE = re.compile(r"/(\d+)/?$")
 
 # Comment-watch pacing - see _comment_watch_loop. Can't ride along on
 # auto-toast's shared feed poll (see comment_watch.py's docstring for why -
@@ -234,6 +306,7 @@ def _sessions_for(raw_id) -> list[str]:
 # here would leak one friend's wishlist/had-it/venues into another's view.
 _wishlist_cache: dict[int, dict] = {}
 _WISHLIST_CACHE_TTL = 15 * 60  # seconds
+_WISHLIST_MAX_PAGES = 12  # caps one refresh at 12 calls (600 beers) - see _fetch_all_wishlist
 
 _venue_cache: dict[int, dict] = {}
 _VENUE_CACHE_TTL = 15 * 60  # seconds
@@ -322,6 +395,50 @@ async def _annotate_had_it(beers: list[dict], user_id: int, token: str | None, l
             beer["userRating"] = result.get("userRating")
 
 
+async def _annotate_my_list(beers: list[dict], user_id: int) -> None:
+    """Mutates each beer dict in-place with wishlistItemId - the native
+    wishlist_items.py entry's id, if this beer already has one - so the
+    search screen's "Мій список" button can toggle add/remove instead of
+    only ever adding (a second tap would otherwise just be a same-bid
+    dedup no-op, per wishlist_items.add_item). A local dict lookup, not an
+    Untappd call, so unlike _annotate_had_it's quota-conserving cap, every
+    result gets annotated."""
+    native_items = await wishlist_items.list_items(user_id)
+    by_bid = {it.get("beerId"): it.get("id") for it in native_items if it.get("beerId") is not None}
+    for beer in beers:
+        beer["wishlistItemId"] = by_bid.get(beer.get("beerId"))
+
+
+async def _annotate_queue_status(beers: list[dict], user_id: int) -> None:
+    """Mutates each beer dict in-place with queueStatus - the small corner
+    badge on every beer row (search/session/brewery/wishlist) that answers
+    "have I already queued this?" before tapping "+" again:
+    - "active": a shared checkin_queue item exists for this beerId *and*
+      is currently visible in this user's own queue view.
+    - "was_in_queue": an item exists but this user has since hidden or
+      completed it (see checkin_queue's module docstring - neither is a
+      delete, the item just drops out of their personal view).
+    Beers nobody has ever queued get no field at all - including ones this
+    user has wiped via checkin_queue.reset_user's "forget my test
+    check-ins" (testForgottenBy): that button exists specifically to erase
+    the impression a beer was queued during the festival, so the badge
+    must stop claiming "was in queue" for it too, not just the completed-
+    at-the-festival text elsewhere. A local dict lookup against the shared
+    queue, not an Untappd call, so - unlike _annotate_had_it's quota-
+    conserving cap - every result gets annotated."""
+    items = await checkin_queue.list_items()
+    by_beer_id = {it.get("beerId"): it for it in items if it.get("beerId") is not None}
+    for beer in beers:
+        item = by_beer_id.get(beer.get("beerId"))
+        if not item:
+            continue
+        if user_id in (item.get("testForgottenBy") or []):
+            continue
+        hidden = item.get("hiddenBy") or []
+        completed = item.get("completedBy") or []
+        beer["queueStatus"] = "was_in_queue" if (user_id in hidden or user_id in completed) else "active"
+
+
 def _fuzzy_match(query: str, keys: list[str], limit: int, score_cutoff: int = 60):
     """rapidfuzz process.extract with case-insensitive matching."""
     if not keys:
@@ -364,32 +481,164 @@ def _search_festival_beers(query: str, limit: int = 10) -> list[dict]:
     return results
 
 
-async def _search_wishlist(query: str, user_id: int, token: str | None, limit: int = 10) -> list[dict]:
-    if not token:
-        return []
+_ZONE_NAME_RE = re.compile(r"^Area (\d+)$")
+
+
+def _festival_editable_zone_names() -> list[str]:
+    """Every distinct "Area N" location present in the currently-loaded
+    festival's beer data, sorted numerically (not alphabetically - "Area
+    10" must sort after "Area 2", not before it). However many of these
+    exist (MBCC has 4; a different festival might have just one, or a
+    dozen) are the main, user-editable zones on the festival map - see
+    festival_map.py's own docstring for why it doesn't hardcode this
+    itself."""
+    names = {
+        (b.get("location") or "").strip()
+        for b in _festival_beers
+        if _ZONE_NAME_RE.match((b.get("location") or "").strip())
+    }
+    return sorted(names, key=lambda n: int(_ZONE_NAME_RE.match(n).group(1)))
+
+
+def _festival_brewery_zone_map() -> dict[str, str]:
+    """{brewery: "Area N"} for every festival brewery whose location is one
+    of the editable zones - location is already forward-filled to brewery
+    level by bot.py's load_db(), so every beer of a brewery agrees, and the
+    first one seen is enough."""
+    zone_names = set(_festival_editable_zone_names())
+    zones: dict[str, str] = {}
+    for b in _festival_beers:
+        brewery = (b.get("brewery") or "").strip()
+        location = (b.get("location") or "").strip()
+        if brewery and location in zone_names and brewery not in zones:
+            zones[brewery] = location
+    return zones
+
+
+def _festival_bonus_categories() -> dict[str, list[str]]:
+    """{category_name: [breweries]} for every festival location that ISN'T
+    one of the "Area N" editable zones - shown read-only, at the end of the
+    map (MBCC's "Lagerland" is just one example of this, not a special
+    case - a different festival's own bonus category is picked up the same
+    way, by name, with no code change needed)."""
+    editable = set(_festival_editable_zone_names())
+    by_category: dict[str, set[str]] = {}
+    for b in _festival_beers:
+        brewery = (b.get("brewery") or "").strip()
+        location = (b.get("location") or "").strip()
+        if brewery and location and location not in editable:
+            by_category.setdefault(location, set()).add(brewery)
+    return {name: sorted(breweries) for name, breweries in sorted(by_category.items())}
+
+
+async def _fetch_all_wishlist(token: str) -> list[dict]:
+    """Pages through get_my_wishlist up to _WISHLIST_MAX_PAGES (same
+    "short page = done" pattern as _fetch_all_friends) - proven live
+    necessary: a single 50-item page silently missed a real wishlist beer
+    that turned out to be past position 50, showing no wishlist marker for
+    it at all despite genuinely being on the list."""
+    beers: list[dict] = []
+    offset = 0
+    for _ in range(_WISHLIST_MAX_PAGES):
+        page = await untappd_mcp.get_my_wishlist(token, limit=50, offset=offset)
+        if not page:
+            break
+        beers.extend(page)
+        if len(page) < 50:
+            break
+        offset += 50
+    return beers
+
+
+async def _get_wishlist_beers(user_id: int, token: str) -> list[dict]:
+    """Shared cache (see _wishlist_cache/_WISHLIST_CACHE_TTL) behind both
+    the checkin webapp's own wishlist-priority search and the lens
+    endpoint's "already on my wishlist" marker - one full get_my_wishlist
+    walk (see _fetch_all_wishlist) serves both for up to 15 minutes, not
+    one per beer."""
     cache = _wishlist_cache.get(user_id)
     now = time.time()
     if cache is None or now - cache["fetched_at"] > _WISHLIST_CACHE_TTL:
         try:
-            cache = {"data": await untappd_mcp.get_my_wishlist(token), "fetched_at": now}
+            cache = {"data": await _fetch_all_wishlist(token), "fetched_at": now}
         except untappd_mcp.UntappdMCPError as e:
             logger.warning("get_my_wishlist failed: %s", e)
             cache = {"data": (cache or {}).get("data") or [], "fetched_at": now}
         _wishlist_cache[user_id] = cache
+    return cache["data"] or []
 
-    beers = cache["data"] or []
+
+async def _fetch_wishlist_sheet_rows(csv_url: str) -> list[dict]:
+    """Fetches and parses a published Google Sheet CSV URL (see
+    WISHLIST_SHEET_CSV_URL's own comment) - a plain GET, no Google auth.
+    "Посилання" (parsed into a bid) is required; "Назва"/"Броварня"/"Стиль"/
+    "ABV" are carried along for display in the webapp's merged wishlist tab
+    but otherwise unused. Rows with no parseable beer link are skipped
+    rather than failing the whole fetch, since this is someone's
+    manually-maintained spreadsheet, not a validated data source."""
+    if not csv_url:
+        return []
+    async with aiohttp.ClientSession() as session:
+        async with session.get(csv_url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            resp.raise_for_status()
+            text = await resp.text()
+    rows: list[dict] = []
+    for row in csv.DictReader(io.StringIO(text)):
+        url = (row.get("Посилання") or "").strip()
+        m = _BEER_URL_ID_RE.search(url)
+        if not m:
+            continue
+        rows.append({
+            "bid": int(m.group(1)),
+            "name": (row.get("Назва") or "").strip() or None,
+            "brewery": (row.get("Броварня") or "").strip() or None,
+            "style": (row.get("Стиль") or "").strip() or None,
+            "abv": (row.get("ABV") or "").strip() or None,
+        })
+    return rows
+
+
+async def _get_wishlist_sheet_rows(user_id: int) -> list[dict]:
+    """Cached per-user (see _WISHLIST_SHEET_CACHE_TTL), same pattern as
+    _wishlist_cache - each user's own registered sheet (see
+    wishlist_sheets.py, set via /wishlist_sheet), falling back to
+    WISHLIST_SHEET_CSV_URL only for AUTO_TOAST_OWNER_ID and only if they
+    haven't registered their own yet (see that env var's own comment)."""
+    cache = _wishlist_sheet_cache.get(user_id)
+    now = time.time()
+    if cache is None or now - cache["fetched_at"] > _WISHLIST_SHEET_CACHE_TTL:
+        csv_url = await wishlist_sheets.get_csv_url(user_id)
+        if not csv_url and str(user_id) == AUTO_TOAST_OWNER_ID:
+            csv_url = WISHLIST_SHEET_CSV_URL
+        try:
+            rows = await _fetch_wishlist_sheet_rows(csv_url)
+            cache = {"rows": rows, "fetched_at": now}
+        except (aiohttp.ClientError, asyncio.TimeoutError, csv.Error) as e:
+            logger.warning("wishlist sheet fetch failed for user %s: %s", user_id, e)
+            cache = {"rows": (cache or {}).get("rows") or [], "fetched_at": now}
+        _wishlist_sheet_cache[user_id] = cache
+    return cache["rows"]
+
+
+async def _search_wishlist(query: str, user_id: int, limit: int = 10) -> list[dict]:
+    """Powers the search screen's "Вішліст" priority checkbox - the user's
+    own list (native items + Google Sheet rows, see _get_my_list_items),
+    not Untappd's classic Wishlist (that one still backs the lens's 🔖
+    marker via _get_wishlist_beers, untouched here). No `token` needed:
+    this list lives entirely in our own storage."""
+    beers = await _get_my_list_items(user_id)
     if not beers:
         return []
-    keys = [f"{(b.get('brewery') or {}).get('name', '')} {b.get('beerName', '')}" for b in beers]
+    keys = [f"{b.get('brewery') or ''} {b.get('name') or ''}" for b in beers]
     hits = _fuzzy_match(query, keys, limit)
     return [
         {
-            "beerId": (b := beers[idx]).get("bid"),
-            "name": b.get("beerName"),
-            "brewery": (b.get("brewery") or {}).get("name"),
+            "beerId": (b := beers[idx]).get("beerId"),
+            "name": b.get("name"),
+            "brewery": b.get("brewery"),
             "style": b.get("style"),
-            "abv": b.get("abv"), "ibu": b.get("ibu"),
-            "rating": b.get("globalRating"), "ratingCount": b.get("ratingCount"),
+            "abv": b.get("abv"), "ibu": None,
+            "rating": None, "ratingCount": None,
             "labelUrl": b.get("labelUrl"),
             "sessions": [],
             "source": "wishlist",
@@ -503,7 +752,7 @@ async def handle_search(request: web.Request) -> web.Response:
     if festival_priority:
         _extend(_search_festival_beers(query))
     if wishlist_priority:
-        _extend(await _search_wishlist(query, user_id, token))
+        _extend(await _search_wishlist(query, user_id))
 
     if token:
         global_results = []
@@ -552,6 +801,8 @@ async def handle_search(request: web.Request) -> web.Response:
 
     beers = ordered[:20]
     await _annotate_had_it(beers, user_id, token)
+    await _annotate_my_list(beers, user_id)
+    await _annotate_queue_status(beers, user_id)
     return web.json_response({"beers": beers})
 
 
@@ -821,6 +1072,53 @@ async def handle_festival_meta(request: web.Request) -> web.Response:
     })
 
 
+async def handle_festival_brewery(request: web.Request) -> web.Response:
+    """Full beer list for one brewery, personally annotated with had-it -
+    the "drill in" view opened by tapping a brewery pill on the festival
+    map. Uses had_it_index's already-synced local data (like
+    handle_festival_session) rather than _annotate_had_it's live,
+    quota-capped Untappd lookups - a brewery can have plenty of beers and
+    this screen has no reason to cost quota just to show its own history."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    brewery = (body.get("brewery") or "").strip()
+    if not brewery:
+        return _json_error("invalid_brewery")
+
+    candidates = [b for b in _festival_beers if (b.get("brewery") or "").strip() == brewery]
+
+    beers = []
+    for b in candidates:
+        bid = _int_beer_id(b)
+        if bid is None:
+            continue
+        beers.append({
+            "beerId": bid,
+            "name": b.get("name"),
+            "brewery": b.get("brewery"),
+            "style": b.get("style"),
+            "sessions": _sessions_for(b.get("id")),
+        })
+
+    for beer in beers:
+        result = await had_it_index.lookup_had_it(user_id, beer["beerId"])
+        if result:
+            beer["hadIt"] = result.get("hadIt", False)
+            beer["userRating"] = result.get("userRating")
+
+    await _annotate_queue_status(beers, user_id)
+    return web.json_response({"brewery": brewery, "beers": beers})
+
+
 async def handle_festival_session(request: web.Request) -> web.Response:
     """Full beer list for one session, personally annotated with had-it -
     the "drill in" view from the stats screen. Optional `query` narrows it
@@ -871,6 +1169,7 @@ async def handle_festival_session(request: web.Request) -> web.Response:
             beer["hadIt"] = result.get("hadIt", False)
             beer["userRating"] = result.get("userRating")
 
+    await _annotate_queue_status(beers, user_id)
     beers.sort(key=lambda b: 1 if b.get("hadIt") else 0)
     return web.json_response({"beers": beers})
 
@@ -898,21 +1197,140 @@ async def handle_badges_get(request: web.Request) -> web.Response:
     # personalUrl (untappd.com/user/{username}/badges/{user_badge_id}) is
     # the real per-earned-instance page - only known once badge_index.py has
     # actually seen this exact badge in the owner's check-in history (see
-    # its own docstring for why there's no way to look this up on demand).
-    # Falls back to the catalog's generic badges.untappd.com page client-side
-    # when absent - see app.js's renderBadgeDetail.
+    # its own docstring for why there's no way to look this up on demand),
+    # and only used when it matches the level actually shown (see below,
+    # right after the level correction it depends on). Falls back to the
+    # catalog's generic badges.untappd.com page client-side when absent -
+    # see app.js's renderBadgeDetail.
+    #
+    # badge_index.py's level is also the source of GROUND TRUTH for the
+    # level itself: compute_progress only ever *estimates* a level from our
+    # own style/country catalog counting had_it_index's beers, which can
+    # undercount if that catalog's matching is ever imperfect (confirmed to
+    # happen at least once this session already). badge_index.py's level
+    # comes straight from Untappd's own check-in "badges" array, so when
+    # it's HIGHER than our estimate, it wins - see badge_stats.level_floor's
+    # own comment on why the corrected row shows pct=0 rather than a
+    # fabricated fraction. The reverse can also happen though: badge_index's
+    # capture depends on having actually fetched a check-in carrying that
+    # exact "(Level N)" badge, so it can lag BEHIND compute_progress's own
+    # estimate too - that's exactly when personalUrl must NOT be used.
     username = (profile or {}).get("username")
     if username:
         earned = await badge_index.get_all(user_id)
         for row in rows:
-            user_badge_id = earned.get(row["name"])
-            if user_badge_id:
+            entry = earned.get(row["name"])
+            if not entry:
+                continue
+            confirmed_level = entry.get("level")
+            if row["levels"] <= 1:
+                # Single-tier badge - any recorded instance at all confirms
+                # it's earned, regardless of confirmed_level (always None
+                # for these - there's no "(Level N)" suffix to parse).
+                if not row["done"]:
+                    row["level"] = 1
+                    row["pct"] = 100
+                    row["done"] = True
+            elif confirmed_level is not None and confirmed_level > row["level"]:
+                level_start, next_threshold = badge_stats.level_floor(
+                    row["countPerLevel"], row["levels"], confirmed_level, row["firstLevelCount"],
+                )
+                row["level"] = confirmed_level
+                row["levelLabel"] = f"рівень {confirmed_level}"
+                row["current"] = level_start
+                row["nextThreshold"] = next_threshold
+                row["pct"] = 0
+                row["done"] = next_threshold is None
+            # personalUrl only makes sense when badge_index.py actually
+            # captured the SAME level being shown - it only records a level
+            # when it happens to see that exact "(Level N)" badge attached to
+            # a fetched check-in, which can lag behind compute_progress's own
+            # independent beer-count estimate (confirmed to happen: a badge
+            # whose count/level is already correct on-screen still linked out
+            # to an old, long-superseded level's page). A stale link is worse
+            # than the generic catalog fallback app.js already has.
+            user_badge_id = entry.get("userBadgeId")
+            if user_badge_id and (row["levels"] <= 1 or confirmed_level == row["level"]):
                 row["personalUrl"] = f"https://untappd.com/user/{username}/badges/{user_badge_id}"
     # Default order only - the Mini App re-sorts/filters this same fetched
     # list client-side (level ascending, alphabetical, search), so this is
     # just the initial "most actionable first" view, not the only one.
     rows.sort(key=lambda r: (-r["level"], -r["pct"]))
     return web.json_response({"badges": rows})
+
+
+async def handle_lens_lookup(request: web.Request) -> web.Response:
+    """Batch beer lookup for a browser userscript (see LENS_API_TOKEN's own
+    comment above): given raw {name, brewery} pairs scraped from a shop's
+    product listing, resolve each on Untappd via beer_match.resolve_beer
+    (same exact-match discipline /scan uses) and report had-it/rating/link
+    for each, plus inWishlist (the classic Untappd Wishlist) and inSheetList
+    (this app's own "Мій список" - native items added via the webapp's tab
+    PLUS a personal Google Sheet, both merged by _get_my_list_items; kept
+    the inSheetList name for backward compat with the already-shipped
+    extension/userscript, even though "sheet" is now only one of its two
+    sources) - deliberately no badge computation here, out of scope for
+    "should I buy this" browsing (unlike /scan's own use of the same
+    resolver)."""
+    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+        return _json_error("unauthorized", 401)
+
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, ValueError):
+        return _json_error("invalid_json")
+    items = body.get("items")
+    if not isinstance(items, list) or not items:
+        return _json_error("no_items")
+    items = items[:LENS_MAX_ITEMS_PER_REQUEST]
+
+    owner_id = int(AUTO_TOAST_OWNER_ID)
+    token = await user_tokens.get_token(owner_id)
+    if not token:
+        return _json_error("not_connected")
+
+    # Fetched ONCE per batch, not per item - it's the same account's
+    # wishlist for every card on the page, and _get_wishlist_beers already
+    # shares the 15-min-TTL _wishlist_cache with the checkin webapp's own
+    # wishlist-priority search, so this is usually a cache hit (0 extra
+    # quota) rather than a fresh get_my_wishlist call.
+    wishlist_beers = await _get_wishlist_beers(owner_id, token)
+    wishlist_bids = {b.get("bid") for b in wishlist_beers if b.get("bid") is not None}
+    my_list_bids = {it["beerId"] for it in await _get_my_list_items(owner_id) if it.get("beerId")}
+
+    semaphore = asyncio.Semaphore(LENS_LOOKUP_CONCURRENCY)
+
+    async def _resolve_one(item) -> dict:
+        name = (item.get("name") or "").strip() if isinstance(item, dict) else ""
+        brewery = (item.get("brewery") or "").strip() if isinstance(item, dict) else ""
+        if not name:
+            return {"matched": False, "query_name": name, "query_brewery": brewery, "candidates": []}
+        async with semaphore:
+            try:
+                # need_country=False: no badge computation here, no use for
+                # country. live_fallback=False: never call check_i_had_beer
+                # either - trust had_it_index's own (monotonically-growing)
+                # data instead. Together these make this endpoint spend NO
+                # Untappd quota at all beyond the free search_beers lookup -
+                # a handful of concurrent get_beer/check_i_had_beer calls
+                # was observed live to 429 almost every one of them, which
+                # is what was actually causing most of the "невідомо, чи
+                # пив" results, not genuinely unknown data.
+                result = await beer_match.resolve_beer(
+                    token, owner_id, name, brewery, need_country=False, live_fallback=False,
+                )
+                result["inWishlist"] = result.get("bid") in wishlist_bids
+                result["inSheetList"] = result.get("bid") in my_list_bids
+                return result
+            except untappd_mcp.UntappdMCPError as exc:
+                logger.warning("lens lookup failed for %r %r: %s", brewery, name, exc)
+                return {
+                    "matched": False, "query_name": name, "query_brewery": brewery,
+                    "candidates": [], "searchUrl": beer_match.build_search_url(brewery, name), "error": True,
+                }
+
+    results = await asyncio.gather(*(_resolve_one(it) for it in items))
+    return web.json_response({"ok": True, "results": results})
 
 
 async def handle_queue_list(request: web.Request) -> web.Response:
@@ -971,8 +1389,8 @@ async def handle_queue_add(request: web.Request) -> web.Response:
         "userId": tg_user.get("id"),
         "name": tg_user.get("first_name") or tg_user.get("username") or "?",
     }
-    item, added = await checkin_queue.add_item(body, added_by)
-    return web.json_response({"ok": True, "item": item, "added": added})
+    item, status = await checkin_queue.add_item(body, added_by)
+    return web.json_response({"ok": True, "item": item, "status": status})
 
 
 async def handle_queue_remove(request: web.Request) -> web.Response:
@@ -1010,6 +1428,162 @@ async def handle_queue_clear(request: web.Request) -> web.Response:
 
     count = await checkin_queue.hide_all(user_id)
     return web.json_response({"ok": True, "cleared": count})
+
+
+async def handle_queue_reset_personal(request: web.Request) -> web.Response:
+    """Settings-screen "forget my test check-ins" action - clears the
+    caller's own completedBy marker (see checkin_queue.reset_user) so a
+    pre-festival test check-in through the queue stops being reported as
+    "already had this at the festival", without dumping it back into their
+    active queue view. Beers they'd separately hidden on purpose are left
+    untouched."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+
+    count = await checkin_queue.reset_user(user_id)
+    return web.json_response({"ok": True, "reset": count})
+
+
+async def handle_festival_map_get(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+
+    zone_names = _festival_editable_zone_names()
+    zone_hint = _festival_brewery_zone_map()
+    known_breweries = list(zone_hint.keys())
+    zones = await festival_map.get_layout(known_breweries, zone_hint, zone_names)
+    return web.json_response({
+        "zones": zones,
+        "zoneOrder": zone_names,
+        "bonusCategories": _festival_bonus_categories(),
+    })
+
+
+async def handle_festival_map_move(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    brewery = body.get("brewery")
+    zone = body.get("zone")
+    side = body.get("side")
+    index = body.get("index")
+    if not isinstance(brewery, str) or brewery not in _festival_brewery_zone_map():
+        return _json_error("invalid_brewery")
+    if not isinstance(index, int) or index < 0:
+        return _json_error("invalid_index")
+
+    moved = await festival_map.move_brewery(brewery, zone, side, index, _festival_editable_zone_names())
+    if not moved:
+        return _json_error("invalid_zone")
+    return web.json_response({"ok": True})
+
+
+async def _get_my_list_items(user_id: int) -> list[dict]:
+    """Merges the user's own live-editable items (wishlist_items.py) with
+    their registered Google Sheet's rows (wishlist_sheets.py/
+    _get_wishlist_sheet_rows), unioned by beer id. A sheet row is dropped
+    when the same beer is already a native item - native wins on
+    duplicates, since it's the one the user can actually manage from the
+    webapp (see wishlist_items.py's own module docstring). Backs both the
+    "Мій список" tab (handle_wishlist_list) and the search screen's
+    "Вішліст" priority checkbox (_search_wishlist) - the latter switched
+    from Untappd's own classic Wishlist to this app's own list, since it's
+    the one the user actually curates here."""
+    native_items = await wishlist_items.list_items(user_id)
+    for it in native_items:
+        it["source"] = "native"
+    native_bids = {it.get("beerId") for it in native_items if it.get("beerId") is not None}
+
+    sheet_rows = await _get_wishlist_sheet_rows(user_id)
+    sheet_items = [
+        {
+            "id": None,
+            "beerId": r.get("bid"),
+            "name": r.get("name"),
+            "brewery": r.get("brewery"),
+            "style": r.get("style"),
+            "abv": r.get("abv"),
+            "labelUrl": None,
+            "source": "sheet",
+        }
+        for r in sheet_rows
+        if r.get("bid") not in native_bids
+    ]
+
+    return native_items + sheet_items
+
+
+async def handle_wishlist_list(request: web.Request) -> web.Response:
+    """The webapp's "Мій список" tab - see _get_my_list_items. Annotated
+    with hadIt/userRating (same as search - see _annotate_had_it) so an
+    already-tried beer shows its checkmark here too, and so selectBeer's
+    rating pre-fill (app.js) kicks in when checking it in again."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+    token = await _resolve_token(tg_user)
+
+    items = await _get_my_list_items(user_id)
+    # Most of this list resolves for free via the already-synced had_it_index
+    # (see _get_had_it) rather than a live call, so a much higher cap than
+    # search's quota-conscious default(5) is fine for a personal list this
+    # size - but still capped, not len(items), in case someone's imported
+    # Sheet is huge and largely outside the synced index.
+    await _annotate_had_it(items, user_id, token, limit=30)
+    await _annotate_queue_status(items, user_id)
+    return web.json_response({"items": items})
+
+
+async def handle_wishlist_add(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    beer_id = body.get("beerId")
+    if not isinstance(beer_id, int) or beer_id <= 0:
+        return _json_error("invalid_beer_id")
+
+    item, added = await wishlist_items.add_item(user_id, body)
+    return web.json_response({"ok": True, "item": item, "added": added})
+
+
+async def handle_wishlist_remove(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    item_id = body.get("id")
+    if not item_id:
+        return _json_error("invalid_id")
+
+    removed = await wishlist_items.remove_item(user_id, item_id)
+    return web.json_response({"ok": True, "removed": removed})
 
 
 async def _fetch_all_friends(token: str) -> list[dict]:
@@ -1140,6 +1714,33 @@ async def handle_comment_watch_toggle(request: web.Request) -> web.Response:
     except json.JSONDecodeError:
         return _json_error("invalid_json")
     await comment_watch.set_enabled(user_id, bool(body.get("enabled")))
+    return web.json_response({"ok": True})
+
+
+async def handle_festival_mode_get(request: web.Request) -> web.Response:
+    """Pauses had_it/venue backfill + auto-toast for the caller (see
+    festival_mode.py's own module docstring) - e.g. for the duration of an
+    actual festival, to keep quota entirely for live search/check-ins."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+    enabled = await festival_mode.is_enabled(user_id)
+    return web.json_response({"enabled": enabled})
+
+
+async def handle_festival_mode_toggle(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+    await festival_mode.set_enabled(user_id, bool(body.get("enabled")))
     return web.json_response({"ok": True})
 
 
@@ -1304,11 +1905,18 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/submit", handle_submit)
     app.router.add_post("/api/checkin/festival/stats", handle_festival_stats)
     app.router.add_post("/api/checkin/festival/session", handle_festival_session)
+    app.router.add_post("/api/checkin/festival/brewery", handle_festival_brewery)
     app.router.add_post("/api/checkin/festival/meta", handle_festival_meta)
     app.router.add_post("/api/checkin/queue/list", handle_queue_list)
     app.router.add_post("/api/checkin/queue/add", handle_queue_add)
     app.router.add_post("/api/checkin/queue/remove", handle_queue_remove)
     app.router.add_post("/api/checkin/queue/clear", handle_queue_clear)
+    app.router.add_post("/api/checkin/queue/reset_personal", handle_queue_reset_personal)
+    app.router.add_post("/api/checkin/festival_map/get", handle_festival_map_get)
+    app.router.add_post("/api/checkin/festival_map/move", handle_festival_map_move)
+    app.router.add_post("/api/checkin/wishlist/list", handle_wishlist_list)
+    app.router.add_post("/api/checkin/wishlist/add", handle_wishlist_add)
+    app.router.add_post("/api/checkin/wishlist/remove", handle_wishlist_remove)
     app.router.add_post("/api/checkin/autotoast/friends", handle_autotoast_friends)
     app.router.add_post("/api/checkin/autotoast/toggle", handle_autotoast_toggle)
     app.router.add_post("/api/checkin/autotoast/set_targets", handle_autotoast_set_targets)
@@ -1320,9 +1928,12 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/autotoast/status", handle_autotoast_status)
     app.router.add_post("/api/checkin/comment_watch/get", handle_comment_watch_get)
     app.router.add_post("/api/checkin/comment_watch/toggle", handle_comment_watch_toggle)
+    app.router.add_post("/api/checkin/festival_mode/get", handle_festival_mode_get)
+    app.router.add_post("/api/checkin/festival_mode/toggle", handle_festival_mode_toggle)
     app.router.add_post("/api/checkin/events/get", handle_events_get)
     app.router.add_post("/api/checkin/events/reply", handle_events_reply)
     app.router.add_post("/api/checkin/badges/get", handle_badges_get)
+    app.router.add_post("/api/lens/lookup", handle_lens_lookup)
     return app
 
 
@@ -1386,13 +1997,17 @@ async def start_webapp_server(
     if data_dir:
         user_tokens.init(data_dir)
         checkin_queue.init(data_dir)
+        festival_map.init(data_dir)
         had_it_index.init(data_dir)
         venue_index.init(data_dir)
         auto_toast.init(data_dir)
         festival_watch.init(data_dir)
         comment_watch.init(data_dir)
+        festival_mode.init(data_dir)
         event_log.init(data_dir)
         badge_index.init(data_dir)
+        wishlist_sheets.init(data_dir)
+        wishlist_items.init(data_dir)
     port = int(os.environ.get("PORT", 8080))
     aio_app = _build_app()
     runner = web.AppRunner(aio_app)
@@ -1454,22 +2069,39 @@ def _start_had_it_backfill() -> None:
 
 
 async def _had_it_backfill_loop() -> None:
-    """Slowly paginates each connected user's full Untappd check-in history
-    into had_it_index.json, a handful of pages at a time, so the had-it
-    badge eventually covers a user's entire history - not just what a live
-    per-search check happens to ask about. Round-robins fairly across
-    multiple connected users (see had_it_index.next_turn) and backs off
+    """Paginates each connected user's Untappd check-in history into
+    had_it_index.json, a handful of pages at a time, so the had-it badge
+    eventually covers a user's entire history - not just what a live
+    per-search check happens to ask about. Two kinds of pass, picked by
+    had_it_index.next_turn: a full walk (initial, then only every
+    HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS) and a much cheaper daily
+    "quick" recheck of just the first HAD_IT_QUICK_RECHECK_LIMIT beers
+    (catches new check-ins/rating edits made in the real Untappd app,
+    which always land at the front of get_user_beers' recency-sorted
+    list - see next_turn's own docstring for why both passes still exist).
+    Round-robins fairly across multiple connected users and backs off
     whenever the shared quota is getting tight, so live festival search/
     check-in traffic is never starved by this background job."""
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:
+            if not _in_backfill_window():
+                await asyncio.sleep(HAD_IT_BACKFILL_IDLE_SLEEP_SECONDS)
+                continue
             user_ids = await user_tokens.list_user_ids()
-            turn = await had_it_index.next_turn(user_ids, HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS) if user_ids else None
+            turn = (
+                await had_it_index.next_turn(
+                    user_ids, HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS, HAD_IT_QUICK_RECHECK_COOLDOWN_SECONDS
+                )
+                if user_ids else None
+            )
             if turn is None:
                 await asyncio.sleep(HAD_IT_BACKFILL_IDLE_SLEEP_SECONDS)
                 continue
-            user_id, offset = turn
+            user_id, offset, kind = turn
+            if await festival_mode.is_enabled(user_id):
+                await asyncio.sleep(HAD_IT_BACKFILL_INTERVAL_SECONDS)
+                continue
             profile = await user_tokens.get_profile(user_id)
             if not profile or not profile.get("token") or not profile.get("username"):
                 await asyncio.sleep(HAD_IT_BACKFILL_INTERVAL_SECONDS)
@@ -1486,10 +2118,16 @@ async def _had_it_backfill_loop() -> None:
                 limit=HAD_IT_BACKFILL_PAGE_SIZE, offset=offset,
             )  # no start/end date - the unfiltered walk verified stable, unlike date-filtering
             items = (page.get("beers") or {}).get("items", [])
-            await had_it_index.record_page(
-                user_id, profile["username"], items,
-                offset + len(items), page.get("total_count", 0),
-            )
+            if kind == "quick":
+                await had_it_index.record_quick_page(
+                    user_id, profile["username"], items,
+                    offset + len(items), HAD_IT_QUICK_RECHECK_LIMIT,
+                )
+            else:
+                await had_it_index.record_page(
+                    user_id, profile["username"], items,
+                    offset + len(items), page.get("total_count", 0),
+                )
         except asyncio.CancelledError:
             raise
         except untappd_mcp.UntappdRateLimited:
@@ -1497,11 +2135,11 @@ async def _had_it_backfill_loop() -> None:
         except untappd_mcp.UntappdMalformedResponse as e:
             # A specific beer/brewery name the upstream server itself
             # serializes into broken JSON - retrying the identical offset
-            # would fail identically forever and wedge this user's backfill
-            # permanently. Skip past it (best-effort - up to one page's
-            # worth of beers may be missed) rather than get stuck.
-            logger.warning("had_it backfill: skipping unparseable page for user %s at offset %s: %s", user_id, offset, e)
-            await had_it_index.skip_page(user_id, offset + HAD_IT_BACKFILL_PAGE_SIZE, str(e))
+            # would fail identically forever and wedge this pass for this
+            # user. Skip past it (best-effort - up to one page's worth of
+            # beers may be missed) rather than get stuck.
+            logger.warning("had_it backfill: skipping unparseable %s page for user %s at offset %s: %s", kind, user_id, offset, e)
+            await had_it_index.skip_page(user_id, offset + HAD_IT_BACKFILL_PAGE_SIZE, str(e), kind=kind)
         except untappd_mcp.UntappdMCPError as e:
             logger.warning("had_it backfill tick failed: %s", e)
         except Exception:
@@ -1517,21 +2155,34 @@ def _start_venue_backfill() -> None:
 
 
 async def _venue_backfill_loop() -> None:
-    """Slowly paginates each connected user's full Untappd check-in history
-    into venue_index.json (checkin_id-based paging via get_user_checkins),
-    so "unique venue mode" can confidently tell a brand-new venue from one
+    """Paginates each connected user's Untappd check-in history into
+    venue_index.json (checkin_id-based paging via get_user_checkins), so
+    "unique venue mode" can confidently tell a brand-new venue from one
     already visited, not just the ~100-250-checkin approximation
-    get_my_recent_venues gives. Mirrors _had_it_backfill_loop's pacing/
-    resilience shape exactly, as its own independent quota consumer."""
+    get_my_recent_venues gives - and so badge_index.py's ground-truth badge
+    levels (see handle_badges_get) stay reasonably fresh. Same two-kind
+    full/quick split as _had_it_backfill_loop (see venue_index.next_turn),
+    as its own independent quota consumer."""
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:
+            if not _in_backfill_window():
+                await asyncio.sleep(VENUE_BACKFILL_IDLE_SLEEP_SECONDS)
+                continue
             user_ids = await user_tokens.list_user_ids()
-            turn = await venue_index.next_turn(user_ids, VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS) if user_ids else None
+            turn = (
+                await venue_index.next_turn(
+                    user_ids, VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS, VENUE_QUICK_RECHECK_COOLDOWN_SECONDS
+                )
+                if user_ids else None
+            )
             if turn is None:
                 await asyncio.sleep(VENUE_BACKFILL_IDLE_SLEEP_SECONDS)
                 continue
-            user_id, max_id = turn
+            user_id, max_id, kind = turn
+            if await festival_mode.is_enabled(user_id):
+                await asyncio.sleep(VENUE_BACKFILL_INTERVAL_SECONDS)
+                continue
             profile = await user_tokens.get_profile(user_id)
             if not profile or not profile.get("token") or not profile.get("username"):
                 await asyncio.sleep(VENUE_BACKFILL_INTERVAL_SECONDS)
@@ -1549,10 +2200,16 @@ async def _venue_backfill_loop() -> None:
             )
             items = (page.get("checkins") or {}).get("items", [])
             next_max_id = (page.get("pagination") or {}).get("max_id")
-            await venue_index.record_page(
-                user_id, profile["username"], items,
-                next_max_id, len(items), VENUE_BACKFILL_PAGE_SIZE,
-            )
+            if kind == "quick":
+                await venue_index.record_quick_page(
+                    user_id, profile["username"], items,
+                    next_max_id, len(items), VENUE_QUICK_RECHECK_LIMIT,
+                )
+            else:
+                await venue_index.record_page(
+                    user_id, profile["username"], items,
+                    next_max_id, len(items), VENUE_BACKFILL_PAGE_SIZE,
+                )
             # Backfills style/brewery/country for beers had_it_index's own
             # offset-paginated walk keeps missing on active accounts (see
             # had_it_index.enrich_from_checkin's docstring for the confirmed
@@ -1723,6 +2380,13 @@ async def _auto_toast_loop() -> None:
             if turn is None:
                 await asyncio.sleep(AUTO_TOAST_IDLE_SLEEP_SECONDS)
                 continue
+            if await festival_mode.is_enabled(turn.owner_id):
+                # peek doesn't auto-advance (see the comment above) - a
+                # paused owner left un-advanced would just be re-peeked
+                # forever, wedging every other owner behind them.
+                await auto_toast.advance_owner_turn()
+                await asyncio.sleep(AUTO_TOAST_INTERVAL_SECONDS)
+                continue
             profile = await user_tokens.get_profile(turn.owner_id)
             if not profile or not profile.get("token"):
                 # A genuinely unusable owner (not a transient condition) -
@@ -1805,12 +2469,12 @@ async def _auto_toast_loop() -> None:
                 try:
                     await untappd_mcp.toast_checkin(token, checkin_id)
                     toasted_by_username[username] = toasted_by_username.get(username, 0) + 1
-                    beer_name = (item.get("beer") or {}).get("beer_name") or "?"
-                    beer_id = (item.get("beer") or {}).get("bid")
-                    await event_log.add_event(
-                        turn.owner_id, "toast", f"🍻 {username}: {beer_name}",
-                        beer_id=beer_id, checkin_id=checkin_id, username=username,
-                    )
+                    # Deliberately NOT logged to event_log - a routine
+                    # auto-toasted check-in is exactly the "just a friend's
+                    # regular check-in" noise the "Останні події" screen is
+                    # meant to rise above (per owner feedback); "comment"
+                    # and "novelty" events stay logged since those are
+                    # actually worth surfacing.
                 except untappd_mcp.UntappdRateLimited:
                     rate_limited = True
                     break  # abandon the rest of this page, retry it next tick (see below)

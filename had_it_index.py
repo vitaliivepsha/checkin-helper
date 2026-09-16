@@ -63,6 +63,10 @@ def _entry(user_id: int) -> dict:
             "last_synced_at": None,
             "last_fetch_at": None,
             "last_error": None,
+            "quick_offset": 0,
+            "last_quick_synced_at": None,
+            "full_walk_seen_bids": [],
+            "full_walk_had_gap": False,
         }
     return data[key]
 
@@ -129,40 +133,69 @@ async def enrich_from_checkin(user_id: int, beer_id, style: str | None, brewery_
             _save()
 
 
+def _merge_beers(entry: dict, items: list[dict]) -> None:
+    """Shared by record_page (full walk) and record_quick_page (daily
+    top-N recheck) - additive only, never removes a previously-known beer,
+    so a partial/incomplete pass can't regress a known-true answer back to
+    unknown."""
+    for it in items:
+        beer = it.get("beer") or {}
+        brewery = it.get("brewery") or {}
+        bid = beer.get("bid")
+        if bid is None:
+            continue
+        record = entry["beers"].setdefault(str(bid), {})
+        record["rating"] = it.get("rating_score")
+        # Style/brewery/country - added later than `rating` (see
+        # README.md) - captured for free from this same already-paid-for
+        # get_user_beers page, never a dedicated per-beer lookup. Only
+        # overwrite when actually present, so a page that's somehow
+        # missing one of these (shouldn't happen) can't erase what an
+        # earlier pass already recorded.
+        style = beer.get("beer_style")
+        if style:
+            record["style"] = style
+        brewery_name = brewery.get("brewery_name")
+        if brewery_name:
+            record["brewery"] = brewery_name
+        country = brewery.get("country_name")
+        if country:
+            record["country"] = country
+
+
 async def record_page(user_id: int, username: str, items: list[dict], offset_after: int, total_count: int) -> None:
-    """Merges one fetched page into the accumulated set. Never removes a
-    previously-known beer, so a partial/incomplete resync can't regress a
-    known-true answer back to unknown. Advances next_offset by the actual
-    number of items received (not the requested page size) - a transient
-    short page (observed to happen occasionally, unrelated to reaching the
-    real end) just means slower progress next tick, not a data gap, since
-    the next fetch resumes exactly where this one left off."""
+    """Merges one fetched page into the accumulated set (full-walk state -
+    see next_turn). Advances next_offset by the actual number of items
+    received (not the requested page size) - a transient short page
+    (observed to happen occasionally, unrelated to reaching the real end)
+    just means slower progress next tick, not a data gap, since the next
+    fetch resumes exactly where this one left off.
+
+    Tracks every bid seen this pass in full_walk_seen_bids so that, once
+    the pass reaches the end, any beer in `beers` NOT seen this time can be
+    dropped - Untappd occasionally merges one beer's bid into another's, and
+    since every merge everywhere else is additive-only (never removes), that
+    kind of stale bid would otherwise linger forever. Only does this
+    cleanup when full_walk_seen_bids is a list (not None) AND no page was
+    skipped this pass (full_walk_had_gap) - a pass with a skipped page, or
+    one that started before this tracking existed (an already-in-flight
+    walk from before this feature shipped - full_walk_seen_bids is simply
+    absent for those), hasn't actually seen everything, so treating its
+    gaps as "gone" would wrongly delete real data. Also skipped when
+    total_count is falsy - never trust a zero/missing total enough to wipe
+    an existing beers dict."""
     async with _lock:
         entry = _entry(user_id)
         entry["username"] = username
-        for it in items:
-            beer = it.get("beer") or {}
-            brewery = it.get("brewery") or {}
-            bid = beer.get("bid")
-            if bid is None:
-                continue
-            record = entry["beers"].setdefault(str(bid), {})
-            record["rating"] = it.get("rating_score")
-            # Style/brewery/country - added later than `rating` (see
-            # README.md) - captured for free from this same already-paid-for
-            # get_user_beers page, never a dedicated per-beer lookup. Only
-            # overwrite when actually present, so a page that's somehow
-            # missing one of these (shouldn't happen) can't erase what an
-            # earlier pass already recorded.
-            style = beer.get("beer_style")
-            if style:
-                record["style"] = style
-            brewery_name = brewery.get("brewery_name")
-            if brewery_name:
-                record["brewery"] = brewery_name
-            country = brewery.get("country_name")
-            if country:
-                record["country"] = country
+        _merge_beers(entry, items)
+        seen = entry.get("full_walk_seen_bids")
+        if seen is not None:
+            seen_set = set(seen)
+            for it in items:
+                bid = (it.get("beer") or {}).get("bid")
+                if bid is not None:
+                    seen_set.add(str(bid))
+            entry["full_walk_seen_bids"] = list(seen_set)
         entry["next_offset"] = offset_after
         entry["total_count"] = total_count
         entry["last_fetch_at"] = time.time()
@@ -170,21 +203,56 @@ async def record_page(user_id: int, username: str, items: list[dict], offset_aft
         if len(items) == 0 or (total_count is not None and offset_after >= total_count):
             entry["fully_synced"] = True
             entry["last_synced_at"] = time.time()
+            if seen is not None and total_count and not entry.get("full_walk_had_gap"):
+                stale_bids = set(entry["beers"].keys()) - set(entry["full_walk_seen_bids"])
+                for bid in stale_bids:
+                    del entry["beers"][bid]
+            entry["full_walk_seen_bids"] = []
+            entry["full_walk_had_gap"] = False
         _save()
 
 
-async def skip_page(user_id: int, offset_after: int, error: str) -> None:
+async def record_quick_page(user_id: int, username: str, items: list[dict], offset_after: int, quick_limit: int) -> None:
+    """Merges one page of the cheap daily top-N recheck (see next_turn's
+    "quick" branch) - same merge as record_page, but tracks its own
+    quick_offset cursor and never touches next_offset/total_count/
+    fully_synced, which stay reserved for the (now monthly) full walk.
+    A short page here means this account's whole history is smaller than
+    quick_limit - already fully covered, same as reaching quick_limit."""
+    async with _lock:
+        entry = _entry(user_id)
+        entry["username"] = username
+        _merge_beers(entry, items)
+        entry["last_fetch_at"] = time.time()
+        entry["last_error"] = None
+        if len(items) == 0 or offset_after >= quick_limit:
+            entry["quick_offset"] = 0
+            entry["last_quick_synced_at"] = time.time()
+        else:
+            entry["quick_offset"] = offset_after
+        _save()
+
+
+async def skip_page(user_id: int, offset_after: int, error: str, kind: str = "full") -> None:
     """Advances past a page that couldn't be parsed at all (observed cause:
     a specific beer/brewery name the upstream server itself serializes into
     genuinely broken JSON - no client-side parsing fix can repair that).
     Deliberately does NOT touch total_count/fully_synced/beers, unlike
-    record_page - this is "we don't know what was here", not a real result
-    page, so it must never be mistaken for reaching the true end. Without
-    this, a single poisoned page would retry the identical offset forever
-    and wedge the whole backfill for that user."""
+    record_page/record_quick_page - this is "we don't know what was here",
+    not a real result page, so it must never be mistaken for reaching the
+    true end. Without this, a single poisoned page would retry the
+    identical offset forever and wedge that pass for that user. `kind`
+    picks which cursor ("full"'s next_offset or "quick"'s quick_offset) to
+    advance, matching whichever pass hit the bad page. A "full" skip also
+    flags full_walk_had_gap - see record_page's own comment on why that
+    flag blocks this pass's stale-bid cleanup."""
     async with _lock:
         entry = _entry(user_id)
-        entry["next_offset"] = offset_after
+        if kind == "quick":
+            entry["quick_offset"] = offset_after
+        else:
+            entry["next_offset"] = offset_after
+            entry["full_walk_had_gap"] = True
         entry["last_fetch_at"] = time.time()
         entry["last_error"] = error
         _save()
@@ -242,10 +310,40 @@ async def get_all_beers(user_id: int) -> dict:
 _rotation_cursor = 0
 
 
-async def next_turn(user_ids: list[int], resync_cooldown_seconds: float) -> tuple[int, int] | None:
+async def next_turn(
+    user_ids: list[int], full_resync_cooldown_seconds: float, quick_recheck_cooldown_seconds: float
+) -> tuple[int, int, str] | None:
     """Round-robin entry point for the backfill loop. Advances the rotation
     cursor on every call (even when nobody turns out to be eligible), so one
-    problem user can never wedge the rotation and starve everyone else."""
+    problem user can never wedge the rotation and starve everyone else.
+
+    Per user, in priority order: (1) an initial/in-progress full walk always
+    continues; (2) once fully synced, a full walk restarts (offset reset to
+    0) after full_resync_cooldown_seconds - the only way to catch anything a
+    quick recheck can't (a skipped/malformed page, data backfilled late, or
+    a bid Untappd itself merged away - see record_page's stale-bid cleanup);
+    (3) otherwise a cheap top-N "quick" recheck runs (continuing mid-cycle,
+    or starting a new one after quick_recheck_cooldown_seconds) - catches
+    new check-ins/rating edits made in the real Untappd app, which always
+    land at the front of get_user_beers' recency-sorted list (a check-in
+    made *through this bot* is already recorded instantly via
+    record_checkin and needs neither pass).
+
+    Tier 1 has one carve-out: once this user has completed a full walk at
+    least once before (last_synced_at is set - true for a resync, false for
+    the very first walk), an overdue quick recheck still gets to interleave
+    in rather than being locked out for the resync's entire, potentially
+    week-plus duration on a large account - confirmed to otherwise starve
+    had-it freshness (and, via the same pattern in venue_index.py,
+    badge_index.py's badge levels) for that whole stretch, every single
+    resync cycle. Doesn't touch next_offset or the full walk's own
+    full_walk_seen_bids/full_walk_had_gap tracking - record_quick_page never
+    writes those fields, so the full walk's own pagination and stale-bid
+    detection stay exactly as gapless as before, just spread across more
+    wall-clock time. A first-ever walk skips this carve-out: its own
+    newest-first pages already cover the same ground a quick recheck would,
+    so interleaving would just spend quota twice for zero freshness
+    benefit."""
     global _rotation_cursor
     if not user_ids:
         return None
@@ -256,19 +354,34 @@ async def next_turn(user_ids: list[int], resync_cooldown_seconds: float) -> tupl
             idx = (_rotation_cursor + i) % n
             user_id = user_ids[idx]
             entry = _entry(user_id)
-            eligible = not entry.get("fully_synced")
-            due_for_resync = False
-            if not eligible:
-                last_synced = entry.get("last_synced_at") or 0
-                if now - last_synced > resync_cooldown_seconds:
-                    eligible = True
-                    due_for_resync = True
-            if eligible:
+
+            last_synced = entry.get("last_synced_at") or 0
+            has_baseline = last_synced > 0
+            quick_offset = entry.get("quick_offset", 0)
+            last_quick_synced = entry.get("last_quick_synced_at") or 0
+            quick_due = quick_offset > 0 or now - last_quick_synced > quick_recheck_cooldown_seconds
+
+            if not entry.get("fully_synced"):
+                if has_baseline and quick_due:
+                    _rotation_cursor = (idx + 1) % n
+                    return user_id, quick_offset, "quick"
                 _rotation_cursor = (idx + 1) % n
-                if due_for_resync:
-                    entry["next_offset"] = 0
-                    entry["fully_synced"] = False
-                    _save()
-                return user_id, entry["next_offset"]
+                return user_id, entry["next_offset"], "full"
+
+            if now - last_synced > full_resync_cooldown_seconds:
+                entry["next_offset"] = 0
+                entry["fully_synced"] = False
+                # Fresh pass starting now - see record_page's own comment
+                # on why stale-bid cleanup only ever applies to a pass that
+                # tracked every bid it saw from offset 0 onward.
+                entry["full_walk_seen_bids"] = []
+                entry["full_walk_had_gap"] = False
+                _save()
+                _rotation_cursor = (idx + 1) % n
+                return user_id, entry["next_offset"], "full"
+
+            if quick_due:
+                _rotation_cursor = (idx + 1) % n
+                return user_id, quick_offset, "quick"
         _rotation_cursor = (_rotation_cursor + 1) % n
         return None

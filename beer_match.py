@@ -1,0 +1,953 @@
+"""Shared "identify one beer by name/brewery on Untappd" logic - used by
+both bot.py's /scan (a Claude-vision-extracted name from a photo) and
+webapp_server.py's /api/lens/lookup (a browser userscript's page-scraped
+name), so the exact-match discipline lives in exactly one place instead of
+being duplicated (and potentially drifting) between the two callers.
+
+Kept as its own module rather than living in bot.py: bot.py imports and
+starts webapp_server.py at runtime (see bot.py's post_init), so
+webapp_server.py importing back from bot.py would be circular.
+"""
+
+import logging
+import re
+from urllib.parse import quote
+
+import had_it_index
+import untappd_mcp
+
+logger = logging.getLogger(__name__)
+
+SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
+# exact-name match past position 5 among a brewery's many similarly-styled
+# beers - proven live (Magic Road "IPA" ranked 9th of a real 10-candidate
+# pull) - 15 gives the exact match room to surface without pulling in so
+# many candidates that two unrelated beers coincidentally share a name.
+
+
+# Non-alcoholic beers get labelled inconsistently across breweries/shops/
+# languages - English "non-alcoholic"/"non alco"/"alcohol free" (a Freeky
+# non-alcoholic listing used this form), Polish "bezalkoholowe", Czech
+# "nealko" (proven live: Untappd's own catalog name for a Litovel beer is
+# "... Nealko / Free") - and even Untappd's OWN catalog names aren't
+# consistent about which form they use (a Polish brewery's entry says
+# "Bezalko", an English-market one says "Non-Alcoholic"). Canonicalizing
+# both sides to the same token before comparing means the match succeeds
+# regardless of which spelling either side happens to use.
+_NON_ALCO_RE = re.compile(
+    r"\bnon[\s-]?alco(?:holic)?\b|\balcohol[\s-]?free\b|\bbezalkoholowe\b|\bnealko\b", re.IGNORECASE
+)
+
+
+def _simple_norm(text: str) -> str:
+    # "%" is kept (not treated as discardable punctuation like other
+    # symbols) - Untappd's own naming convention uses a trailing "%" to
+    # mark a non-alcoholic sibling of a same-named beer (e.g. Birbant's
+    # "Turbo" vs "Turbo%", two genuinely different real beers) - stripping
+    # it would make the two compare as the same name and pick one at
+    # random between them.
+    return re.sub(r"[^a-z0-9%]+", " ", (text or "").lower()).strip()
+
+
+def scan_norm(text: str) -> str:
+    """Same normalization as _simple_norm, plus:
+    - canonicalizing non-alcoholic phrasing (see _NON_ALCO_RE) so a query
+      and a candidate that spell it differently still compare equal.
+    - dropping the bare word "and" - a flavor list punctuated "X, Y & Z" on
+      a label and "X, Y and Z" in Untappd's own catalog name would
+      otherwise normalize to two different token sequences (the "&" is
+      stripped as punctuation, but the literal word "and" is not) and miss
+      what should count as the same name."""
+    canonicalized = _NON_ALCO_RE.sub("bezalko", text or "")
+    return " ".join(w for w in _simple_norm(canonicalized).split() if w != "and")
+
+
+def _token_set(text: str) -> frozenset:
+    return frozenset(scan_norm(text).split())
+
+
+def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "") -> dict | None:
+    """search_beers ranks by its own relevance score, which is not reliable
+    enough to trust blindly: it can rank a DIFFERENT same-brewery beer
+    ABOVE the actual correct match, both for a short/generic detected name
+    (e.g. "Velvet" ranked "Gelato XTREME: Blue Velvet" above the plain
+    "Velvet" IPA) and for an entire flavor LINE sharing one base name (e.g.
+    "Wonders" ranked one sibling flavor above the actually-correct one) -
+    both proven live on real shelf photos.
+
+    A wrong beer presented with full confidence (wrong style/ABV/link/
+    badges) is worse than admitting no match, so this refuses to guess:
+    - a single candidate is trusted as-is (no sibling to confuse it with).
+    - with multiple candidates, compares TOKEN SETS (order-independent - a
+      shop's own word order doesn't always match Untappd's, e.g. "Bezalko
+      Jasne" vs the catalog's "Jasne Bezalko"), not the joined string. The
+      brewery's own tokens are dropped from beer_name's side first (see
+      brewery_name below) - a shop's title routinely repeats the brewery
+      name as a prefix, but a real catalog beerName essentially never
+      does, so keeping those tokens in the comparison only risks a false
+      match, never a genuine one.
+    - an exact token-set match wins if exactly one candidate has it; two+
+      candidates with the identical name are a genuine catalog duplicate,
+      not something to guess between.
+    - failing that, a query whose tokens are a STRICT SUBSET of exactly one
+      candidate's tokens is accepted - the common "shop listed a shortened
+      name, Untappd's is fuller" case (e.g. "Salty Love vol.1" for the
+      catalog's "Salty Love vol.1 - Mango + Peach + Coconut + Lemon", or a
+      missing "Bezalkoholowe" qualifier the shop's own listing omitted).
+      Only ever query-subset-of-candidate, never the reverse - accepting a
+      shorter candidate for a longer/noisier query would risk matching on
+      whatever of the query's words happen to overlap, not a real identity.
+    - None means the caller should tell the user it couldn't confidently
+      identify it, not silently substitute a lookalike.
+
+    brewery_name: when the beer_name still has the brewery's own name
+    baked in (proven live, a common shop pattern - "PINTA Hazy Morning"),
+    its tokens are excluded from the comparison - proven live necessary:
+    "PINTA PINTA Hazy Morning" (brewery duplicated in the query) exact-
+    matched "Pinta Hazy Morning" by a COMPLETELY UNRELATED brewery
+    ("Upside Down") that just happens to credit "Pinta" in its own beer
+    name, while the real "Hazy Morning" by PINTA itself doesn't repeat its
+    own brewery name and so wasn't an exact match at all until "pinta" was
+    dropped from the query's side of the comparison.
+    """
+    if len(results) == 1:
+        return results[0]
+
+    raw_query_tokens = _token_set(beer_name)
+    if not raw_query_tokens:
+        return None
+    # Brewery tokens are excluded for the EXACT check only, not the
+    # superset one below - proven live both ways: excluding them for exact
+    # is what fixes the Pinta case (a real catalog beerName essentially
+    # never repeats its own brewery name), but ALSO excluding them from the
+    # superset check reintroduces a different false positive (Primátor's
+    # "PRIMÁTOR PREMIUM LAGER" superset-matching "Diver Premium Lager" the
+    # moment "primátor" no longer disqualifies it) - the superset check
+    # already only fires when every OTHER query word is a genuine subset,
+    # so leaving the brewery token in place there costs nothing when it's
+    # truly a duplicate (still matches fine) but adds a safety margin
+    # against exactly this kind of coincidence.
+    query_tokens = raw_query_tokens - _token_set(brewery_name)
+    if not query_tokens:
+        return None
+
+    exact = [r for r in results if _token_set(r.get("beerName") or "") == query_tokens]
+    if len(exact) == 1:
+        return exact[0]
+    if len(exact) > 1:
+        return None  # genuine catalog duplicates (e.g. two identically-named "LAGER" entries) - can't tell them apart
+
+    supersets = [r for r in results if raw_query_tokens < _token_set(r.get("beerName") or "")]
+    if len(supersets) == 1:
+        return supersets[0]
+    return None
+
+
+# ---- Known terms -----------------------------------------------------------
+# Brewery-specific in-house abbreviations/nicknames (e.g. Trzech Kumpli's
+# own "ONINNI" for "Our New IPA Needs No Introduction") and known shop-
+# listing misspellings (e.g. "Kawastrofa" for the real "Kawastorfa") - by
+# nature these are NOT general rules, no pattern-based cleanup below could
+# ever infer them, so they're a plain, hand-maintained lookup instead. Add
+# to this as new ones turn up; keys are matched case-insensitively as whole
+# words/phrases, wherever they appear in a beer name.
+KNOWN_TERM_SUBSTITUTIONS = {
+    "oninni": "Our New IPA Needs No Introduction",
+    "bcbs": "Bourbon County Brand Stout",  # generic - most breweries' "BCBS" nods at Goose Island's famous one
+    "kawastrofa": "Kawastorfa",
+}
+
+# Some abbreviations mean something DIFFERENT for a specific brewery's own
+# in-house pun - proven live: 3 Sons' own "BCBS" is "Broward County Brand
+# Stout" (a play on their home county), not the generic "Bourbon County
+# Brand Stout" above. Checked first, keyed by a lowercase substring of the
+# (cleaned) brewery name; falls back to KNOWN_TERM_SUBSTITUTIONS when this
+# brewery has no override for that particular term.
+BREWERY_TERM_SUBSTITUTIONS = {
+    "3 sons": {"bcbs": "Broward County Brand Stout"},
+}
+
+# A brewery sometimes spins a whole sub-line off into its own separate
+# Untappd brewery entry - proven live: Maryensztadt's "Freeky" line is
+# entirely non-alcoholic and catalogued under its own "FREEKY non-
+# alcoholic" brewery, not under "Maryensztadt" itself (a shop's own
+# "Producent" field still says "Maryensztadt" regardless). Keyed by a
+# lowercase substring of the (cleaned) brewery name, mapping to a whole-word
+# trigger that must appear in the beer NAME -> the real brewery to search
+# under instead. Tried as an extra, highest-priority brewery variant (see
+# resolve_beer) - the shop-provided brewery is still tried too as a
+# fallback, in case a future listing under this same trigger word turns out
+# not to need the override.
+BREWERY_OVERRIDE_BY_NAME_TERM = {
+    "maryensztadt": {"freeky": "FREEKY non-alcoholic"},
+    # onemorebeer.pl's own "Producent: Fortuna" is wrong specifically for
+    # the "Grodziskie" style beers it also lists under that same producer -
+    # proven live: "Fortuna Grodziskie ... Pils" found nothing, the real
+    # brewery is "Browar Grodzisk" (a specialty brewery for this one
+    # style). Not a blanket BREWERY_RENAME like Piotrków/Drink ID below -
+    # Fortuna's OTHER (non-Grodziskie) listings are presumably correct as
+    # Fortuna, per the user's own observation this only misfires here.
+    "fortuna": {"grodziskie": "Browar Grodzisk"},
+}
+
+# A shop's "Producent" field is sometimes a manufacturing/contract-brewing
+# location that never existed as its OWN brewery on Untappd at all - proven
+# live: a shop's "Piotrków" returned zero results no matter what, because
+# that beer is actually catalogued under the brand "Drink ID" instead.
+# Unconditional (no beer-name trigger needed, unlike
+# BREWERY_OVERRIDE_BY_NAME_TERM above) - keyed by a lowercase substring of
+# the (cleaned) brewery name. Same fallback-first-then-original-too
+# priority as the name-term overrides.
+BREWERY_RENAME = {
+    "piotrków": "Drink ID",
+    # "Krachla" (a shop's own Producent, sometimes preceded by the town
+    # "Grybów") - proven live: "Krachla Góralskie Krzepkie" (with or
+    # without "Grybów") found nothing, the real brewery is "Pilsvar".
+    "krachla": "Pilsvar",
+    # Shops list the full legal name "Rodinný Pivovar Zichovec", but
+    # Untappd has long since catalogued the brewery under just "Zichovec" -
+    # the full name returns nothing.
+    "zichovec": "Zichovec",
+}
+
+# A brewery is sometimes catalogued under MULTIPLE names on Untappd at
+# once, inconsistently per-beer, rather than one single "real" name a
+# BREWERY_RENAME could swap to - proven live: "Jurajskie" (this shop's own
+# Producent field) correctly resolves plenty of its own beers ("Jurajskie
+# Porter Bałtycki" etc. all work fine as-is), but OTHER beers from the same
+# brewery are catalogued as "Na Jurze X" ("Motocyklowe") or even "Stacja X"
+# ("Jabłko-Mięta") instead, with no way to predict which convention a given
+# beer uses from the shop's text alone. Unlike BREWERY_OVERRIDE_BY_NAME_TERM,
+# not conditioned on any beer-name trigger - these are just extra brewery
+# variants worth trying, appended AFTER the shop-provided ones (see
+# resolve_beer) so the common case (shop's own name already works) isn't
+# disturbed; only consulted at all once those have failed.
+BREWERY_ALIASES = {
+    "jurajskie": ["Na Jurze"],
+}
+
+
+def _brewery_override(brewery_name: str, beer_name: str) -> str | None:
+    brewery_key = (brewery_name or "").strip().lower()
+    for key, rename in BREWERY_RENAME.items():
+        if key in brewery_key:
+            return rename
+    for key, triggers in BREWERY_OVERRIDE_BY_NAME_TERM.items():
+        if key not in brewery_key:
+            continue
+        for trigger, override in triggers.items():
+            if re.search(r"\b" + re.escape(trigger) + r"\b", beer_name or "", re.IGNORECASE):
+                return override
+    return None
+
+
+def _brewery_aliases(brewery_name: str) -> list[str]:
+    brewery_key = (brewery_name or "").strip().lower()
+    aliases: list[str] = []
+    for key, names in BREWERY_ALIASES.items():
+        if key in brewery_key:
+            aliases.extend(names)
+    return aliases
+
+
+_ALL_KNOWN_TERMS = set(KNOWN_TERM_SUBSTITUTIONS) | {
+    term for overrides in BREWERY_TERM_SUBSTITUTIONS.values() for term in overrides
+}
+_KNOWN_TERM_RE = re.compile(
+    r"\b(" + "|".join(re.escape(k) for k in sorted(_ALL_KNOWN_TERMS, key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def _apply_known_terms(text: str, brewery_name: str = "") -> str:
+    brewery_key = (brewery_name or "").strip().lower()
+    overrides = next(
+        (subs for key, subs in BREWERY_TERM_SUBSTITUTIONS.items() if key in brewery_key),
+        {},
+    )
+
+    def _replace(m: re.Match) -> str:
+        term = m.group(0).lower()
+        return overrides.get(term) or KNOWN_TERM_SUBSTITUTIONS.get(term) or m.group(0)
+
+    return _KNOWN_TERM_RE.sub(_replace, text or "")
+
+
+# ---- Query cleanup ---------------------------------------------------------
+# A shop's own product-listing text is close to, but not identical to,
+# Untappd's catalog name - and this search backend needs a fairly close
+# match to return anything at all (proven live: several of these, left
+# unstripped, made search_beers return ZERO results, not just a worse-
+# ranked one). None of this is per-brewery - every rule below is a generic
+# pattern observed across multiple, unrelated breweries on one real shop's
+# listing page.
+
+# A generic "this is a brewery" noun prefixing OR trailing the actual
+# brewery name, in whichever language a given shop happens to use - proven
+# live: "Browar Lubrow" as a PREFIX returned zero results (catalogued as
+# "Lubrow Brewery"), "PINTA Brewery" as a SUFFIX also returned zero
+# (catalogued as plain "PINTA"), and hoptimaal.com's own vendor field lists
+# breweries as "Brasserie Caulier" (French), "Arpus Brewing Co." / "Polly's
+# Brew Co." (English), "X Brouwerij"/"X Bierbrouwerij" (Dutch) - same
+# pattern, just not Polish.
+_BREWERY_PREFIX_RE = re.compile(
+    r"^(browar|brewery|brewing|piwowarnia|brasserie|brouwerij|bierbrouwerij)\s+", re.IGNORECASE
+)
+
+# Strips exactly ONE trailing generic word - used iteratively (see
+# _brewery_query_variants), not in one greedy pass. A site can stack
+# several of these words at the end ("PINTA Barrel Brewing Brewery",
+# "Arpus Brewing Co."), but blindly stripping ALL of them in one shot is
+# too aggressive when one of those "generic" words is actually part of the
+# real brewery name - proven live: ontap.pl's own "Ale Browar Brewery" (it
+# appends "Brewery" to every listing) has a real Untappd brewery of
+# "AleBrowar" - stripping only the site's own "Brewery" suffix ("Ale
+# Browar Dortmunder") found the exact, unique match, while also stripping
+# "Browar" ("Ale Dortmunder") left only generic words and returned 6
+# unrelated, ambiguous candidates instead.
+_BREWERY_SUFFIX_WORD_RE = re.compile(
+    r"\s+(browar|brewery|brewing|piwowarnia|brasserie|brouwerij|bierbrouwerij|company|co\.?|brew)$",
+    re.IGNORECASE,
+)
+
+# "X x Y" collaboration notation - Untappd typically credits a collab beer
+# to one side only (which side varies and isn't predictable from the shop's
+# own text - proven live both ways), and searching with the full "X x Y"
+# phrase reliably returned zero results. Keep only the brewery before " x ".
+_COLLAB_SUFFIX_RE = re.compile(r"\s+x\s+\S.*$", re.IGNORECASE)
+
+# Generic marketing/edition words that are never part of a beer's own
+# catalog name but do appear in a shop's product title - each confirmed
+# live to independently make search_beers return zero results when left in
+# (including the tier words alone, without "Series" attached). "Prozdrowotne"
+# (Polish "health-promoting") is the same kind of marketing descriptor, just
+# for a health-halo claim instead of an edition tier.
+_NOISE_WORDS_RE = re.compile(
+    r"\b(series|festiwal|festival|platinum|gold|silver|bronze|prozdrowotne|gluten)\b", re.IGNORECASE
+)
+
+# "Polish Vintage:" - a collection/series label a shop prepends, never
+# part of the beer's own catalog name - proven live to return zero
+# results when left in (including just the words, without the colon).
+# The optional trailing colon is consumed too, so it doesn't linger as a
+# dangling punctuation mark once the words are gone.
+_POLISH_VINTAGE_RE = re.compile(r"\bpolish\s+vintage\s*:?", re.IGNORECASE)
+
+# "Kraft Roku <year>" (Polish "Craft of the Year <year>") - an award/
+# marketing label a shop tacks onto a listing, never part of the beer's
+# own catalog name - proven live to return zero results when left in,
+# for any year.
+_KRAFT_ROKU_RE = re.compile(r"\bkraft\s+roku\s+\d{4}\b", re.IGNORECASE)
+
+# "IN&OUT" - a shop's own dine-in/takeaway program label, never part of
+# the beer's own catalog name - proven live to return zero results when
+# left in.
+_IN_OUT_RE = re.compile(r"\bin\s*&\s*out\b", re.IGNORECASE)
+
+# A dangling "&"/"/" left over once an adjacent noise word (e.g. "gluten"
+# out of "Gluten & Alcohol Free") or non-alco marker has been stripped out
+# from beside it - proven live: "Freeky Hazy IPA Gluten &" (the "&" left
+# over once "Gluten" and the non-alco marker after it were both handled)
+# still returned zero results until the stray "&" itself was gone too.
+_DANGLING_CONNECTOR_RE = re.compile(r"(^|\s)[&/](\s|$)")
+
+# A shop's own title joins a flavour list with the natural-language "and"
+# ("Malina I Pigwa" - Polish "i" = "and"), but Untappd's catalog name for
+# that exact beer doesn't use it at all ("Bestbir Piwo z Sokiem Malina -
+# Pigwa") - proven live: leaving the bare "I" in returned ZERO results,
+# dropping it found the one real match uniquely. Same role as the bare
+# "and" scan_norm already drops for COMPARISON (see _NON_ALCO_RE's
+# neighbor above) - this is the query-building-time equivalent, needed
+# because here the untouched word breaks the search itself, not just the
+# token comparison after.
+_POLISH_AND_RE = re.compile(r"\bi\b", re.IGNORECASE)
+
+# Same concept as _NON_ALCO_RE, but used to DETECT the concept in a shop's
+# raw text (including a bare "0%"/"0.0%" ABV callout, another common way
+# shops flag a non-alcoholic beer) rather than to canonicalize it - see
+# _non_alco_variants below for why detection and query-text substitution
+# are handled separately.
+_NON_ALCO_TRIGGER_RE = re.compile(
+    r"\bnon[\s-]?alco(?:holic)?\b|\balcohol[\s-]?free\b|\bbezalkoholowe\b|\bnealko\b|\b0(?:[.,]0)?\s*%",
+    re.IGNORECASE,
+)
+
+# A shop's product title sometimes embeds the beer's STYLE category as
+# actual words IN the name - not always trailing ("Czech Pilsner" at the
+# end), sometimes stuck in the MIDDLE ("WILD Sour Saison Apricot & Palo
+# Santo", "Aardbei-Schaarbeekse Kriek 23/24" - both confirmed live to
+# return nothing until the style word was removed from wherever it sat).
+# Untappd's own catalog name never includes it either way. NOT folded into
+# _NOISE_WORDS_RE / _clean_beer_name_query - unlike those words, a style
+# name is common enough as an actual beer-name substring elsewhere that
+# stripping it unconditionally on every query is riskier, so this is only
+# ever tried as a fallback variant (see _style_stripped_variant) after the
+# untouched name already failed.
+_STYLE_WORDS_RE = re.compile(
+    r"\b(stout|porter|ipa|lager|pils(?:ner)?|ale|sour|gose|saison|wheat|kriek|lambic|"
+    r"witbier|weisse|bock|barleywine|quad(?:rupel)?|tripel|dubbel|munich helles|helles)\b",
+    re.IGNORECASE,
+)
+
+# German compound style words ending in "-bier" (German for "beer") - a
+# shop lists the full compound ("Weizenbier"), but Untappd's own catalog
+# name for that exact beer sometimes drops the "-bier" and just uses the
+# base word ("Weizen") - proven live: "Primator Weizenbier" found nothing,
+# "Primator Weizen" found the exact beer uniquely. Only ever tried as a
+# fallback variant, same reasoning as _STYLE_WORDS_RE above - "-bier" as a
+# word-ending is common enough elsewhere that stripping it unconditionally
+# would be riskier than trying it as one more rewrite.
+_BIER_SUFFIX_RE = re.compile(r"\b(\w+)bier\b", re.IGNORECASE)
+
+# A shop sometimes appends the beer's own ABV to its title ("Svijany Rytir
+# 12%") - proven live this is NOT noise to unconditionally strip like the
+# packaging words above: "Svijany Maz 11%" found the single exact
+# "Svijanský Máz" match, while "Svijany Maz" alone (no %) came back with 5
+# ambiguous candidates (several real flavour variants sharing that base
+# name) - the percentage was actively HELPING disambiguate. So this is only
+# ever tried as a fallback (after the as-is, %-included name already
+# failed), for the opposite (rarer) case where the % itself is what a shop
+# adds but Untappd's own catalog name doesn't carry.
+_ABV_PERCENT_RE = re.compile(r"\b\d{1,2}(?:[.,]\d+)?\s*%")
+
+# A Polish shop's own title describes a beer with an adjective agreeing
+# with the implicit noun "piwo" (beer, grammatically neuter - "...skie"),
+# but Untappd's catalog name often agrees with a DIFFERENT noun instead
+# (e.g. the loanword "Pils", grammatically masculine - "...ski") - proven
+# live: "Raciborskie Pils" (shop's own neuter form) came back ambiguous (2
+# candidates, neither an exact/superset token match), while "Raciborski
+# Pils" (masculine, Untappd's actual name) found the one real match
+# uniquely. Only ever tried as a fallback - most shop titles already use
+# whichever gender happens to match.
+_POLISH_SKIE_ADJECTIVE_RE = re.compile(r"\b(\w+)skie\b", re.IGNORECASE)
+
+# A shop sometimes describes a beer's flavour/style with a POLISH word
+# instead of whatever Untappd's own catalog name actually uses - proven
+# live twice: a shop's "LITOVEL MIODOWY" (Polish "honey-flavoured") only
+# matched Untappd's real "Litovel Medový speciál" (Czech "medový") once
+# translated - the Polish spelling alone came back ambiguous even with the
+# brewery name included; a shop's "AleBrowar Kwas Chlebowy JASNY" (Polish
+# "light/pale") returned ZERO results, while Untappd's real name for that
+# exact variant is the English "Kwas Chlebowy Light". Not a general rule
+# (no pattern could infer a translation), so a small hand-maintained pair
+# list, same spirit as KNOWN_TERM_SUBSTITUTIONS - but tried as a fallback
+# VARIANT rather than substituted unconditionally, since both words are
+# also perfectly normal Polish words elsewhere and blindly rewriting every
+# occurrence would break those.
+_FLAVOR_TRANSLATION_RE = re.compile(r"\b(miodowy|miodowe|miodowa|jasny|jasne|jasna)\b", re.IGNORECASE)
+_FLAVOR_TRANSLATIONS = {
+    "miodowy": "Medový", "miodowe": "Medový", "miodowa": "Medový",
+    "jasny": "Light", "jasne": "Light", "jasna": "Light",
+}
+
+
+def _brewery_query_base(brewery_name: str) -> str:
+    """Prefix/collab cleanup only (no trailing-generic-word stripping) -
+    used where a single representative brewery string is needed (e.g.
+    BREWERY_TERM_SUBSTITUTIONS' substring match), not for building a
+    search query itself."""
+    cleaned = _BREWERY_PREFIX_RE.sub("", brewery_name or "").strip()
+    cleaned = _COLLAB_SUFFIX_RE.sub("", cleaned).strip()
+    return cleaned or (brewery_name or "").strip()
+
+
+def _brewery_query_variants(brewery_name: str) -> list[str]:
+    """Ordered brewery-name variants to try. For the trailing (suffix)
+    position, least-aggressively-stripped first: stripping exactly one
+    trailing generic word, then two, etc. - see _BREWERY_SUFFIX_WORD_RE for
+    why this is progressive rather than one greedy strip; the unstripped
+    SUFFIX form is deliberately never tried on its own - proven live (see
+    _BREWERY_PREFIX_RE) that leaving a genuine generic word at the END
+    reliably returns zero results, so it's never worth the search call.
+
+    For the LEADING (prefix) position though, both the prefix-kept and
+    prefix-stripped forms are tried (prefix-kept first) - unlike the
+    suffix case, a leading "Browar"/"Brewery" etc. isn't reliably safe to
+    drop: proven live both ways - "Browar Lubrow" needs it stripped
+    (catalogued as plain "Lubrow"), but "Browar Jana" needs it KEPT
+    (catalogued as "Browar Jana" - "Browar" is part of this one's actual
+    name, not a generic descriptor, same idea as ontap.pl's "AleBrowar"
+    suffix case). Trying prefix-kept first costs nothing when it's wrong
+    (proven live: a genuinely generic kept prefix just returns zero
+    results, same as the suffix case, so it's a harmless first attempt)."""
+    collab_stripped = _COLLAB_SUFFIX_RE.sub("", brewery_name or "").strip() or (brewery_name or "").strip()
+    prefix_stripped = _BREWERY_PREFIX_RE.sub("", collab_stripped).strip()
+
+    prefix_forms = [collab_stripped]
+    if prefix_stripped and prefix_stripped.lower() != collab_stripped.lower():
+        prefix_forms.append(prefix_stripped)
+
+    variants: list[str] = []
+    for form in prefix_forms:
+        current = form
+        suffix_variants = []
+        while True:
+            stripped = _BREWERY_SUFFIX_WORD_RE.sub("", current).strip()
+            if not stripped or stripped == current:
+                break
+            suffix_variants.append(stripped)
+            current = stripped
+        variants.extend(suffix_variants or [form])
+
+    seen: set[str] = set()
+    deduped = []
+    for v in variants:
+        key = v.lower()
+        if v and key not in seen:
+            seen.add(key)
+            deduped.append(v)
+    return deduped
+
+
+def _collapse_non_alco_markers(text: str, replacement: str | None = None) -> str:
+    """Collapses every non-alco trigger match (see _NON_ALCO_TRIGGER_RE) in
+    text down to a single occurrence - the first one, replaced with
+    `replacement` if given, else left as its own original text - dropping
+    every further one entirely. A shop's title sometimes carries the
+    concept TWICE at once (a word AND a bare "0.0%" callout, e.g. "Zlaty
+    Bazant Nealko 0.0%") - proven live this is actively harmful, not just
+    redundant: leaving both in can coincidentally return exactly ONE WRONG
+    search result (a flavoured "Radler 0.0" sibling, not the plain beer)
+    that then gets blindly trusted (see pick_best_match's single-result
+    rule), while collapsing to one marker ("Zlaty Bazant Nealko") finds the
+    real beer via an exact token match instead. A no-op when there's
+    nothing to change: zero matches, or exactly one and no replacement was
+    requested."""
+    matches = list(_NON_ALCO_TRIGGER_RE.finditer(text or ""))
+    if not matches or (replacement is None and len(matches) < 2):
+        return text or ""
+    parts = []
+    last_end = 0
+    for i, m in enumerate(matches):
+        parts.append(text[last_end:m.start()])
+        if i == 0:
+            parts.append(replacement if replacement is not None else m.group(0))
+        last_end = m.end()
+    parts.append(text[last_end:])
+    return re.sub(r"\s+", " ", "".join(parts)).strip()
+
+
+def _clean_beer_name_query(beer_name: str, brewery_name: str = "") -> str:
+    cleaned = _apply_known_terms(beer_name or "", brewery_name)
+    cleaned = _NOISE_WORDS_RE.sub("", cleaned)
+    cleaned = _KRAFT_ROKU_RE.sub("", cleaned)
+    cleaned = _IN_OUT_RE.sub("", cleaned)
+    cleaned = _POLISH_VINTAGE_RE.sub("", cleaned)
+    cleaned = _POLISH_AND_RE.sub("", cleaned)
+    cleaned = _collapse_non_alco_markers(cleaned)
+    # Cleanup above can leave a dangling "&"/"/" behind (e.g. stripping
+    # "Gluten" out of "Gluten & Alcohol Free" leaves "& Alcohol Free") -
+    # proven live this stray connector alone still broke the search.
+    cleaned = _DANGLING_CONNECTOR_RE.sub(" ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or (beer_name or "").strip()
+
+
+def _brewery_prefix_stripped_variant(beer_name: str, brewery_core: str) -> str | None:
+    """Some shops don't split brewery from beer name at all - the product
+    TITLE itself is the brewery name immediately followed by the beer name,
+    with no separator (proven live: hoptimaal.com's own listings are
+    literally "<Vendor> <BeerName>", e.g. vendor "FrauGruber Brewing" +
+    title "FrauGruber The Pretender"). The untouched name usually still
+    finds the beer fine even with the brewery duplicated at the front (this
+    search backend tolerates a repeated-but-correct word - proven live), so
+    this is only tried as a fallback for when that duplication is what's
+    making an otherwise-unique match ambiguous. Strips brewery_core's
+    words from the FRONT of beer_name only if they match there exactly, in
+    order, case-insensitively; returns None otherwise (most sites' beer
+    names never start with the brewery's own name, so this is a no-op for
+    them)."""
+    core_words = (brewery_core or "").split()
+    name_words = (beer_name or "").split()
+    if not core_words or len(name_words) <= len(core_words):
+        return None
+    if [w.lower() for w in name_words[: len(core_words)]] != [w.lower() for w in core_words]:
+        return None
+    return " ".join(name_words[len(core_words):]).strip() or None
+
+
+def _style_stripped_variant(text: str) -> str | None:
+    stripped = _STYLE_WORDS_RE.sub("", text or "")
+    stripped = re.sub(r"\s+", " ", stripped).strip()
+    return stripped if stripped and stripped.lower() != (text or "").strip().lower() else None
+
+
+def _bier_suffix_variant(text: str) -> str | None:
+    stripped = _BIER_SUFFIX_RE.sub(lambda m: m.group(1), text or "")
+    return stripped if stripped and stripped.lower() != (text or "").strip().lower() else None
+
+
+def _abv_percent_stripped_variant(text: str) -> str | None:
+    stripped = _ABV_PERCENT_RE.sub("", text or "")
+    stripped = re.sub(r"\s+", " ", stripped).strip()
+    return stripped if stripped and stripped.lower() != (text or "").strip().lower() else None
+
+
+def _polish_skie_variant(text: str) -> str | None:
+    stripped = _POLISH_SKIE_ADJECTIVE_RE.sub(lambda m: m.group(1) + "ski", text or "")
+    return stripped if stripped and stripped.lower() != (text or "").strip().lower() else None
+
+
+def _flavor_translation_variant(text: str) -> str | None:
+    if not _FLAVOR_TRANSLATION_RE.search(text or ""):
+        return None
+    translated = _FLAVOR_TRANSLATION_RE.sub(
+        lambda m: _FLAVOR_TRANSLATIONS.get(m.group(0).lower(), m.group(0)), text
+    )
+    return translated if translated.lower() != (text or "").strip().lower() else None
+
+
+def _non_alco_variants(beer_name: str) -> list[str]:
+    """If beer_name mentions "non-alcoholic" in any common spelling (or a
+    bare "0%"), return rewritten variants substituting each spelling
+    Untappd's own catalog is known to use for this concept, PLUS one more
+    variant with the marker dropped entirely. Untappd isn't consistent
+    about which form a given brewery's entry uses - proven live five
+    different ways: one brewery's entry needed "Bezalko", another needed
+    the full "Bezalkoholowe" (truncating it to "Bezalko" returned zero
+    results for THAT one), an English-market one needed "Non-Alcoholic", a
+    Czech one (Litovel) needed "Nealko", and two others ("Amber Bezalkoholowe
+    Zanzi" -> catalogued as plain "Zanzi"; "Freeky Jasny Lager Bezalkoholowe"
+    -> catalogued as plain "Freeky Jasny Lager") needed the marker gone
+    entirely, no replacement word at all - so all five are tried rather
+    than guessing which a given brewery/beer uses. Uses
+    _collapse_non_alco_markers rather than a plain substitute-every-match,
+    in case beer_name still has more than one trigger occurrence (normally
+    it won't - _clean_beer_name_query already collapses that upstream - but
+    this stays correct even if called directly on un-cleaned text)."""
+    if not _NON_ALCO_TRIGGER_RE.search(beer_name or ""):
+        return []
+    return [
+        v for v in (
+            _collapse_non_alco_markers(beer_name, spelling)
+            for spelling in ("Bezalko", "Bezalkoholowe", "Non-Alcoholic", "Nealko", "")
+        )
+        if v  # the "" (drop entirely) spelling can leave nothing at all if the marker was the whole name
+    ]
+
+
+def _drop_trailing_words(text: str, max_drop: int = 2):
+    """Yields `text` with its last 1..max_drop words progressively removed.
+    A shop's own product title sometimes carries one or two extra trailing
+    words a cleanup regex above has no specific rule for - a wrong flavor-
+    descriptor word ("Coconut Cream" vs the catalog's "Coconut Milk"), a
+    release year that isn't part of the real name, a style phrase ("Czech
+    Pilsner") - each confirmed live to make this search backend return
+    nothing at all when left in, and confirmed live to find the beer once
+    dropped. Only ever removes from the END - a shop abbreviating/altering
+    a SUFFIX is the observed pattern, not a prefix."""
+    words = text.split()
+    for n in range(1, max_drop + 1):
+        if len(words) - n < 1:
+            break
+        yield " ".join(words[: len(words) - n])
+
+
+def _query_name_variants(clean_name: str, *brewery_cores: str) -> list[str]:
+    """Ordered, deduplicated list of beer-name variants to try, most-
+    confident-first - see the comment above `base_variants` below for the
+    exact ordering and why it's split into "safe" vs "situational"
+    reductions, each optionally combined with a brewery-prefix strip
+    against every brewery_core given (see _brewery_prefix_stripped_variant
+    - a no-op unless the name literally starts with that core's own
+    words). Multiple brewery_cores matter when a BREWERY_OVERRIDE_BY_NAME_TERM
+    is in play - proven live (Maryensztadt's "Freeky" line): the beer name
+    still duplicates the ORIGINAL shop-provided brewery ("Maryensztadt"),
+    not the override being searched under ("FREEKY non-alcoholic"), so the
+    prefix-strip needs to check against BOTH to find the duplication no
+    matter which one the current search attempt is using. Every base
+    variant also gets progressively shorter (trailing-word-dropped)
+    versions tried. Capped so one stubborn beer can't blow up a batch lens
+    lookup into a dozen+ search_beers calls."""
+    # Two categories, treated differently: "safe" reductions (style/-bier
+    # words) are NEVER part of a real catalog name (see _STYLE_WORDS_RE),
+    # so their brewery-compounded forms are trusted early. "Situational"
+    # reductions (ABV%, Polish adjective gender, flavour translation, non-
+    # alco substitution) each involve either keeping-vs-changing genuinely
+    # meaningful info or a speculative word GUESS - proven live both can
+    # misfire when compounded too eagerly, so the plain brewery-prefix
+    # strip (keeping this info exactly as printed) is tried BEFORE any of
+    # them get their turn.
+    safe_strips = []
+    for stripper in (_style_stripped_variant, _bier_suffix_variant):
+        stripped = stripper(clean_name)
+        if stripped:
+            safe_strips.append(stripped)
+    situational_strips = []
+    for stripper in (_abv_percent_stripped_variant, _polish_skie_variant, _flavor_translation_variant):
+        stripped = stripper(clean_name)
+        if stripped:
+            situational_strips.append(stripped)
+    non_alco_strips = _non_alco_variants(clean_name)
+
+    cores = [c for c in dict.fromkeys(brewery_cores) if c]
+
+    def _compounds(strips: list[str]) -> list[str]:
+        out = []
+        for strip in strips:
+            for core in cores:
+                compound = _brewery_prefix_stripped_variant(strip, core)
+                if compound:
+                    out.append(compound)
+        return out
+
+    # Ordering, most-confident-first: the name as-is; every SAFE reduction
+    # compounded with a brewery-prefix strip (proven live necessary -
+    # onemorebeer.pl's "PRIMÁTOR PRIMÁTOR PREMIUM LAGER": stripping ONLY
+    # the brewery prefix (keeping "LAGER") matched a real but WRONG sibling
+    # beer via the superset rule, only stripping BOTH found the actual
+    # exact match); the plain brewery-prefix strip alone, keeping every
+    # situational word exactly as printed (proven live necessary -
+    # "Staropolski Kultowe Prozdrowotne 0,0%" and "Svijany Maz 11%" both
+    # needed the ABV kept literal, just the duplicated brewery gone); each
+    # SAFE reduction uncompounded; then situational reductions and non-alco
+    # substitutions, compounded and uncompounded, in that order - proven
+    # live these can misfire when tried any earlier (a non-alco-
+    # substituted-but-still-brewery-duplicated variant, "Browar Jana BROWAR
+    # JANA Non-Alcoholic", confidently matched a totally unrelated beer).
+    base_variants = [clean_name]
+    base_variants.extend(_compounds(safe_strips))
+    for core in cores:
+        brewery_prefix_stripped = _brewery_prefix_stripped_variant(clean_name, core)
+        if brewery_prefix_stripped:
+            base_variants.append(brewery_prefix_stripped)
+    base_variants.extend(safe_strips)
+    base_variants.extend(_compounds(situational_strips))
+    base_variants.extend(situational_strips)
+    base_variants.extend(_compounds(non_alco_strips))
+    base_variants.extend(non_alco_strips)
+
+    variants = list(base_variants)
+    for base in base_variants:
+        variants.extend(_drop_trailing_words(base))
+
+    # A degenerate variant - one that IS the brewery's own name and
+    # nothing else - carries zero product-identifying information, but can
+    # still coincidentally return a confident (exact/superset) match:
+    # proven live, "Birbant" alone (the tail end of _drop_trailing_words
+    # stripping "HERO%" entirely off "BIRBANT HERO%") uniquely superset-
+    # matched "Collab PL: Birbant" - a totally unrelated PINTA collab that
+    # only credits Birbant BY NAME inside its own beerName, not the actual
+    # "Hero%" product on the shelf. Never worth trying - drop these rather
+    # than let them roll the dice.
+    core_keys = {c.lower() for c in cores}
+    variants = [v for v in variants if v.lower() not in core_keys]
+
+    seen: set[str] = set()
+    deduped = []
+    for v in variants:
+        key = v.lower()
+        if v and key not in seen:
+            seen.add(key)
+            deduped.append(v)
+    return deduped[:10]
+
+
+async def _search_and_match(token: str, brewery: str, beer_name: str) -> tuple[dict | None, str, list[dict]]:
+    query = f"{brewery} {beer_name}".strip()
+    results = await untappd_mcp.search_beers(token, query, limit=SEARCH_RESULT_LIMIT)
+    if not results:
+        logger.info(f"resolve_beer: no results for query={query!r}")
+        return None, query, []
+    match = pick_best_match(results, beer_name, brewery)
+    if match is None:
+        logger.info(
+            "resolve_beer: ambiguous, no confident match: query=%r (candidates: %s)",
+            query, [r.get("beerName") for r in results],
+        )
+    return match, query, results
+
+
+def build_search_url(brewery_name: str, beer_name: str) -> str:
+    """Untappd's own search page for the given brewery/name text - a
+    fallback link for the user to search manually themselves when nothing
+    here could confidently pick one beer. Callers should pass the CLEANED
+    text (e.g. resolve_beer's clean_brewery/clean_name), not the raw shop
+    text - proven live: the raw text (e.g. "Brovarnia Gdańsk Brewery IPA")
+    often doesn't find anything on Untappd's own search page either (the
+    same "Brewery"-suffix problem search_beers has), which would defeat
+    the point of offering a search link at all."""
+    return f"https://untappd.com/search?q={quote(f'{brewery_name} {beer_name}'.strip())}&type=beer"
+
+
+def _as_candidate(r: dict) -> dict:
+    bid = r.get("bid")
+    return {
+        "name": r.get("beerName"),
+        "brewery": (r.get("brewery") or {}).get("name"),
+        "bid": bid,
+        "url": f"https://untappd.com/beer/{bid}" if bid is not None else None,
+    }
+
+
+async def resolve_beer(
+    token: str, user_id: int, beer_name: str, brewery_name: str, *,
+    need_country: bool = True, live_fallback: bool = True,
+) -> dict:
+    """Look up one beer by name/brewery on Untappd: clean up the query (see
+    the module-level cleanup rules), search, accept only a confident match
+    (see pick_best_match), then attach country + had-it status. Returns a
+    plain dict (no text/HTML formatting, no badge computation - callers
+    build their own presentation on top):
+
+        {"matched": bool, "query_name", "query_brewery",
+         "name", "brewery", "style", "abv", "bid", "url",
+         "rating", "ratingCount", "country", "hadIt" (True/False/None)}
+
+    When "matched" is False, only query_name/query_brewery plus
+    "candidates" (list of up to 3 {"name", "brewery", "bid", "url"} dicts,
+    possibly empty) are present - search found genuine lookalikes but
+    pick_best_match couldn't confidently choose between them (e.g. two
+    same-named catalog entries, or a shop's title too generic to tell two
+    real variants apart). An empty candidates list means search found
+    nothing at all, not just nothing confident. Callers that only need a
+    yes/no can ignore this field entirely; a caller with room to show a
+    couple of alternative links (e.g. the lens endpoint) can offer the
+    user a pick instead of a flat "not found".
+
+    Raises untappd_mcp.UntappdMCPError on a search failure so the caller
+    decides how to surface it (e.g. without aborting sibling lookups from
+    the same batch).
+
+    need_country=False skips the get_beer call entirely (country is only
+    ever used for badge matching, e.g. /scan - callers with no badge
+    computation, e.g. the lens endpoint, have no use for it).
+
+    live_fallback=False skips the check_i_had_beer call when the local
+    index is ambiguous (mid-resync), falling back to a plain "is this
+    beer_id already in had_it_index" membership check instead of asking
+    Untappd live. For a caller resolving dozens of beers from one shop page
+    at once (the lens endpoint), both of these together eliminate every
+    quota-costing call - only the free search_beers lookup remains - which
+    also sidesteps the real, tight per-second burst limit that a handful of
+    concurrent quota calls was hitting in practice (observed live: nearly
+    every get_beer/check_i_had_beer call 429'd when several ran at once)."""
+    brewery_variants = _brewery_query_variants(brewery_name)
+    # Captured before any override is prepended - see _query_name_variants'
+    # docstring on why the ORIGINAL shop-provided brewery is still needed
+    # for name-prefix-duplicate detection even when searching under an
+    # override (the beer name duplicates what the shop actually printed,
+    # not whatever brewery we end up querying under).
+    original_brewery_core = brewery_variants[0]
+    brewery_override = _brewery_override(brewery_name, beer_name)
+    if brewery_override:
+        brewery_variants = [brewery_override] + brewery_variants
+    # Appended at the END, tried only once the shop-provided brewery
+    # variants have all failed - see BREWERY_ALIASES for why (the shop's
+    # own brewery name already works fine for MOST of that brewery's own
+    # beers, this only helps the exceptions).
+    for alias in _brewery_aliases(brewery_name):
+        if alias not in brewery_variants:
+            brewery_variants.append(alias)
+    brewery_base = _brewery_query_base(brewery_name)
+    clean_name = _clean_beer_name_query(beer_name, brewery_base)
+    # Same "most reduced" name the search retry loop itself would end up
+    # trying (see _query_name_variants) - proven live necessary
+    # (onemorebeer.pl's "Litovel Litovel Černy Citron 4%"): the plain
+    # clean_name still has the brewery duplicated AND a trailing ABV
+    # percent, and Untappd's own search page finds nothing for that
+    # either, same as the raw text this replaced earlier.
+    _url_brewery_prefix_stripped = (
+        _brewery_prefix_stripped_variant(clean_name, original_brewery_core)
+        or _brewery_prefix_stripped_variant(clean_name, brewery_variants[-1])
+    )
+    _url_abv_stripped = _abv_percent_stripped_variant(clean_name)
+    url_name = (
+        (_url_brewery_prefix_stripped and _abv_percent_stripped_variant(_url_brewery_prefix_stripped))
+        or _url_brewery_prefix_stripped
+        or _url_abv_stripped
+        or clean_name
+    )
+    not_found = {
+        "matched": False, "query_name": beer_name, "query_brewery": brewery_name,
+        "candidates": [], "searchUrl": build_search_url(brewery_variants[-1], url_name),
+    }
+
+    match, query = None, ""
+    # Prefer the FIRST attempt's candidate list for the "couldn't tell
+    # which one" fallback shown to the user (see _as_candidate below) - the
+    # least-truncated query is also the one closest to what was actually
+    # on the shelf/page, so its candidates are the most relevant set to
+    # offer as alternatives. Only fall back to a later attempt's results if
+    # the first one found literally nothing to show.
+    first_results: list[dict] | None = None
+    last_nonempty_results: list[dict] = []
+    for brewery_variant in brewery_variants:
+        # Recomputed per brewery_variant (cheap - pure string ops, no I/O):
+        # the brewery-prefix-stripped name variant (see
+        # _brewery_prefix_stripped_variant) needs to match against WHICHEVER
+        # brewery form is being tried this iteration, not just one fixed
+        # form - proven live necessary (onemorebeer.pl's "Browar Jana"): the
+        # beer name duplicates the FULL "Browar Jana", but the fully-
+        # stripped brewery variant is just "Jana", which doesn't match that
+        # duplicate at all, so the name-side strip silently never fired.
+        # original_brewery_core is passed alongside it for when an override
+        # is in play (see _query_name_variants' docstring) - the beer name
+        # still duplicates what the shop actually printed, not the override.
+        name_variants = _query_name_variants(clean_name, brewery_variant, original_brewery_core)
+        for candidate_name in name_variants:
+            match, query, results = await _search_and_match(token, brewery_variant, candidate_name)
+            if first_results is None:
+                first_results = results
+            if results:
+                last_nonempty_results = results
+            if match is not None:
+                break
+        if match is not None:
+            break
+
+    if match is None:
+        source = first_results if first_results else last_nonempty_results
+        not_found["candidates"] = [_as_candidate(r) for r in source[:3]]
+        return not_found
+
+    bid = match.get("bid")
+    logger.info("resolve_beer: query=%r -> %r (bid=%s)", query, match.get("beerName"), bid)
+
+    country = ""
+    if bid is not None and need_country:
+        try:
+            detail = await untappd_mcp.get_beer(token, bid)
+            country = ((detail.get("beer") or {}).get("brewery") or {}).get("country_name") or ""
+        except untappd_mcp.UntappdMCPError as exc:
+            logger.warning(f"resolve_beer: get_beer failed for bid={bid}: {exc}")
+
+    had_it = None
+    if bid is not None:
+        had_it_result = await had_it_index.lookup_had_it(user_id, bid)
+        if had_it_result is None:
+            if live_fallback:
+                try:
+                    live = await untappd_mcp.check_i_had_beer(token, bid)
+                    had_it_result = {"hadIt": bool(live.get("hadIt"))}
+                except untappd_mcp.UntappdMCPError as exc:
+                    logger.warning(f"resolve_beer: check_i_had_beer failed for bid={bid}: {exc}")
+            else:
+                # No live quota call allowed - fall back to a direct
+                # membership check instead of leaving this "unknown".
+                # Safe even mid-resync: had_it_index's beers dict only ever
+                # grows (record_page never removes a previously-known
+                # beer), so "not present" is still a solid negative signal,
+                # just possibly a little stale for something tried very
+                # recently, right before the current backfill pass reached
+                # it.
+                beers = await had_it_index.get_all_beers(user_id)
+                had_it_result = {"hadIt": str(bid) in beers}
+        if had_it_result is not None:
+            had_it = had_it_result.get("hadIt")
+
+    return {
+        "matched": True,
+        "query_name": beer_name,
+        "query_brewery": brewery_name,
+        "name": match.get("beerName") or beer_name,
+        "brewery": (match.get("brewery") or {}).get("name") or brewery_name,
+        "style": match.get("style") or "",
+        "abv": match.get("abv"),
+        "bid": bid,
+        "url": f"https://untappd.com/beer/{bid}" if bid is not None else None,
+        "rating": match.get("globalRating"),
+        "ratingCount": match.get("ratingCount"),
+        "country": country,
+        "hadIt": had_it,
+    }

@@ -89,10 +89,16 @@ async def record(user_id: int, badge_name: str, user_badge_id) -> None:
 
 
 async def get_all(user_id: int) -> dict:
-    """{badge_name: user_badge_id} - unwraps the {userBadgeId, level}
-    storage shape (and tolerates a bare int, the pre-level-tracking shape
-    written by an earlier version of this module, if any lingers on disk)."""
+    """{badge_name: {"userBadgeId": ..., "level": int|None}} - the real
+    level Untappd itself assigned (from record's "(Level N)" parse), used
+    by webapp_server.py's handle_badges_get to correct badge_stats.py's own
+    computed level when they disagree (see that function's own comment).
+    Tolerates a bare int, the pre-level-tracking shape written by an
+    earlier version of this module, if any lingers on disk."""
     async with _lock:
         data = _load()
         entry = data.get(str(user_id)) or {}
-        return {name: (v["userBadgeId"] if isinstance(v, dict) else v) for name, v in entry.items()}
+        return {
+            name: (v if isinstance(v, dict) else {"userBadgeId": v, "level": None})
+            for name, v in entry.items()
+        }

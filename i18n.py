@@ -144,6 +144,24 @@ EXTRA_STRINGS = {
         "untappd_token_rate_limited": "⚠️ Untappd is rate-limiting right now — try again in a bit.",
         "untappd_token_connected": "✅ Connected as @{username} — your check-ins in the festival Mini App will now go to your own Untappd account.",
 
+        "cmd_wishlist_sheet": "📋 My wishlist sheet",
+        "wishlist_sheet_prompt": (
+            "Untappd's own \"Lists\" feature (custom named lists, not the classic single Wishlist) has no API access at all, "
+            "so instead you can publish your own Google Sheet and I'll check your beers against it.\n\n"
+            "*How to set it up:*\n"
+            "1. Make a Google Sheet with a column named exactly *Посилання* — put an untappd.com beer link in each row "
+            "(e.g. `https://untappd.com/beer/123456` or `https://untappd.com/b/.../123456`). Other columns (name, brewery, "
+            "style...) are just for your own reference, I only read that one.\n"
+            "2. File → Share → *Publish to web* → pick the sheet → format *Comma-separated values (.csv)* → Publish.\n"
+            "3. Send me that published link here.\n\n"
+            "{current}"
+            "_(send `-` to remove your current sheet, or /cancel to abort)_"
+        ),
+        "wishlist_sheet_current": "Your current sheet: {url}\n\n",
+        "wishlist_sheet_invalid": "❌ That doesn't look like a published CSV link (should start with `https://` and contain `output=csv`) — check step 2 above and try /wishlist_sheet again.",
+        "wishlist_sheet_connected": "✅ Saved! I'll check your beers against this sheet from now on.",
+        "wishlist_sheet_cleared": "🗑 Removed your wishlist sheet.",
+
         "cmd_import_history": "📥 Import Untappd history",
         "import_history_group_hint": "Please message me privately to import your Untappd history.",
         "import_history_not_connected": "Connect your Untappd account first with /connect_untappd, then try /import_history again.",
@@ -151,6 +169,25 @@ EXTRA_STRINGS = {
         "import_history_invalid_file": "❌ Couldn't read that as a valid Untappd export (.csv or .json) — double check the file and try again, or /cancel.",
         "import_history_done": "✅ Imported {count} beers from your export{skipped_note} — your \"already had it\" badge now covers your whole history immediately.",
         "import_history_skipped_note": " ({skipped} rows skipped — couldn't read them)",
+
+        "cmd_scan": "📷 Scan a beer",
+        "scan_group_hint": "Please message me privately to scan a beer.",
+        "scan_owner_only": "Store-shelf scanning is still a personal test feature and isn't available for other accounts yet.",
+        "scan_not_connected": "Connect your Untappd account first with /connect_untappd, then try /scan again.",
+        "scan_prompt": "📷 Send me a photo of the beer's label (bottle, can, or shelf tag).\n_(or /cancel to abort)_",
+        "scan_not_found_photo": "😕 Couldn't read a beer label in that photo. Try a clearer photo of the label.",
+        "scan_error": "❌ Something went wrong recognizing that photo. Please try /scan again.",
+        "scan_no_match": "😕 Couldn't find \"{brewery} {beer}\" on Untappd. Try a clearer photo.",
+        "scan_result_header": "🍺 <b>{beer}</b>\n🏭 {brewery}",
+        "scan_rating": "⭐ {rating} ({count})",
+        "scan_had_it_yes": "✅ You've already had this beer",
+        "scan_had_it_no": "🆕 You haven't had this beer yet",
+        "scan_had_it_unknown": "❔ Not sure yet whether you've had this beer",
+        "scan_badges_header": "🏅 Counts toward:",
+        "scan_badges_none": "🏅 Doesn't count toward any of your still-open style/country badges",
+        "scan_too_many": "…and {count} more beer(s) in that photo were skipped (max {max} per scan).",
+        "btn_scan_again": "📷 Scan another",
+        "scan_not_yours": "This button isn't yours - run /scan yourself.",
 
         "cmd_auto_toast": "🍻 Auto-toast",
         "auto_toast_group_hint": "Please message me privately to manage auto-toast.",
@@ -258,6 +295,24 @@ EXTRA_STRINGS = {
         "untappd_token_rate_limited": "⚠️ Untappd тимчасово обмежив запити — спробуй за хвилину.",
         "untappd_token_connected": "✅ Підключено як @{username} — твої чекіни у фестивальному Mini App тепер будуть на твоєму власному Untappd-акаунті.",
 
+        "cmd_wishlist_sheet": "📋 Мій список (таблиця)",
+        "wishlist_sheet_prompt": (
+            "Власна фіча Untappd \"Lists\" (іменовані списки, не класичний єдиний Wishlist) взагалі не має API-доступу, "
+            "тож замість неї можеш опублікувати власну Google-таблицю, а я звірятиму твої пива з нею.\n\n"
+            "*Як налаштувати:*\n"
+            "1. Створи Google-таблицю з колонкою, яка називається точно *Посилання* — у кожному рядку встав посилання на untappd.com "
+            "(наприклад, `https://untappd.com/beer/123456` або `https://untappd.com/b/.../123456`). Інші колонки (назва, броварня, "
+            "стиль...) лише для твоєї зручності, я читаю тільки цю.\n"
+            "2. Файл → Поділитися → *Опублікувати в інтернеті* → обери аркуш → формат *Значення, розділені комами (.csv)* → Опублікувати.\n"
+            "3. Надішли мені це опубліковане посилання.\n\n"
+            "{current}"
+            "_(надішли `-`, щоб прибрати поточну таблицю, або /cancel щоб скасувати)_"
+        ),
+        "wishlist_sheet_current": "Поточна таблиця: {url}\n\n",
+        "wishlist_sheet_invalid": "❌ Це не схоже на опубліковане CSV-посилання (має починатись з `https://` і містити `output=csv`) — перевір крок 2 вище і спробуй /wishlist_sheet ще раз.",
+        "wishlist_sheet_connected": "✅ Збережено! Тепер звірятиму твої пива з цією таблицею.",
+        "wishlist_sheet_cleared": "🗑 Прибрав твою таблицю списку.",
+
         "cmd_import_history": "📥 Імпорт історії Untappd",
         "import_history_group_hint": "Напиши мені в приваті, щоб імпортувати історію Untappd.",
         "import_history_not_connected": "Спершу підключи Untappd через /connect_untappd, потім спробуй /import_history ще раз.",
@@ -265,6 +320,25 @@ EXTRA_STRINGS = {
         "import_history_invalid_file": "❌ Не вдалося прочитати це як експорт Untappd (.csv чи .json) — перевір файл і спробуй ще раз, або /cancel.",
         "import_history_done": "✅ Імпортовано {count} пив з експорту{skipped_note} — бейдж \"вже пив\" тепер одразу покриває всю твою історію.",
         "import_history_skipped_note": " ({skipped} рядків пропущено — не вдалося прочитати)",
+
+        "cmd_scan": "📷 Сканувати пиво",
+        "scan_group_hint": "Напиши мені в приваті, щоб сканувати пиво.",
+        "scan_owner_only": "Сканування пива в магазині поки що особиста тестова фіча й недоступне для інших акаунтів.",
+        "scan_not_connected": "Спершу підключи Untappd через /connect_untappd, потім спробуй /scan ще раз.",
+        "scan_prompt": "📷 Надішли фото етикетки пива (пляшка, банка або цінник на полиці).\n_(або /cancel щоб скасувати)_",
+        "scan_not_found_photo": "😕 Не вдалося розпізнати етикетку пива на фото. Спробуй чіткіше фото.",
+        "scan_error": "❌ Щось пішло не так при розпізнаванні фото. Спробуй /scan ще раз.",
+        "scan_no_match": "😕 Не знайшов \"{brewery} {beer}\" на Untappd. Спробуй чіткіше фото.",
+        "scan_result_header": "🍺 <b>{beer}</b>\n🏭 {brewery}",
+        "scan_rating": "⭐ {rating} ({count})",
+        "scan_had_it_yes": "✅ Ти вже пив це пиво",
+        "scan_had_it_no": "🆕 Ти ще не пив це пиво",
+        "scan_had_it_unknown": "❔ Поки не відомо, чи ти пив це пиво",
+        "scan_badges_header": "🏅 Йде в залік:",
+        "scan_badges_none": "🏅 Не йде в залік жодного з твоїх ще не закритих бейджів стилю/країни",
+        "scan_too_many": "…і ще {count} пиво(а) на цьому фото пропущено (максимум {max} за одне сканування).",
+        "btn_scan_again": "📷 Ще скан",
+        "scan_not_yours": "Ця кнопка не твоя — виконай /scan сам.",
 
         "cmd_auto_toast": "🍻 Авто-тост",
         "auto_toast_group_hint": "Напиши мені в приваті, щоб керувати авто-тостом.",

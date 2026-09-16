@@ -16,6 +16,9 @@ checkins.json
 pinned.json
 pinned_status.json
 status.json
+festival_map.json
+festival_mode.json
+wishlist_items.json
 
 # Logs
 bot_log.txt

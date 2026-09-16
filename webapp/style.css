@@ -3,13 +3,47 @@
   --bg: var(--tg-theme-bg-color, #ffffff);
   --text: var(--tg-theme-text-color, #111111);
   --hint: var(--tg-theme-hint-color, #888888);
-  --link: var(--tg-theme-link-color, #2481cc);
-  --button: var(--tg-theme-button-color, #2481cc);
-  --button-text: var(--tg-theme-button-text-color, #ffffff);
+  /* Deliberately NOT var(--tg-theme-link/button-color, ...) - Telegram's
+     own theme color is blue for most people, which made every button/link/
+     toggle in this app look indistinguishable from Telegram's own chrome.
+     This is the app's own brand accent instead, same idea as Festival
+     mode's override below just as the baseline rather than a special case. */
+  --link: #7c5cfc;
+  --button: #7c5cfc;
+  --button-text: #ffffff;
   --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
 }
 
+/* Festival mode's own accent, overriding the Telegram theme's blue while
+   active (see festival_mode.py/app.js's applyFestivalModeUI) - a visible,
+   at-a-glance "you're at a festival right now" cue that cascades through
+   every button/pill/toggle already themed off --button/--link, no
+   per-component changes needed. */
+body.festival-mode-active {
+  --link: #e08600;
+  --button: #f39c12;
+  --button-text: #1a1300;
+}
+
 * { box-sizing: border-box; }
+
+/* Flat-design icon set (inline SVG, currentColor-driven - see index.html/
+   app.js for the markup) replacing the old ad-hoc emoji throughout, plus
+   the shared shadow/radius/press-feedback language used everywhere below
+   to move cards and buttons off a flat single-color-no-depth "cardboard"
+   look toward a soft, layered one, without any skeuomorphic gradients. */
+.icon {
+  width: 1.15em; height: 1.15em; flex-shrink: 0; vertical-align: -0.22em;
+  fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.icon.icon-filled { fill: currentColor; stroke: none; }
+
+:root {
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --tap-scale: 0.97;
+}
 
 body {
   margin: 0;
@@ -18,19 +52,31 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   padding: 12px;
-  padding-bottom: 32px;
+  padding-bottom: 88px;
 }
 
 .screen { display: none; }
-.screen.active { display: block; }
+.screen.active { display: block; animation: screen-fade-in 0.2s ease-out; }
+@keyframes screen-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen.active { animation: none; }
+}
 
 .topbar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 .topbar-top-row { display: flex; align-items: center; gap: 8px; }
 .icon-btn {
   position: relative;
-  border: none; background: transparent; font-size: 18px; line-height: 1;
-  padding: 4px; cursor: pointer; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 50%;
+  border: none; background: var(--secondary-bg); color: var(--text);
+  cursor: pointer; flex-shrink: 0;
+  transition: transform 0.1s ease;
 }
+.icon-btn:active { transform: scale(var(--tap-scale)); }
+.icon-btn .icon { width: 18px; height: 18px; vertical-align: middle; }
 .icon-btn.has-unread::after {
   content: ""; position: absolute; top: 2px; right: 2px;
   width: 8px; height: 8px; border-radius: 50%;
@@ -41,31 +87,105 @@ body {
   color: var(--hint);
   margin-left: auto;
 }
-.topbar-buttons {
-  display: flex; gap: 8px; width: 100%; min-width: 0; overflow-x: auto;
-  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+/* Bottom tab bar - only the 4 core destinations, icon-on-top/label-below,
+   evenly split via flex:1 so all 4 always fit with no horizontal scroll at
+   any phone width (a scrollable top row here had zero visible hint that it
+   scrolled - confirmed live: 2 of 6 tabs sat fully off-screen at real
+   phone width). No "active tab" highlight - screens don't map 1:1 to a
+   tab (search/rate/drill-downs have none), so every tab stays the same
+   neutral color regardless of which screen is open. */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; width: 100%;
+  display: flex;
+  background: var(--bg);
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+  z-index: 100;
 }
-.topbar-buttons::-webkit-scrollbar { display: none; }
-.queue-bar-btn {
-  flex: 1 1 0; min-width: max-content; white-space: nowrap;
-  padding: 6px 12px; border-radius: 999px; border: none;
+.nav-tab {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 6px 4px; border: none; background: transparent; color: var(--text);
+  cursor: pointer; transition: transform 0.1s ease;
+}
+.nav-tab:active { transform: scale(var(--tap-scale)); }
+.nav-tab.active { color: var(--button); }
+.nav-tab .icon { width: 24px; height: 24px; }
+.nav-label {
+  font-size: 11px; font-weight: 600; line-height: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.nav-icon-wrap { position: relative; display: inline-flex; }
+.nav-badge {
+  position: absolute; top: -5px; right: -10px;
+  min-width: 16px; height: 16px; padding: 0 3px; border-radius: 999px;
   background: var(--button); color: var(--button-text);
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  text-align: center;
+  font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
 }
 
-input[type="text"] {
+input[type="text"], input[type="number"] {
   width: 100%;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--secondary-bg);
+  border-radius: 14px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
   background: var(--secondary-bg);
   color: var(--text);
   font-size: 16px;
   margin-bottom: 10px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+input[type="text"]:focus, input[type="number"]:focus {
+  outline: none;
+  border-color: var(--button);
+  background: var(--bg);
+  /* --button switches between the app's own accent and festival mode's
+     orange (see :root/body.festival-mode-active) - color-mix derives the
+     glow from whichever is currently active instead of a second hardcoded
+     variable per mode. Static rgba first as a fallback for engines without
+     color-mix (silently ignored as invalid, not blank, everywhere else). */
+  box-shadow: 0 0 0 3px rgba(124, 92, 252, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--button) 15%, transparent);
 }
 
+/* Wraps a search input to add a clear ("x") button - see app.js's
+   addSearchClearButton. Relies on the input's own margin-bottom collapsing
+   through this plain, border/padding-less wrap, so spacing below it stays
+   exactly what it was unwrapped. */
+.search-field-wrap { position: relative; }
+.search-field-wrap input[type="text"] { padding-right: 40px; }
+.search-clear-btn {
+  position: absolute; right: 4px; top: 0; bottom: 10px;
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; border: none; background: transparent; color: var(--hint);
+  cursor: pointer; padding: 0;
+}
+.search-clear-btn:active { transform: scale(0.9); }
+.search-clear-btn .icon { width: 15px; height: 15px; }
+
 .hint { color: var(--hint); font-size: 13px; margin: 6px 2px; }
+
+/* Idle empty-state illustration on the search screen - hidden as soon as
+   there's a real query (see app.js), shown again once cleared. Two
+   pre-colored SVGs (not a single currentColor one) since the "liquid"
+   shade isn't simply --link/--button in the default theme the way it
+   happens to be for festival mode's - swapped by the same
+   body.festival-mode-active class every other themed element uses. */
+/* Fills the empty space below the search filters down to the bottom nav
+   and centers the icon within it (both axes), not just left-right at the
+   top - #screen-search.active overrides the generic .screen.active's
+   plain display:block (higher specificity, scoped to this one screen)
+   just enough to make that centering possible. */
+/* 100px = body's own 12px top padding + 88px bottom padding (clears the
+   fixed nav bar) - without subtracting those, a percentage-of-viewport
+   min-height overshoots or undershoots the space actually available above
+   the nav, leaving the icon short of true center. */
+#screen-search.active { display: flex; flex-direction: column; min-height: calc(100vh - 100px); }
+.home-hero { flex: 1; display: flex; align-items: center; justify-content: center; }
+.home-hero-icon { width: 220px; height: 220px; border-radius: 44px; box-shadow: var(--shadow-md); opacity: 0.88; }
+.home-hero-icon-festival { display: none; }
+body.festival-mode-active .home-hero-icon-default { display: none; }
+body.festival-mode-active .home-hero-icon-festival { display: block; }
 
 .results { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 
@@ -74,19 +194,34 @@ input[type="text"] {
   align-items: center;
   gap: 10px;
   padding: 10px;
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--secondary-bg);
+  border: 1px solid rgba(128, 128, 128, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
+.result-row:active { transform: scale(0.99); box-shadow: none; }
 .thumb { position: relative; flex-shrink: 0; width: 40px; height: 40px; }
 .thumb img {
-  width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
+  width: 40px; height: 40px; border-radius: 10px; object-fit: cover;
   background: #ddd;
 }
 .had-it-corner {
   position: absolute; bottom: -4px; right: -4px;
-  font-size: 14px; line-height: 1;
-  background: var(--bg); border-radius: 50%; padding: 1px;
+  width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+  background: #2e7d32; color: #fff; border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--bg);
 }
+.had-it-corner .icon { width: 11px; height: 11px; stroke-width: 3; }
+.queue-status-corner {
+  position: absolute; top: -4px; right: -4px;
+  width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+  color: #fff; border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.queue-status-corner .icon { width: 10px; height: 10px; stroke-width: 3; }
+.queue-status-corner.active { background: var(--button); }
+.queue-status-corner.was { background: var(--hint); opacity: 0.85; }
 .result-main { flex: 1; min-width: 0; }
 .result-name { display: flex; align-items: baseline; gap: 4px; font-weight: 600; min-width: 0; }
 .result-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -95,10 +230,23 @@ input[type="text"] {
 .had-it-badge { font-size: 13px; white-space: nowrap; flex-shrink: 0; }
 .result-meta { font-size: 13px; color: var(--hint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Shared visual language for every small circular icon button (queue-add,
+   remove, Untappd-link, row-menu, event-reply) - a soft tinted fill reads
+   as a modern "chip" rather than the flat bordered-and-empty look, with a
+   quick press-scale for tactile feedback. Each keeps its own class for
+   JS hooks/size tweaks; this just centralizes the shared look. */
+.add-queue-btn, .queue-remove-btn, .untappd-link-btn, .row-menu-btn, .event-reply-toggle-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: var(--bg); color: var(--text);
+  cursor: pointer; transition: transform 0.1s ease;
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.18);
+}
+.add-queue-btn:active, .queue-remove-btn:active, .untappd-link-btn:active,
+.row-menu-btn:active, .event-reply-toggle-btn:active { transform: scale(var(--tap-scale)); }
+
 .add-queue-btn {
   flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
-  border: 1px solid var(--hint); background: transparent; color: var(--text);
-  font-size: 18px; line-height: 1; cursor: pointer;
+  font-size: 18px; line-height: 1;
 }
 
 .queue-number {
@@ -109,7 +257,12 @@ input[type="text"] {
 }
 .queue-remove-btn {
   flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
-  border: none; background: transparent; color: var(--hint); font-size: 16px; cursor: pointer;
+}
+
+.wishlist-sheet-tag {
+  flex-shrink: 0; padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--hint); color: var(--hint);
+  font-size: 11px; font-weight: 600; white-space: nowrap;
 }
 
 .queue-header {
@@ -118,10 +271,29 @@ input[type="text"] {
 }
 .queue-header h2 { margin: 0; }
 .queue-clear-btn {
-  width: auto; margin-bottom: 0; padding: 6px 12px; border-radius: 999px;
-  border: 1px solid var(--hint); background: transparent; color: var(--hint);
+  width: auto; margin-bottom: 0; padding: 7px 14px; border-radius: 999px;
+  border: none; background: var(--bg); color: var(--hint);
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.25);
   font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: transform 0.1s ease;
 }
+.queue-clear-btn:active { transform: scale(0.97); }
+
+/* Long-press-to-select mode (queue + "Мій список") - the header swaps for
+   this bar, and .row-checkbox/.row-actions visibility below is driven by
+   .selection-mode on the list container, not per-row state, so entering/
+   leaving mode is a single class toggle on re-render. */
+.selection-bar { font-size: 13px; font-weight: 600; color: var(--text); }
+.selection-bar-actions { display: flex; gap: 8px; }
+.row-checkbox {
+  display: none; flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--hint); align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--button-text); background: transparent;
+}
+.results.selection-mode .row-checkbox { display: flex; }
+.results.selection-mode .row-actions { display: none; }
+.row-checkbox.checked { background: var(--button); border-color: var(--button); }
 
 .toggle-switch {
   position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0;
@@ -146,21 +318,31 @@ input[type="text"] {
 
 .settings-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px; border-radius: 12px; background: var(--secondary-bg);
-  margin-bottom: 8px;
+  padding: 12px; border-radius: 16px; background: var(--secondary-bg);
+  border: 1px solid rgba(128, 128, 128, 0.08);
+  margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 .settings-row-label { min-width: 0; }
-.settings-row-title { font-weight: 600; font-size: 15px; }
+.settings-row-title { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; }
 .settings-row-hint { font-size: 12px; color: var(--hint); margin-top: 2px; }
+
+/* Auto-toast/festival-watch/festival-map each have a full screen beyond
+   their own row (friend search, location setup, the map itself) - tapping
+   the row (not the toggle, where there is one) opens it, same as a native
+   "Settings item with a detail screen". The chevron is what actually
+   signals "this opens something" (without it, a plain press-scale reads
+   as just a button, not a drill-in) - settings-row-queue-reset is
+   deliberately the one clickable row *without* one, since it's an
+   immediate action with a confirm dialog, not a navigation. */
+.settings-row-clickable { cursor: pointer; transition: transform 0.1s ease; }
+.settings-row-clickable:active { transform: scale(0.99); }
+.settings-row-arrow { color: var(--hint); flex-shrink: 0; }
 
 .event-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .event-row-text { font-size: 14px; }
 .event-row-time { font-size: 12px; color: var(--hint); }
 .event-reply-toggle-btn {
   flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
-  border: 1px solid var(--hint); background: transparent;
-  font-size: 13px; line-height: 1; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
 }
 .event-reply-box {
   display: flex; gap: 6px; margin-top: 6px; padding: 0 10px;
@@ -168,19 +350,52 @@ input[type="text"] {
 .event-reply-box input[type="text"] { margin-bottom: 0; }
 .event-reply-send-btn { width: auto; margin-bottom: 0; padding: 10px 14px; white-space: nowrap; }
 
-.row-actions { display: flex; flex-direction: column; gap: 6px; align-items: center; flex-shrink: 0; }
+.row-actions { position: relative; display: flex; flex-direction: column; gap: 6px; align-items: center; flex-shrink: 0; }
 .untappd-link-btn {
   flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
-  border: 1px solid var(--hint); background: transparent;
-  font-size: 13px; line-height: 1; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
 }
+
+/* Search row's overflow menu ("..." next to the always-visible "+") - the
+   3-icon row got cramped once the wishlist toggle joined the queue-add and
+   Untappd-link buttons; queue's "+" stays a one-tap action (this app's
+   core festival use case) while the other two move here, mirroring
+   Untappd's own kebab menu. */
+.row-menu-btn {
+  position: relative; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+}
+.row-menu-btn.has-wishlist-item::after {
+  content: ""; position: absolute; top: -2px; right: -2px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--button); border: 1.5px solid var(--bg);
+}
+/* One shared instance, body-level (see its markup in index.html) - top/left
+   are set inline by app.js from the clicked "..." button's own
+   getBoundingClientRect(), then shifted fully to that button's left via
+   the transform below (no need to know the menu's own rendered width
+   up front). Being a body-level element, not a .result-row descendant,
+   is the point: a .result-row.had-it's opacity: 0.6 would otherwise bleed
+   into it with no way for the menu to opt back out via its own opacity. */
+.row-menu {
+  display: none; flex-direction: column;
+  position: absolute; z-index: 30; transform: translate(calc(-100% - 8px), 0);
+  background: var(--bg); border-radius: 10px; min-width: 180px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); overflow: hidden;
+}
+.row-menu.open { display: flex; }
+.row-menu-item {
+  width: 100%; display: flex; align-items: center; gap: 8px; opacity: 1;
+  padding: 10px 14px; border: none; border-radius: 0; background: transparent;
+  color: var(--text); font-size: 14px; font-weight: 400; text-align: left; cursor: pointer;
+}
+.row-menu-item:not(:last-child) { border-bottom: 1px solid var(--secondary-bg); }
+.row-menu-item.active { color: var(--button); font-weight: 600; }
 
 .back-btn {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--secondary-bg); border: none; border-radius: 999px;
   color: var(--link); font-size: 14px; font-weight: 600;
   padding: 8px 14px 8px 10px; margin-bottom: 14px; cursor: pointer;
+  box-shadow: var(--shadow-sm);
   transition: transform 0.1s ease, opacity 0.1s ease;
 }
 .back-btn::before {
@@ -189,7 +404,9 @@ input[type="text"] {
 .back-btn:active { transform: scale(0.96); opacity: 0.7; }
 
 .beer-card {
-  padding: 12px; border-radius: 12px; background: var(--secondary-bg); margin-bottom: 16px;
+  padding: 14px; border-radius: 16px; background: var(--secondary-bg);
+  border: 1px solid rgba(128, 128, 128, 0.08);
+  margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 .beer-card .name { font-weight: 700; font-size: 17px; }
 .beer-card .meta { color: var(--hint); font-size: 13px; margin-top: 2px; }
@@ -213,29 +430,237 @@ input[type="text"] {
 input[type="range"] { width: 100%; }
 
 .pills { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.pill {
-  padding: 6px 14px; border-radius: 999px; background: var(--secondary-bg);
-  border: 1px solid var(--hint); color: var(--text); font-size: 14px; cursor: pointer;
+/* Badges' 3 sort pills wrapped to a messy second line at common phone
+   widths - a single horizontally-scrollable row (scrollbar hidden, same
+   pattern mobile filter-chip rows normally use) reads cleaner than a wrap. */
+#badges-sort-pills {
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
 }
-.pill.active { background: var(--button); color: var(--button-text); border-color: var(--button); }
+#badges-sort-pills::-webkit-scrollbar { display: none; }
+#badges-sort-pills .pill { flex-shrink: 0; }
+.pill {
+  padding: 7px 14px; border-radius: 999px; background: var(--secondary-bg);
+  border: 1px solid rgba(128, 128, 128, 0.15); box-shadow: none;
+  color: var(--text); font-size: 14px; cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.pill:active { transform: scale(var(--tap-scale)); }
+.pill.active {
+  background: var(--button); color: var(--button-text);
+  border-color: var(--button); box-shadow: var(--shadow-sm);
+}
+
+/* auto-fit (not auto-fill) so a lone zone actually stretches to fill the
+   row instead of sitting in a half-width column with dead space beside it
+   - the zone count isn't fixed (see festival_map.py's own docstring), so
+   this has to look reasonable anywhere from 1 zone to a dozen. */
+.festival-map-zones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+/* Edit mode: a 2-per-row grid (row-major fill, so with 4 zones column 1
+   holds zone 1 over zone 3 and column 2 holds zone 2 over zone 4 - same
+   pairing as before) where each column is nearly the full viewport wide,
+   so by default you see the first column with just a sliver of the second
+   peeking in from the edge as a scroll hint. grid-template-columns is set
+   inline by app.js's renderFestivalMap (ceil(zone count / 2) columns - 1
+   for a single zone, 2 for anywhere from 3 to 4, etc.) since the column
+   count depends on how many zones this festival actually has; this rule
+   only supplies what doesn't vary by count. */
+body.map-edit-mode .festival-map-zones {
+  display: grid;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 4px;
+}
+.map-zone {
+  background: var(--secondary-bg); border-radius: 16px;
+  border: 1px solid rgba(128, 128, 128, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  padding: 10px; cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+/* In edit mode the card itself isn't tappable (it's a drag surface, not a
+   "open full-screen zone" trigger). */
+body.map-edit-mode .map-zone {
+  scroll-snap-align: start;
+  cursor: default;
+}
+.map-zone.drag-over {
+  background: color-mix(in srgb, var(--button) 12%, var(--secondary-bg));
+  box-shadow: inset 0 0 0 2px var(--button);
+}
+.map-zone-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 0;
+}
+.map-zone-label {
+  font-size: 12px; font-weight: 600; color: var(--hint);
+  text-transform: uppercase; letter-spacing: 0.02em;
+}
+.map-zone-count {
+  font-size: 12px; color: var(--hint); background: var(--bg);
+  border-radius: 999px; padding: 2px 8px;
+}
+/* Overview cards (non-edit-mode) show a dense, non-interactive dot preview
+   instead of readable pills - tapping the card opens the full-screen
+   detail view (#festival-map-detail) for the real, draggable-in-edit-mode
+   perimeter layout. Edit mode swaps the dots for that same perimeter
+   layout in place (see .perimeter-grid below). */
+.map-zone-pills.preview { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-top: 8px; }
+body.map-edit-mode .map-zone-pills.preview { display: none; }
+#festival-map-zones .perimeter-grid { display: none; }
+body.map-edit-mode #festival-map-zones .perimeter-grid { display: grid; }
+.brewery-pill-preview {
+  height: 12px; border-radius: 6px; background: var(--bg);
+  border: 1px solid rgba(128, 128, 128, 0.25);
+}
+.brewery-pill {
+  padding: 6px 10px; border-radius: 999px; background: var(--bg);
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  color: var(--text); font-size: 12px; touch-action: none; user-select: none;
+  text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+body.map-edit-mode .brewery-pill {
+  cursor: grab; box-shadow: var(--shadow-sm);
+  border-style: dashed; border-color: var(--button);
+}
+/* The dragged pill itself, lifted out of the list and following the
+   pointer - the list it left behind shows .brewery-pill-placeholder in its
+   place, and the other pills FLIP-animate into their new positions as the
+   placeholder moves (see app.js's flipReorder). */
+.map-pill-floating {
+  position: fixed; z-index: 999; pointer-events: none;
+  transform: translate(-50%, -50%) scale(1.06);
+  background: var(--button); color: var(--button-text); border-color: var(--button);
+  box-shadow: var(--shadow-md);
+}
+.brewery-pill-placeholder {
+  border-radius: 999px; border: 1px dashed rgba(128, 128, 128, 0.35);
+  background: color-mix(in srgb, var(--button) 8%, transparent);
+  min-height: 27px;
+}
+.festival-map-lagerland { margin-top: 16px; }
+.lagerland-pills { display: grid; grid-template-columns: 1fr 1fr 1fr; margin-top: 8px; }
+.lagerland-pills .brewery-pill { color: var(--hint); opacity: 0.7; }
+
+/* The real venue layout - breweries run along the whole perimeter of a
+   rectangle (a short top row, tall left/right columns, a short bottom row,
+   empty middle) rather than a flat grid. Used both by the full-screen
+   single-zone detail view and by each zone's edit-mode panel. */
+.perimeter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1fr;
+  grid-template-areas:
+    "top top top"
+    "left mid right"
+    "bottom bottom bottom";
+  gap: 8px;
+  margin-top: 8px;
+}
+.perimeter-top, .perimeter-bottom {
+  grid-column: 1 / -1;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 6px;
+}
+.perimeter-top { grid-area: top; }
+.perimeter-bottom { grid-area: bottom; }
+.perimeter-left { grid-area: left; display: flex; flex-direction: column; gap: 6px; }
+.perimeter-right { grid-area: right; display: flex; flex-direction: column; gap: 6px; }
+.perimeter-mid {
+  grid-area: mid;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; opacity: 0.35;
+}
+#festival-map-detail .map-zone-header { margin: 14px 0 4px; }
+
+#festival-map-search-input { margin-bottom: 8px; }
+/* Edit mode has its own horizontally-scrolling layout with no detail view
+   to jump into, so the "find a brewery" search doesn't apply there. */
+body.map-edit-mode #festival-map-search-input,
+body.map-edit-mode #festival-map-search-results { display: none; }
+
+@keyframes brewery-pill-highlight-fade {
+  0% { background: var(--button); color: var(--button-text); border-color: var(--button); }
+  100% { background: var(--bg); color: var(--text); border-color: rgba(128, 128, 128, 0.15); }
+}
+.brewery-pill-highlight { animation: brewery-pill-highlight-fade 1.6s ease-out forwards; }
+/* Persistent "this is the search result you picked" marker - stays until a
+   different brewery is searched or the map screen is left (see app.js's
+   clearActiveSearchHighlight), unlike the fading flash above. Same ring
+   style as .venue-item.selected elsewhere in this app. */
+.brewery-pill-active { box-shadow: inset 0 0 0 2px var(--button); }
+
+@keyframes zone-label-highlight-fade {
+  0% { background: var(--button); color: var(--button-text); }
+  100% { background: transparent; color: var(--hint); }
+}
+.map-zone-label-flash {
+  animation: zone-label-highlight-fade 1.6s ease-out forwards;
+  border-radius: 6px; padding: 2px 6px; margin: -2px -6px;
+}
+.brewery-pill-clickable { cursor: pointer; }
+
+.brewery-session-header { font-weight: 600; font-size: 15px; margin: 16px 0 2px; }
+.brewery-session-header:first-child { margin-top: 0; }
+.brewery-session-stats { margin-bottom: 8px; }
 
 .secondary-btn {
-  width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--hint);
-  background: transparent; color: var(--text); font-size: 15px; margin-bottom: 8px; cursor: pointer;
+  width: 100%; padding: 12px; border-radius: 14px; border: none;
+  background: var(--secondary-bg); color: var(--text); font-size: 15px;
+  margin-bottom: 8px; cursor: pointer; box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform 0.1s ease;
 }
+.secondary-btn:active { transform: scale(0.98); }
 
 .checkbox-label {
   display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--hint);
   margin-bottom: 8px; cursor: pointer;
 }
 .checkbox-label:has(input:disabled) { opacity: 0.5; cursor: default; }
+/* Native checkboxes render as a plain OS-blue square, same "looks like the
+   platform, not this app" issue the rest of the accent-color cleanup
+   already targeted - appearance:none plus a hand-drawn checkmark (the
+   classic rotated-border trick, no image asset) themes it off
+   --button/--button-text like everything else. */
+.checkbox-label input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 20px; height: 20px; flex-shrink: 0; margin: 0; position: relative;
+  border: 1.5px solid rgba(128, 128, 128, 0.35);
+  border-radius: 6px;
+  background: var(--bg);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.checkbox-label input[type="checkbox"]:checked {
+  background: var(--button);
+  border-color: var(--button);
+}
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute; left: 6px; top: 2px;
+  width: 5px; height: 10px;
+  border: solid var(--button-text);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.checkbox-label input[type="checkbox"]:active { transform: scale(0.9); }
 
 .search-filters { display: flex; gap: 16px; margin: 4px 0 8px; }
 .search-filters .checkbox-label { margin-bottom: 0; }
 
 .venue-selected-card {
-  padding: 12px 14px; border-radius: 12px; background: var(--secondary-bg);
-  border: 1px solid var(--button); font-size: 16px; font-weight: 600;
+  padding: 12px 14px; border-radius: 16px; background: var(--secondary-bg);
+  /* The inset ring IS this card's border - it's the "you selected this
+     venue" indicator, not just decoration, so it stays instead of the
+     plain gray border the other 3 cards got alongside their own softer
+     shadow. */
+  box-shadow: inset 0 0 0 1.5px var(--button), 0 2px 8px rgba(0, 0, 0, 0.03);
+  font-size: 16px; font-weight: 600;
   margin-bottom: 8px;
 }
 
@@ -247,9 +672,12 @@ input[type="range"] { width: 100%; }
 
 .venue-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .venue-item {
-  padding: 10px; border-radius: 10px; background: var(--secondary-bg); font-size: 14px; cursor: pointer;
+  padding: 10px 12px; border-radius: 12px; background: var(--secondary-bg);
+  font-size: 14px; cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease;
 }
-.venue-item.selected { outline: 2px solid var(--button); }
+.venue-item:active { transform: scale(0.99); }
+.venue-item.selected { box-shadow: inset 0 0 0 2px var(--button); }
 .venue-category { color: var(--hint); font-size: 13px; }
 .venue-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .venue-badge {
@@ -259,7 +687,12 @@ input[type="range"] { width: 100%; }
 .badge-icon { width: 20px; height: 20px; border-radius: 4px; object-fit: cover; }
 .hidden { display: none !important; }
 
-.badge-row { display: flex; gap: 10px; align-items: center; }
+.badge-row {
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px; border-radius: 14px; background: var(--secondary-bg);
+  box-shadow: var(--shadow-sm); transition: transform 0.1s ease;
+}
+.badge-row:active { transform: scale(0.99); }
 .badge-row.done { opacity: 0.7; }
 .badge-row-icon { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
 .badge-row-main { flex: 1; min-width: 0; }
@@ -267,14 +700,11 @@ input[type="range"] { width: 100%; }
 .badge-row-progress { font-size: 12px; color: var(--hint); margin-top: 2px; }
 
 .primary-btn {
-  width: 100%; padding: 14px; border-radius: 12px; border: none;
+  width: 100%; padding: 14px; border-radius: 14px; border: none;
   background: var(--button); color: var(--button-text); font-size: 16px; font-weight: 600;
-  margin-top: 8px; cursor: pointer;
+  margin-top: 8px; cursor: pointer; box-shadow: var(--shadow-md);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
+.primary-btn:active { transform: scale(0.98); box-shadow: var(--shadow-sm); }
 .primary-btn:disabled { opacity: 0.6; }
-
-.confirm-summary {
-  padding: 14px; border-radius: 12px; background: var(--secondary-bg); margin-bottom: 16px;
-  font-size: 15px; line-height: 1.6;
-}
-.confirm-summary b { display: inline-block; min-width: 90px; color: var(--hint); font-weight: 500; }

@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Untappd Had-It Overlay",
+  "version": "1.13.0",
+  "description": "Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://bronchial-inger-puddly.ngrok-free.dev/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.piwnemosty.pl/*",
+        "https://*.ontap.pl/*",
+        "https://hoptimaal.com/*",
+        "https://www.hoptimaal.com/*",
+        "https://hopincraftbier.be/*",
+        "https://www.hopincraftbier.be/*",
+        "https://onemorebeer.pl/*",
+        "https://www.onemorebeer.pl/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

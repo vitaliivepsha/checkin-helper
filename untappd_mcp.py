@@ -213,9 +213,19 @@ async def check_i_had_beer(token: str, beer_id: int) -> dict:
     return await _call_tool("check_i_had_beer", {"beerId": beer_id}, token)
 
 
-async def get_my_wishlist(token: str, limit: int = 50) -> list[dict]:
-    """Wishlist beers, normalized to the same shape as search_beers() results."""
-    result = await _call_tool("get_my_wishlist", {"limit": limit}, token)
+async def get_beer(token: str, beer_id: int) -> dict:
+    """Full beer detail, including brewery country (search_beers() results
+    don't carry a country field). Returns the raw envelope: {"beer": {...,
+    "brewery": {..., "country_name": ...}}}. Costs 1 quota call."""
+    return await _call_tool("get_beer", {"beerId": beer_id}, token)
+
+
+async def get_my_wishlist(token: str, limit: int = 50, offset: int = 0) -> list[dict]:
+    """One page of wishlist beers, normalized to the same shape as
+    search_beers() results. No single-call "give me everything" - page
+    with offset for a wishlist bigger than one page, same pattern as
+    get_user_friends (see webapp_server._fetch_all_wishlist)."""
+    result = await _call_tool("get_my_wishlist", {"limit": limit, "offset": offset}, token)
     items = (result.get("beers") or {}).get("items", []) if isinstance(result, dict) else []
     out = []
     for item in items:
