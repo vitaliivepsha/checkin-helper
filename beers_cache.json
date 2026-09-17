@@ -7,7 +7,8 @@
             "style": "Sour - Tomato / Vegetable Gose",
             "had": false,
             "image": "https://labels.untappd.com/5581827",
-            "position": "Z1"
+            "position": "Z1",
+            "location": "Area 1"
         },
         {
             "id": "4785506",
@@ -16,7 +17,8 @@
             "style": "IPA - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/4785506",
-            "position": "Z1"
+            "position": "Z1",
+            "location": "Area 1"
         },
         {
             "id": "4099202",
@@ -25,7 +27,8 @@
             "style": "Stout - Foreign / Export",
             "had": true,
             "image": "https://labels.untappd.com/4099202",
-            "position": "Z1"
+            "position": "Z1",
+            "location": "Area 1"
         },
         {
             "id": "3798916",
@@ -34,7 +37,8 @@
             "style": "Lager - Mexican",
             "had": true,
             "image": "https://labels.untappd.com/3798916",
-            "position": "Z1"
+            "position": "Z1",
+            "location": "Area 1"
         },
         {
             "id": "6670706",
@@ -43,7 +47,8 @@
             "style": "Mead - Session / Short",
             "had": false,
             "image": "https://labels.untappd.com/6670706",
-            "position": "P1"
+            "position": "P1",
+            "location": "Area 1"
         },
         {
             "id": "3774392",
@@ -52,7 +57,8 @@
             "style": "Mead - Cyser",
             "had": true,
             "image": "https://labels.untappd.com/3774392",
-            "position": "P1"
+            "position": "P1",
+            "location": "Area 1"
         },
         {
             "id": "3814384",
@@ -61,7 +67,8 @@
             "style": "Mead - Metheglin",
             "had": true,
             "image": "https://labels.untappd.com/3814384",
-            "position": "P1"
+            "position": "P1",
+            "location": "Area 1"
         },
         {
             "id": "6446117",
@@ -70,7 +77,8 @@
             "style": "Mead - Traditional",
             "had": true,
             "image": "https://labels.untappd.com/6446117",
-            "position": "P1"
+            "position": "P1",
+            "location": "Area 1"
         },
         {
             "id": "6532917",
@@ -79,7 +87,8 @@
             "style": "Bock - Doppelbock",
             "had": false,
             "image": "https://labels.untappd.com/6532917",
-            "position": "Z2"
+            "position": "Z2",
+            "location": "Area 1"
         },
         {
             "id": "4005598",
@@ -88,7 +97,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/4005598",
-            "position": "Z2"
+            "position": "Z2",
+            "location": "Area 1"
         },
         {
             "id": "6623570",
@@ -97,7 +107,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6623570",
-            "position": "Z2"
+            "position": "Z2",
+            "location": "Area 1"
         },
         {
             "id": "2822994",
@@ -106,7 +117,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/2822994",
-            "position": "Z2"
+            "position": "Z2",
+            "location": "Area 1"
         },
         {
             "id": "6447593",
@@ -115,7 +127,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": true,
             "image": "https://labels.untappd.com/6447593",
-            "position": "Z3"
+            "position": "Z3",
+            "location": "Area 1"
         },
         {
             "id": "6516306",
@@ -124,7 +137,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6516306",
-            "position": "Z3"
+            "position": "Z3",
+            "location": "Area 1"
         },
         {
             "id": "6603173",
@@ -133,7 +147,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6603173",
-            "position": "Z3"
+            "position": "Z3",
+            "location": "Area 1"
         },
         {
             "id": "6603171",
@@ -142,7 +157,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6603171",
-            "position": "Z3"
+            "position": "Z3",
+            "location": "Area 1"
         },
         {
             "id": "6629870",
@@ -151,7 +167,8 @@
             "style": "Sour - Berliner Weisse",
             "had": false,
             "image": "https://labels.untappd.com/6629870",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "6087774",
@@ -160,7 +177,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6087774",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "6666776",
@@ -169,7 +187,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6666776",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "6087773",
@@ -178,7 +197,8 @@
             "style": "Stout - Imperial / Double Coffee",
             "had": false,
             "image": "https://labels.untappd.com/6087773",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "6591772",
@@ -187,7 +207,8 @@
             "style": "Pale Ale - American",
             "had": false,
             "image": "https://labels.untappd.com/6591772",
-            "position": "Z4"
+            "position": "Z4",
+            "location": "Area 1"
         },
         {
             "id": "6613495",
@@ -196,7 +217,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6613495",
-            "position": "Z4"
+            "position": "Z4",
+            "location": "Area 1"
         },
         {
             "id": "6140833",
@@ -205,7 +227,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6140833",
-            "position": "Z4"
+            "position": "Z4",
+            "location": "Area 1"
         },
         {
             "id": "6670470",
@@ -214,7 +237,8 @@
             "style": "Barleywine - Other",
             "had": false,
             "image": "https://labels.untappd.com/6670470",
-            "position": "P18"
+            "position": "P18",
+            "location": "Area 1"
         },
         {
             "id": "5158567",
@@ -223,7 +247,8 @@
             "style": "IPA - Australian",
             "had": true,
             "image": "https://labels.untappd.com/5158567",
-            "position": "P18"
+            "position": "P18",
+            "location": "Area 1"
         },
         {
             "id": "4948797",
@@ -232,7 +257,8 @@
             "style": "IPA - Imperial / Double",
             "had": true,
             "image": "https://labels.untappd.com/4948797",
-            "position": "P18"
+            "position": "P18",
+            "location": "Area 1"
         },
         {
             "id": "6629716",
@@ -241,7 +267,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6629716",
-            "position": "P18"
+            "position": "P18",
+            "location": "Area 1"
         },
         {
             "id": "6596727",
@@ -250,7 +277,8 @@
             "style": "Barleywine - Other",
             "had": false,
             "image": "https://labels.untappd.com/6596727",
-            "position": "Z5"
+            "position": "Z5",
+            "location": "Area 1"
         },
         {
             "id": "6584127",
@@ -259,7 +287,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6584127",
-            "position": "Z5"
+            "position": "Z5",
+            "location": "Area 1"
         },
         {
             "id": "6537414",
@@ -268,7 +297,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6537414",
-            "position": "Z5"
+            "position": "Z5",
+            "location": "Area 1"
         },
         {
             "id": "6493136",
@@ -277,7 +307,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6493136",
-            "position": "Z5"
+            "position": "Z5",
+            "location": "Area 1"
         },
         {
             "id": "6514492",
@@ -286,7 +317,8 @@
             "style": "Lambic - Fruit",
             "had": false,
             "image": "https://labels.untappd.com/6514492",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "6515320",
@@ -295,7 +327,8 @@
             "style": "Lambic - Other",
             "had": false,
             "image": "https://labels.untappd.com/6515320",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "6509163",
@@ -304,7 +337,8 @@
             "style": "Lambic - Fruit",
             "had": false,
             "image": "https://labels.untappd.com/6509163",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "6245418",
@@ -313,7 +347,8 @@
             "style": "Lambic - Fruit",
             "had": true,
             "image": "https://labels.untappd.com/6245418",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "6245413",
@@ -322,7 +357,8 @@
             "style": "Lambic - Fruit",
             "had": true,
             "image": "https://labels.untappd.com/6245413",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "5995267",
@@ -331,7 +367,8 @@
             "style": "Cider - Other Fruit",
             "had": false,
             "image": "https://labels.untappd.com/5995267",
-            "position": "Z7"
+            "position": "Z7",
+            "location": "Area 1"
         },
         {
             "id": "5644944",
@@ -340,7 +377,8 @@
             "style": "Farmhouse Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/5644944",
-            "position": "Z7"
+            "position": "Z7",
+            "location": "Area 1"
         },
         {
             "id": "6285087",
@@ -349,7 +387,8 @@
             "style": "Lager - Helles",
             "had": false,
             "image": "https://labels.untappd.com/6285087",
-            "position": "Z7"
+            "position": "Z7",
+            "location": "Area 1"
         },
         {
             "id": "6180903",
@@ -358,7 +397,8 @@
             "style": "Sour - Other",
             "had": false,
             "image": "https://labels.untappd.com/6180903",
-            "position": "Z7"
+            "position": "Z7",
+            "location": "Area 1"
         },
         {
             "id": "6670538",
@@ -367,7 +407,8 @@
             "style": "Cider - Dry",
             "had": false,
             "image": "https://labels.untappd.com/6670538",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6670536",
@@ -376,7 +417,8 @@
             "style": "Cider - Ice",
             "had": false,
             "image": "https://labels.untappd.com/6670536",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6670535",
@@ -385,7 +427,8 @@
             "style": "Cider - Ice",
             "had": false,
             "image": "https://labels.untappd.com/6670535",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "5828405",
@@ -394,7 +437,8 @@
             "style": "Cider - Dry",
             "had": true,
             "image": "https://labels.untappd.com/5828405",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6670533",
@@ -403,7 +447,8 @@
             "style": "Cider - Dry",
             "had": false,
             "image": "https://labels.untappd.com/6670533",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6648257",
@@ -412,7 +457,8 @@
             "style": "IPA - Other",
             "had": false,
             "image": "https://labels.untappd.com/6648257",
-            "position": "P8"
+            "position": "P8",
+            "location": "Area 1"
         },
         {
             "id": "6648258",
@@ -421,7 +467,8 @@
             "style": "Sour - Other",
             "had": false,
             "image": "https://labels.untappd.com/6648258",
-            "position": "P8"
+            "position": "P8",
+            "location": "Area 1"
         },
         {
             "id": "6648259",
@@ -430,7 +477,8 @@
             "style": "IPA - Black / Cascadian Dark Ale",
             "had": false,
             "image": "https://labels.untappd.com/6648259",
-            "position": "P8"
+            "position": "P8",
+            "location": "Area 1"
         },
         {
             "id": "6648260",
@@ -439,7 +487,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6648260",
-            "position": "P8"
+            "position": "P8",
+            "location": "Area 1"
         },
         {
             "id": "6663269",
@@ -448,7 +497,8 @@
             "style": "Bock - Doppelbock",
             "had": false,
             "image": "https://labels.untappd.com/6663269",
-            "position": "P10"
+            "position": "P10",
+            "location": "Area 1"
         },
         {
             "id": "6663268",
@@ -457,7 +507,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6663268",
-            "position": "P10"
+            "position": "P10",
+            "location": "Area 1"
         },
         {
             "id": "6663267",
@@ -466,7 +517,8 @@
             "style": "Porter - Imperial / Double Baltic",
             "had": false,
             "image": "https://labels.untappd.com/6663267",
-            "position": "P10"
+            "position": "P10",
+            "location": "Area 1"
         },
         {
             "id": "6663266",
@@ -475,7 +527,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6663266",
-            "position": "P10"
+            "position": "P10",
+            "location": "Area 1"
         },
         {
             "id": "6560497",
@@ -484,7 +537,8 @@
             "style": "Pale Ale - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6560497",
-            "position": "Z8"
+            "position": "Z8",
+            "location": "Area 1"
         },
         {
             "id": "1995368",
@@ -493,7 +547,8 @@
             "style": "IPA - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/1995368",
-            "position": "Z8"
+            "position": "Z8",
+            "location": "Area 1"
         },
         {
             "id": "6534918",
@@ -502,7 +557,8 @@
             "style": "Wild Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/6534918",
-            "position": "Z8"
+            "position": "Z8",
+            "location": "Area 1"
         },
         {
             "id": "1202873",
@@ -511,7 +567,8 @@
             "style": "Pale Ale - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/1202873",
-            "position": "Z8"
+            "position": "Z8",
+            "location": "Area 1"
         },
         {
             "id": "6670060",
@@ -520,7 +577,8 @@
             "style": "Barleywine - Other",
             "had": false,
             "image": "https://labels.untappd.com/6670060",
-            "position": "Z28"
+            "position": "Z28",
+            "location": "Area 1"
         },
         {
             "id": "4409580",
@@ -529,7 +587,8 @@
             "style": "Farmhouse Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/4409580",
-            "position": "Z28"
+            "position": "Z28",
+            "location": "Area 1"
         },
         {
             "id": "6496765",
@@ -538,7 +597,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/6496765",
-            "position": "Z28"
+            "position": "Z28",
+            "location": "Area 1"
         },
         {
             "id": "6104501",
@@ -547,7 +607,8 @@
             "style": "Pilsner - Other",
             "had": false,
             "image": "https://labels.untappd.com/6104501",
-            "position": "Z28"
+            "position": "Z28",
+            "location": "Area 1"
         },
         {
             "id": "6604731",
@@ -556,7 +617,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6604731",
-            "position": "Z9"
+            "position": "Z9",
+            "location": "Area 1"
         },
         {
             "id": "6480792",
@@ -565,7 +627,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6480792",
-            "position": "Z9"
+            "position": "Z9",
+            "location": "Area 1"
         },
         {
             "id": "6211724",
@@ -574,7 +637,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6211724",
-            "position": "Z9"
+            "position": "Z9",
+            "location": "Area 1"
         },
         {
             "id": "6151401",
@@ -583,7 +647,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6151401",
-            "position": "Z9"
+            "position": "Z9",
+            "location": "Area 1"
         },
         {
             "id": "6456628",
@@ -592,7 +657,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6456628",
-            "position": "Z11"
+            "position": "Z11",
+            "location": "Area 1"
         },
         {
             "id": "6533907",
@@ -601,7 +667,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6533907",
-            "position": "Z11"
+            "position": "Z11",
+            "location": "Area 1"
         },
         {
             "id": "6505603",
@@ -610,7 +677,8 @@
             "style": "IPA - Quadruple",
             "had": false,
             "image": "https://labels.untappd.com/6505603",
-            "position": "Z11"
+            "position": "Z11",
+            "location": "Area 1"
         },
         {
             "id": "6622277",
@@ -619,7 +687,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6622277",
-            "position": "Z11"
+            "position": "Z11",
+            "location": "Area 1"
         },
         {
             "id": "6574780",
@@ -628,7 +697,8 @@
             "style": "Stout - Imperial / Double Coffee",
             "had": false,
             "image": "https://labels.untappd.com/6574780",
-            "position": "Z10"
+            "position": "Z10",
+            "location": "Area 1"
         },
         {
             "id": "6574778",
@@ -637,7 +707,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6574778",
-            "position": "Z10"
+            "position": "Z10",
+            "location": "Area 1"
         },
         {
             "id": "6606502",
@@ -646,7 +717,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6606502",
-            "position": "Z10"
+            "position": "Z10",
+            "location": "Area 1"
         },
         {
             "id": "6606499",
@@ -655,7 +727,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6606499",
-            "position": "Z10"
+            "position": "Z10",
+            "location": "Area 1"
         },
         {
             "id": "6407127",
@@ -664,7 +737,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6407127",
-            "position": "Z12"
+            "position": "Z12",
+            "location": "Area 1"
         },
         {
             "id": "6617646",
@@ -673,7 +747,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6617646",
-            "position": "Z12"
+            "position": "Z12",
+            "location": "Area 1"
         },
         {
             "id": "6454700",
@@ -682,7 +757,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6454700",
-            "position": "Z12"
+            "position": "Z12",
+            "location": "Area 1"
         },
         {
             "id": "6571633",
@@ -691,7 +767,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6571633",
-            "position": "Z12"
+            "position": "Z12",
+            "location": "Area 1"
         },
         {
             "id": "6584320",
@@ -700,7 +777,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6584320",
-            "position": "Z26"
+            "position": "Z26",
+            "location": "Area 1"
         },
         {
             "id": "5258261",
@@ -709,7 +787,8 @@
             "style": "Pilsner - German",
             "had": false,
             "image": "https://labels.untappd.com/5258261",
-            "position": "Z26"
+            "position": "Z26",
+            "location": "Area 1"
         },
         {
             "id": "6207295",
@@ -718,7 +797,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/6207295",
-            "position": "Z26"
+            "position": "Z26",
+            "location": "Area 1"
         },
         {
             "id": "5498912",
@@ -727,7 +807,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/5498912",
-            "position": "Z26"
+            "position": "Z26",
+            "location": "Area 1"
         },
         {
             "id": "6663497",
@@ -736,7 +817,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6663497",
-            "position": "P2"
+            "position": "P2",
+            "location": "Area 1"
         },
         {
             "id": "6631870",
@@ -745,7 +827,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6631870",
-            "position": "P2"
+            "position": "P2",
+            "location": "Area 1"
         },
         {
             "id": "6374415",
@@ -754,7 +837,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6374415",
-            "position": "P2"
+            "position": "P2",
+            "location": "Area 1"
         },
         {
             "id": "6536608",
@@ -763,7 +847,8 @@
             "style": "Stout - Imperial / Double",
             "had": true,
             "image": "https://labels.untappd.com/6536608",
-            "position": "P2"
+            "position": "P2",
+            "location": "Area 1"
         },
         {
             "id": "4030602",
@@ -772,7 +857,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/4030602",
-            "position": "Z31"
+            "position": "Z31",
+            "location": "Area 1"
         },
         {
             "id": "5610972",
@@ -781,7 +867,8 @@
             "style": "Barleywine - Other",
             "had": false,
             "image": "https://labels.untappd.com/5610972",
-            "position": "Z31"
+            "position": "Z31",
+            "location": "Area 1"
         },
         {
             "id": "6455427",
@@ -790,7 +877,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6455427",
-            "position": "Z31"
+            "position": "Z31",
+            "location": "Area 1"
         },
         {
             "id": "3507187",
@@ -799,7 +887,8 @@
             "style": "Stout - Imperial / Double",
             "had": true,
             "image": "https://labels.untappd.com/3507187",
-            "position": "Z31"
+            "position": "Z31",
+            "location": "Area 1"
         },
         {
             "id": "6446122",
@@ -808,7 +897,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6446122",
-            "position": "P15"
+            "position": "P15",
+            "location": "Area 1"
         },
         {
             "id": "6536139",
@@ -817,7 +907,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6536139",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6446129",
@@ -826,7 +917,8 @@
             "style": "Stout - Pastry",
             "had": true,
             "image": "https://labels.untappd.com/6446129",
-            "position": "P15"
+            "position": "P15",
+            "location": "Area 1"
         },
         {
             "id": "6658822",
@@ -835,7 +927,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6658822",
-            "position": "P15"
+            "position": "P15",
+            "location": "Area 1"
         },
         {
             "id": "6645693",
@@ -844,7 +937,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6645693",
-            "position": "P19"
+            "position": "P19",
+            "location": "Area 1"
         },
         {
             "id": "6620595",
@@ -853,7 +947,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6620595",
-            "position": "P19"
+            "position": "P19",
+            "location": "Area 1"
         },
         {
             "id": "6645684",
@@ -862,7 +957,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6645684",
-            "position": "P19"
+            "position": "P19",
+            "location": "Area 1"
         },
         {
             "id": "6391246",
@@ -871,7 +967,8 @@
             "style": "Historical Beer - Grodziskie / Grätzer",
             "had": true,
             "image": "https://labels.untappd.com/6391246",
-            "position": "P19"
+            "position": "P19",
+            "location": "Area 1"
         },
         {
             "id": "6568220",
@@ -880,7 +977,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6568220",
-            "position": "Z13"
+            "position": "Z13",
+            "location": "Area 1"
         },
         {
             "id": "6600277",
@@ -889,7 +987,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6600277",
-            "position": "Z13"
+            "position": "Z13",
+            "location": "Area 1"
         },
         {
             "id": "6600325",
@@ -898,7 +997,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6600325",
-            "position": "Z13"
+            "position": "Z13",
+            "location": "Area 1"
         },
         {
             "id": "6600294",
@@ -907,7 +1007,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6600294",
-            "position": "Z13"
+            "position": "Z13",
+            "location": "Area 1"
         },
         {
             "id": "5132498",
@@ -916,7 +1017,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/5132498",
-            "position": "Z30"
+            "position": "Z30",
+            "location": "Area 1"
         },
         {
             "id": "6556335",
@@ -925,7 +1027,8 @@
             "style": "Brown Ale - English",
             "had": false,
             "image": "https://labels.untappd.com/6556335",
-            "position": "Z30"
+            "position": "Z30",
+            "location": "Area 1"
         },
         {
             "id": "4196423",
@@ -934,7 +1037,8 @@
             "style": "Farmhouse Ale - Stjørdalsøl",
             "had": false,
             "image": "https://labels.untappd.com/4196423",
-            "position": "Z30"
+            "position": "Z30",
+            "location": "Area 1"
         },
         {
             "id": "3377067",
@@ -943,7 +1047,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/3377067",
-            "position": "Z30"
+            "position": "Z30",
+            "location": "Area 1"
         },
         {
             "id": "6628775",
@@ -952,7 +1057,8 @@
             "style": "Wild Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/6628775",
-            "position": "Z14"
+            "position": "Z14",
+            "location": "Area 1"
         },
         {
             "id": "6400148",
@@ -961,7 +1067,8 @@
             "style": "Farmhouse Ale - Bière de Garde",
             "had": false,
             "image": "https://labels.untappd.com/6400148",
-            "position": "Z14"
+            "position": "Z14",
+            "location": "Area 1"
         },
         {
             "id": "6622369",
@@ -970,7 +1077,8 @@
             "style": "Farmhouse Ale - Bière de Coupage",
             "had": false,
             "image": "https://labels.untappd.com/6622369",
-            "position": "Z14"
+            "position": "Z14",
+            "location": "Area 1"
         },
         {
             "id": "6400013",
@@ -979,7 +1087,8 @@
             "style": "Wild Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/6400013",
-            "position": "Z14"
+            "position": "Z14",
+            "location": "Area 1"
         },
         {
             "id": "6300835",
@@ -988,7 +1097,8 @@
             "style": "Historical Beer - Grodziskie / Grätzer",
             "had": true,
             "image": "https://labels.untappd.com/6300835",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6639872",
@@ -997,7 +1107,8 @@
             "style": "Historical Beer - Grodziskie / Grätzer",
             "had": false,
             "image": "https://labels.untappd.com/6639872",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6639854",
@@ -1006,7 +1117,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6639854",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6658428",
@@ -1015,7 +1127,8 @@
             "style": "IPA - Other",
             "had": false,
             "image": "https://labels.untappd.com/6658428",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6448026",
@@ -1024,7 +1137,8 @@
             "style": "Barleywine - Other",
             "had": true,
             "image": "https://labels.untappd.com/6448026",
-            "position": "P11"
+            "position": "P11",
+            "location": "Area 1"
         },
         {
             "id": "6654435",
@@ -1033,7 +1147,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6654435",
-            "position": "P12"
+            "position": "P12",
+            "location": "Area 1"
         },
         {
             "id": "6654433",
@@ -1042,7 +1157,8 @@
             "style": "Freeze-Distilled Beer",
             "had": false,
             "image": "https://labels.untappd.com/6654433",
-            "position": "P12"
+            "position": "P12",
+            "location": "Area 1"
         },
         {
             "id": "6583963",
@@ -1051,7 +1167,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6583963",
-            "position": "Z24"
+            "position": "Z24",
+            "location": "Area 1"
         },
         {
             "id": "3743901",
@@ -1060,7 +1177,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/3743901",
-            "position": "Z24"
+            "position": "Z24",
+            "location": "Area 1"
         },
         {
             "id": "6576983",
@@ -1069,7 +1187,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6576983",
-            "position": "Z24"
+            "position": "Z24",
+            "location": "Area 1"
         },
         {
             "id": "6583967",
@@ -1078,7 +1197,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6583967",
-            "position": "Z24"
+            "position": "Z24",
+            "location": "Area 1"
         },
         {
             "id": "6655629",
@@ -1087,7 +1207,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6655629",
-            "position": "P7"
+            "position": "P7",
+            "location": "Area 1"
         },
         {
             "id": "5215416",
@@ -1096,7 +1217,8 @@
             "style": "Pilsner - Czech / Bohemian",
             "had": true,
             "image": "https://labels.untappd.com/5215416",
-            "position": "P7"
+            "position": "P7",
+            "location": "Area 1"
         },
         {
             "id": "6562598",
@@ -1105,7 +1227,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6562598",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6429624",
@@ -1114,7 +1237,8 @@
             "style": "Stout - Pastry",
             "had": true,
             "image": "https://labels.untappd.com/6429624",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6598597",
@@ -1123,7 +1247,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6598597",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6615502",
@@ -1132,7 +1257,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/6615502",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6561821",
@@ -1141,7 +1267,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6561821",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6515429",
@@ -1150,7 +1277,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6515429",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6670665",
@@ -1159,7 +1287,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6670665",
-            "position": "P6"
+            "position": "P6",
+            "location": "Area 1"
         },
         {
             "id": "6645535",
@@ -1168,7 +1297,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6645535",
-            "position": "P6"
+            "position": "P6",
+            "location": "Area 1"
         },
         {
             "id": "6645555",
@@ -1177,7 +1307,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6645555",
-            "position": "P6"
+            "position": "P6",
+            "location": "Area 1"
         },
         {
             "id": "6658572",
@@ -1186,7 +1317,8 @@
             "style": "IPA - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/6658572",
-            "position": "P6"
+            "position": "P6",
+            "location": "Area 1"
         },
         {
             "id": "6650548",
@@ -1195,7 +1327,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6650548",
-            "position": "Z16"
+            "position": "Z16",
+            "location": "Area 1"
         },
         {
             "id": "6629197",
@@ -1204,7 +1337,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6629197",
-            "position": "Z16"
+            "position": "Z16",
+            "location": "Area 1"
         },
         {
             "id": "6553503",
@@ -1213,7 +1347,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6553503",
-            "position": "Z16"
+            "position": "Z16",
+            "location": "Area 1"
         },
         {
             "id": "6415803",
@@ -1222,7 +1357,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6415803",
-            "position": "Z17"
+            "position": "Z17",
+            "location": "Area 1"
         },
         {
             "id": "6543453",
@@ -1231,7 +1367,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6543453",
-            "position": "Z17"
+            "position": "Z17",
+            "location": "Area 1"
         },
         {
             "id": "6164006",
@@ -1240,7 +1377,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": true,
             "image": "https://labels.untappd.com/6164006",
-            "position": "Z17"
+            "position": "Z17",
+            "location": "Area 1"
         },
         {
             "id": "6212442",
@@ -1249,7 +1387,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": true,
             "image": "https://labels.untappd.com/6212442",
-            "position": "Z17"
+            "position": "Z17",
+            "location": "Area 1"
         },
         {
             "id": "6588530",
@@ -1258,7 +1397,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6588530",
-            "position": "Z25"
+            "position": "Z25",
+            "location": "Area 1"
         },
         {
             "id": "2674794",
@@ -1267,7 +1407,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/2674794",
-            "position": "Z25"
+            "position": "Z25",
+            "location": "Area 1"
         },
         {
             "id": "1941131",
@@ -1276,7 +1417,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/1941131",
-            "position": "Z25"
+            "position": "Z25",
+            "location": "Area 1"
         },
         {
             "id": "6588532",
@@ -1285,7 +1427,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6588532",
-            "position": "Z25"
+            "position": "Z25",
+            "location": "Area 1"
         },
         {
             "id": "6599432",
@@ -1294,7 +1437,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6599432",
-            "position": "P16"
+            "position": "P16",
+            "location": "Area 1"
         },
         {
             "id": "6625206",
@@ -1303,7 +1447,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6625206",
-            "position": "P16"
+            "position": "P16",
+            "location": "Area 1"
         },
         {
             "id": "6632073",
@@ -1312,7 +1457,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6632073",
-            "position": "Z18"
+            "position": "Z18",
+            "location": "Area 1"
         },
         {
             "id": "6432395",
@@ -1321,7 +1467,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6432395",
-            "position": "Z18"
+            "position": "Z18",
+            "location": "Area 1"
         },
         {
             "id": "6305247",
@@ -1330,7 +1477,8 @@
             "style": "Sour - Tomato / Vegetable Gose",
             "had": false,
             "image": "https://labels.untappd.com/6305247",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6632083",
@@ -1339,7 +1487,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6632083",
-            "position": "Z18"
+            "position": "Z18",
+            "location": "Area 1"
         },
         {
             "id": "6475218",
@@ -1348,7 +1497,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/6475218",
-            "position": "Z23"
+            "position": "Z23",
+            "location": "Area 1"
         },
         {
             "id": "2427593",
@@ -1357,7 +1507,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/2427593",
-            "position": "Z23"
+            "position": "Z23",
+            "location": "Area 1"
         },
         {
             "id": "6486178",
@@ -1366,7 +1517,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/6486178",
-            "position": "Z23"
+            "position": "Z23",
+            "location": "Area 1"
         },
         {
             "id": "205781",
@@ -1375,7 +1527,8 @@
             "style": "Farmhouse Ale - Brett",
             "had": false,
             "image": "https://labels.untappd.com/205781",
-            "position": "Z23"
+            "position": "Z23",
+            "location": "Area 1"
         },
         {
             "id": "6636948",
@@ -1384,7 +1537,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6636948",
-            "position": "Z19"
+            "position": "Z19",
+            "location": "Area 1"
         },
         {
             "id": "6628234",
@@ -1393,7 +1547,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6628234",
-            "position": "Z19"
+            "position": "Z19",
+            "location": "Area 1"
         },
         {
             "id": "6636946",
@@ -1402,7 +1557,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6636946",
-            "position": "Z19"
+            "position": "Z19",
+            "location": "Area 1"
         },
         {
             "id": "6628231",
@@ -1411,7 +1567,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6628231",
-            "position": "Z19"
+            "position": "Z19",
+            "location": "Area 1"
         },
         {
             "id": "1479857",
@@ -1420,7 +1577,8 @@
             "style": "IPA - Imperial / Double",
             "had": true,
             "image": "https://labels.untappd.com/1479857",
-            "position": "P14"
+            "position": "P14",
+            "location": "Area 1"
         },
         {
             "id": "6604016",
@@ -1429,7 +1587,8 @@
             "style": "Pilsner - American",
             "had": false,
             "image": "https://labels.untappd.com/6604016",
-            "position": "P14"
+            "position": "P14",
+            "location": "Area 1"
         },
         {
             "id": "6543468",
@@ -1438,7 +1597,8 @@
             "style": "Freeze-Distilled Beer",
             "had": false,
             "image": "https://labels.untappd.com/6543468",
-            "position": "P14"
+            "position": "P14",
+            "location": "Area 1"
         },
         {
             "id": "6405527",
@@ -1447,7 +1607,8 @@
             "style": "Freeze-Distilled Beer",
             "had": true,
             "image": "https://labels.untappd.com/6405527",
-            "position": "P14"
+            "position": "P14",
+            "location": "Area 1"
         },
         {
             "id": "6553070",
@@ -1456,7 +1617,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/6553070",
-            "position": "Z27"
+            "position": "Z27",
+            "location": "Area 1"
         },
         {
             "id": "2892521",
@@ -1465,7 +1627,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/2892521",
-            "position": "Z27"
+            "position": "Z27",
+            "location": "Area 1"
         },
         {
             "id": "5897028",
@@ -1474,7 +1637,8 @@
             "style": "Pilsner - German",
             "had": false,
             "image": "https://labels.untappd.com/5897028",
-            "position": "Z27"
+            "position": "Z27",
+            "location": "Area 1"
         },
         {
             "id": "6553081",
@@ -1483,7 +1647,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6553081",
-            "position": "Z27"
+            "position": "Z27",
+            "location": "Area 1"
         },
         {
             "id": "6671154",
@@ -1492,7 +1657,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6671154",
-            "position": "P3"
+            "position": "P3",
+            "location": "Area 1"
         },
         {
             "id": "6665291",
@@ -1501,7 +1667,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6665291",
-            "position": "P3"
+            "position": "P3",
+            "location": "Area 1"
         },
         {
             "id": "6665292",
@@ -1510,7 +1677,8 @@
             "style": "Historical Beer - Other",
             "had": false,
             "image": "https://labels.untappd.com/6665292",
-            "position": "P3"
+            "position": "P3",
+            "location": "Area 1"
         },
         {
             "id": "6665295",
@@ -1519,7 +1687,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6665295",
-            "position": "P3"
+            "position": "P3",
+            "location": "Area 1"
         },
         {
             "id": "6563187",
@@ -1528,7 +1697,8 @@
             "style": "Stout - Imperial / Double Coffee",
             "had": true,
             "image": "https://labels.untappd.com/6563187",
-            "position": "P17"
+            "position": "P17",
+            "location": "Area 1"
         },
         {
             "id": "6563344",
@@ -1537,7 +1707,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6563344",
-            "position": "P17"
+            "position": "P17",
+            "location": "Area 1"
         },
         {
             "id": "6604041",
@@ -1546,7 +1717,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6604041",
-            "position": "P17"
+            "position": "P17",
+            "location": "Area 1"
         },
         {
             "id": "6563339",
@@ -1555,7 +1727,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6563339",
-            "position": "P17"
+            "position": "P17",
+            "location": "Area 1"
         },
         {
             "id": "1703999",
@@ -1564,7 +1737,8 @@
             "style": "IPA - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/1703999",
-            "position": "Z22"
+            "position": "Z22",
+            "location": "Area 1"
         },
         {
             "id": "361171",
@@ -1573,7 +1747,8 @@
             "style": "IPA - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/361171",
-            "position": "Z22"
+            "position": "Z22",
+            "location": "Area 1"
         },
         {
             "id": "467174",
@@ -1582,7 +1757,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/467174",
-            "position": "Z22"
+            "position": "Z22",
+            "location": "Area 1"
         },
         {
             "id": "4629991",
@@ -1591,7 +1767,8 @@
             "style": "Sour - Fruited Berliner Weisse",
             "had": false,
             "image": "https://labels.untappd.com/4629991",
-            "position": "Z22"
+            "position": "Z22",
+            "location": "Area 1"
         },
         {
             "id": "6666478",
@@ -1600,7 +1777,8 @@
             "style": "IPA - Red",
             "had": false,
             "image": "https://labels.untappd.com/6666478",
-            "position": "P5"
+            "position": "P5",
+            "location": "Area 1"
         },
         {
             "id": "1948875",
@@ -1609,7 +1787,8 @@
             "style": "Pilsner - Czech / Bohemian",
             "had": true,
             "image": "https://labels.untappd.com/1948875",
-            "position": "P5"
+            "position": "P5",
+            "location": "Area 1"
         },
         {
             "id": "6666472",
@@ -1618,7 +1797,8 @@
             "style": "Barleywine - Other",
             "had": false,
             "image": "https://labels.untappd.com/6666472",
-            "position": "P5"
+            "position": "P5",
+            "location": "Area 1"
         },
         {
             "id": "6666470",
@@ -1627,7 +1807,8 @@
             "style": "Freeze-Distilled Beer",
             "had": false,
             "image": "https://labels.untappd.com/6666470",
-            "position": "P5"
+            "position": "P5",
+            "location": "Area 1"
         },
         {
             "id": "5108710",
@@ -1636,7 +1817,8 @@
             "style": "Sour - Tomato / Vegetable Gose",
             "had": false,
             "image": "https://labels.untappd.com/5108710",
-            "position": "Z20"
+            "position": "Z20",
+            "location": "Area 1"
         },
         {
             "id": "6534260",
@@ -1645,7 +1827,8 @@
             "style": "Pale Ale - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6534260",
-            "position": "Z20"
+            "position": "Z20",
+            "location": "Area 1"
         },
         {
             "id": "3668218",
@@ -1654,7 +1837,8 @@
             "style": "Stout - Milk / Sweet",
             "had": true,
             "image": "https://labels.untappd.com/3668218",
-            "position": "Z20"
+            "position": "Z20",
+            "location": "Area 1"
         },
         {
             "id": "2744975",
@@ -1663,7 +1847,8 @@
             "style": "Lager - Helles",
             "had": true,
             "image": "https://labels.untappd.com/2744975",
-            "position": "Z20"
+            "position": "Z20",
+            "location": "Area 1"
         },
         {
             "id": "6568338",
@@ -1672,7 +1857,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6568338",
-            "position": "Z29"
+            "position": "Z29",
+            "location": "Area 1"
         },
         {
             "id": "2623197",
@@ -1681,7 +1867,8 @@
             "style": "Lager - Mexican",
             "had": false,
             "image": "https://labels.untappd.com/2623197",
-            "position": "Z29"
+            "position": "Z29",
+            "location": "Area 1"
         },
         {
             "id": "3752218",
@@ -1690,7 +1877,8 @@
             "style": "Fruit Beer",
             "had": false,
             "image": "https://labels.untappd.com/3752218",
-            "position": "Z29"
+            "position": "Z29",
+            "location": "Area 1"
         },
         {
             "id": "2593312",
@@ -1699,7 +1887,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/2593312",
-            "position": "Z29"
+            "position": "Z29",
+            "location": "Area 1"
         },
         {
             "id": "6663307",
@@ -1708,7 +1897,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/6663307",
-            "position": "P4"
+            "position": "P4",
+            "location": "Area 1"
         },
         {
             "id": "6663309",
@@ -1717,7 +1907,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6663309",
-            "position": "P4"
+            "position": "P4",
+            "location": "Area 1"
         },
         {
             "id": "6663304",
@@ -1726,7 +1917,8 @@
             "style": "Sour - Tomato / Vegetable Gose",
             "had": false,
             "image": "https://labels.untappd.com/6663304",
-            "position": "P4"
+            "position": "P4",
+            "location": "Area 1"
         },
         {
             "id": "6576595",
@@ -1735,7 +1927,8 @@
             "style": "Sour - Other",
             "had": false,
             "image": "https://labels.untappd.com/6576595",
-            "position": "P4"
+            "position": "P4",
+            "location": "Area 1"
         },
         {
             "id": "3079153",
@@ -1744,7 +1937,8 @@
             "style": "IPA - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/3079153",
-            "position": "Z21"
+            "position": "Z21",
+            "location": "Area 1"
         },
         {
             "id": "6619651",
@@ -1753,7 +1947,8 @@
             "style": "IPA - New Zealand",
             "had": false,
             "image": "https://labels.untappd.com/6619651",
-            "position": "Z21"
+            "position": "Z21",
+            "location": "Area 1"
         },
         {
             "id": "6619650",
@@ -1762,7 +1957,8 @@
             "style": "IPA - Session New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6619650",
-            "position": "Z21"
+            "position": "Z21",
+            "location": "Area 1"
         },
         {
             "id": "6411277",
@@ -1771,7 +1967,8 @@
             "style": "Sour - Tomato / Vegetable Gose",
             "had": true,
             "image": "https://labels.untappd.com/6411277",
-            "position": "Z21"
+            "position": "Z21",
+            "location": "Area 1"
         }
     ],
     "saturday": [
@@ -1782,7 +1979,8 @@
             "style": "Sour - Fruited",
             "had": true,
             "image": "https://labels.untappd.com/5505703",
-            "position": "Z1"
+            "position": "Z1",
+            "location": "Area 1"
         },
         {
             "id": "4979880",
@@ -1791,7 +1989,8 @@
             "style": "IPA - American",
             "had": true,
             "image": "https://labels.untappd.com/4979880",
-            "position": "Z1"
+            "position": "Z1",
+            "location": "Area 1"
         },
         {
             "id": "3981332",
@@ -1800,7 +1999,8 @@
             "style": "Stout - Imperial / Double",
             "had": true,
             "image": "https://labels.untappd.com/3981332",
-            "position": "Z1"
+            "position": "Z1",
+            "location": "Area 1"
         },
         {
             "id": "3798893",
@@ -1809,7 +2009,8 @@
             "style": "Pilsner - Czech / Bohemian",
             "had": true,
             "image": "https://labels.untappd.com/3798893",
-            "position": "Z1"
+            "position": "Z1",
+            "location": "Area 1"
         },
         {
             "id": "6670704",
@@ -1818,7 +2019,8 @@
             "style": "Mead - Traditional",
             "had": false,
             "image": "https://labels.untappd.com/6670704",
-            "position": "P1"
+            "position": "P1",
+            "location": "Area 1"
         },
         {
             "id": "6649279",
@@ -1827,7 +2029,8 @@
             "style": "Mead - Melomel",
             "had": false,
             "image": "https://labels.untappd.com/6649279",
-            "position": "P1"
+            "position": "P1",
+            "location": "Area 1"
         },
         {
             "id": "2754622",
@@ -1836,7 +2039,8 @@
             "style": "Mead - Session / Short",
             "had": false,
             "image": "https://labels.untappd.com/2754622",
-            "position": "P1"
+            "position": "P1",
+            "location": "Area 1"
         },
         {
             "id": "3814393",
@@ -1845,7 +2049,8 @@
             "style": "Mead - Traditional",
             "had": true,
             "image": "https://labels.untappd.com/3814393",
-            "position": "P1"
+            "position": "P1",
+            "location": "Area 1"
         },
         {
             "id": "6623569",
@@ -1854,7 +2059,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6623569",
-            "position": "Z2"
+            "position": "Z2",
+            "location": "Area 1"
         },
         {
             "id": "4090433",
@@ -1863,7 +2069,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/4090433",
-            "position": "Z2"
+            "position": "Z2",
+            "location": "Area 1"
         },
         {
             "id": "6151354",
@@ -1872,7 +2079,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6151354",
-            "position": "Z2"
+            "position": "Z2",
+            "location": "Area 1"
         },
         {
             "id": "6581468",
@@ -1881,7 +2089,8 @@
             "style": "Kellerbier / Zwickelbier",
             "had": false,
             "image": "https://labels.untappd.com/6581468",
-            "position": "Z2"
+            "position": "Z2",
+            "location": "Area 1"
         },
         {
             "id": "6639660",
@@ -1890,7 +2099,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6639660",
-            "position": "Z3"
+            "position": "Z3",
+            "location": "Area 1"
         },
         {
             "id": "6447592",
@@ -1899,7 +2109,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": true,
             "image": "https://labels.untappd.com/6447592",
-            "position": "Z3"
+            "position": "Z3",
+            "location": "Area 1"
         },
         {
             "id": "6560464",
@@ -1908,7 +2119,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6560464",
-            "position": "Z3"
+            "position": "Z3",
+            "location": "Area 1"
         },
         {
             "id": "6516309",
@@ -1917,7 +2129,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6516309",
-            "position": "Z3"
+            "position": "Z3",
+            "location": "Area 1"
         },
         {
             "id": "6666779",
@@ -1926,7 +2139,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6666779",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "5275850",
@@ -1935,7 +2149,8 @@
             "style": "Wild Ale - Other",
             "had": true,
             "image": "https://labels.untappd.com/5275850",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "5275858",
@@ -1944,7 +2159,8 @@
             "style": "Wild Ale - Other",
             "had": true,
             "image": "https://labels.untappd.com/5275858",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "5275861",
@@ -1953,7 +2169,8 @@
             "style": "Wild Ale - Other",
             "had": true,
             "image": "https://labels.untappd.com/5275861",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "6666773",
@@ -1962,7 +2179,8 @@
             "style": "Stout - Smoked",
             "had": false,
             "image": "https://labels.untappd.com/6666773",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "6630963",
@@ -1971,7 +2189,8 @@
             "style": "Stout - Oyster",
             "had": false,
             "image": "https://labels.untappd.com/6630963",
-            "position": "P9"
+            "position": "P9",
+            "location": "Area 1"
         },
         {
             "id": "3820116",
@@ -1980,7 +2199,8 @@
             "style": "IPA - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/3820116",
-            "position": "Z4"
+            "position": "Z4",
+            "location": "Area 1"
         },
         {
             "id": "5739488",
@@ -1989,7 +2209,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/5739488",
-            "position": "Z4"
+            "position": "Z4",
+            "location": "Area 1"
         },
         {
             "id": "6670472",
@@ -1998,7 +2219,8 @@
             "style": "Wild Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/6670472",
-            "position": "P18"
+            "position": "P18",
+            "location": "Area 1"
         },
         {
             "id": "6289402",
@@ -2007,7 +2229,8 @@
             "style": "Non-Alcoholic - Sour",
             "had": true,
             "image": "https://labels.untappd.com/6289402",
-            "position": "P18"
+            "position": "P18",
+            "location": "Area 1"
         },
         {
             "id": "6629708",
@@ -2016,7 +2239,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6629708",
-            "position": "P18"
+            "position": "P18",
+            "location": "Area 1"
         },
         {
             "id": "6629702",
@@ -2025,7 +2249,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6629702",
-            "position": "P18"
+            "position": "P18",
+            "location": "Area 1"
         },
         {
             "id": "6490446",
@@ -2034,7 +2259,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6490446",
-            "position": "Z5"
+            "position": "Z5",
+            "location": "Area 1"
         },
         {
             "id": "6596220",
@@ -2043,7 +2269,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6596220",
-            "position": "Z5"
+            "position": "Z5",
+            "location": "Area 1"
         },
         {
             "id": "6539082",
@@ -2052,7 +2279,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6539082",
-            "position": "Z5"
+            "position": "Z5",
+            "location": "Area 1"
         },
         {
             "id": "6537415",
@@ -2061,7 +2289,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6537415",
-            "position": "Z5"
+            "position": "Z5",
+            "location": "Area 1"
         },
         {
             "id": "5916428",
@@ -2070,7 +2299,8 @@
             "style": "Lambic - Gueuze",
             "had": true,
             "image": "https://labels.untappd.com/5916428",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "6245429",
@@ -2079,7 +2309,8 @@
             "style": "Lambic - Fruit",
             "had": true,
             "image": "https://labels.untappd.com/6245429",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "6245424",
@@ -2088,7 +2319,8 @@
             "style": "Lambic - Fruit",
             "had": false,
             "image": "https://labels.untappd.com/6245424",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "6514490",
@@ -2097,7 +2329,8 @@
             "style": "Lambic - Fruit",
             "had": false,
             "image": "https://labels.untappd.com/6514490",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "5783500",
@@ -2106,7 +2339,8 @@
             "style": "Lambic - Fruit",
             "had": true,
             "image": "https://labels.untappd.com/5783500",
-            "position": "Z6"
+            "position": "Z6",
+            "location": "Area 1"
         },
         {
             "id": "4377585",
@@ -2115,7 +2349,8 @@
             "style": "Historical Beer - Gruit / Ancient Herbed Ale",
             "had": false,
             "image": "https://labels.untappd.com/4377585",
-            "position": "Z7"
+            "position": "Z7",
+            "location": "Area 1"
         },
         {
             "id": "2133795",
@@ -2124,7 +2359,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/2133795",
-            "position": "Z7"
+            "position": "Z7",
+            "location": "Area 1"
         },
         {
             "id": "5762077",
@@ -2133,7 +2369,8 @@
             "style": "Sour - Other",
             "had": false,
             "image": "https://labels.untappd.com/5762077",
-            "position": "Z7"
+            "position": "Z7",
+            "location": "Area 1"
         },
         {
             "id": "6385412",
@@ -2142,7 +2379,8 @@
             "style": "Cider - Other Fruit",
             "had": false,
             "image": "https://labels.untappd.com/6385412",
-            "position": "Z7"
+            "position": "Z7",
+            "location": "Area 1"
         },
         {
             "id": "6648266",
@@ -2151,7 +2389,8 @@
             "style": "Cider - Dry",
             "had": false,
             "image": "https://labels.untappd.com/6648266",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6059397",
@@ -2160,7 +2399,8 @@
             "style": "Cider - Ice",
             "had": true,
             "image": "https://labels.untappd.com/6059397",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6670546",
@@ -2169,7 +2409,8 @@
             "style": "Cider - Dry",
             "had": false,
             "image": "https://labels.untappd.com/6670546",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6670543",
@@ -2178,7 +2419,8 @@
             "style": "Cider - Dry",
             "had": false,
             "image": "https://labels.untappd.com/6670543",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6670540",
@@ -2187,7 +2429,8 @@
             "style": "Cider - Other",
             "had": false,
             "image": "https://labels.untappd.com/6670540",
-            "position": "P13"
+            "position": "P13",
+            "location": "Area 1"
         },
         {
             "id": "6648262",
@@ -2196,7 +2439,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6648262",
-            "position": "P8"
+            "position": "P8",
+            "location": "Area 1"
         },
         {
             "id": "6648263",
@@ -2205,7 +2449,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6648263",
-            "position": "P8"
+            "position": "P8",
+            "location": "Area 1"
         },
         {
             "id": "6648264",
@@ -2214,7 +2459,8 @@
             "style": "Sour - Other",
             "had": false,
             "image": "https://labels.untappd.com/6648264",
-            "position": "P8"
+            "position": "P8",
+            "location": "Area 1"
         },
         {
             "id": "6648265",
@@ -2223,7 +2469,8 @@
             "style": "IPA - Black / Cascadian Dark Ale",
             "had": false,
             "image": "https://labels.untappd.com/6648265",
-            "position": "P8"
+            "position": "P8",
+            "location": "Area 1"
         },
         {
             "id": "6607903",
@@ -2232,7 +2479,8 @@
             "style": "Pale Ale - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6607903",
-            "position": "P10"
+            "position": "P10",
+            "location": "Area 1"
         },
         {
             "id": "6646060",
@@ -2241,7 +2489,8 @@
             "style": "Porter - Imperial / Double Baltic",
             "had": false,
             "image": "https://labels.untappd.com/6646060",
-            "position": "P10"
+            "position": "P10",
+            "location": "Area 1"
         },
         {
             "id": "6663271",
@@ -2250,7 +2499,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6663271",
-            "position": "P10"
+            "position": "P10",
+            "location": "Area 1"
         },
         {
             "id": "6663270",
@@ -2259,7 +2509,8 @@
             "style": "Porter - Imperial / Double Baltic",
             "had": false,
             "image": "https://labels.untappd.com/6663270",
-            "position": "P10"
+            "position": "P10",
+            "location": "Area 1"
         },
         {
             "id": "6649835",
@@ -2268,7 +2519,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/6649835",
-            "position": "Z8"
+            "position": "Z8",
+            "location": "Area 1"
         },
         {
             "id": "2798886",
@@ -2277,7 +2529,8 @@
             "style": "Pilsner - German",
             "had": false,
             "image": "https://labels.untappd.com/2798886",
-            "position": "Z8"
+            "position": "Z8",
+            "location": "Area 1"
         },
         {
             "id": "6613587",
@@ -2286,7 +2539,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6613587",
-            "position": "Z8"
+            "position": "Z8",
+            "location": "Area 1"
         },
         {
             "id": "1202873",
@@ -2295,7 +2549,8 @@
             "style": "Pale Ale - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/1202873",
-            "position": "Z8"
+            "position": "Z8",
+            "location": "Area 1"
         },
         {
             "id": "6018986",
@@ -2304,7 +2559,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/6018986",
-            "position": "Z28"
+            "position": "Z28",
+            "location": "Area 1"
         },
         {
             "id": "5585111",
@@ -2313,7 +2569,8 @@
             "style": "Table Beer",
             "had": false,
             "image": "https://labels.untappd.com/5585111",
-            "position": "Z28"
+            "position": "Z28",
+            "location": "Area 1"
         },
         {
             "id": "5853327",
@@ -2322,7 +2579,8 @@
             "style": "Porter - English",
             "had": false,
             "image": "https://labels.untappd.com/5853327",
-            "position": "Z28"
+            "position": "Z28",
+            "location": "Area 1"
         },
         {
             "id": "6587300",
@@ -2331,7 +2589,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/6587300",
-            "position": "Z28"
+            "position": "Z28",
+            "location": "Area 1"
         },
         {
             "id": "6317516",
@@ -2340,7 +2599,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6317516",
-            "position": "Z9"
+            "position": "Z9",
+            "location": "Area 1"
         },
         {
             "id": "6599771",
@@ -2349,7 +2609,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6599771",
-            "position": "Z9"
+            "position": "Z9",
+            "location": "Area 1"
         },
         {
             "id": "6572390",
@@ -2358,7 +2619,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6572390",
-            "position": "Z9"
+            "position": "Z9",
+            "location": "Area 1"
         },
         {
             "id": "6317508",
@@ -2367,7 +2629,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6317508",
-            "position": "Z9"
+            "position": "Z9",
+            "location": "Area 1"
         },
         {
             "id": "6526439",
@@ -2376,7 +2639,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": true,
             "image": "https://labels.untappd.com/6526439",
-            "position": "Z10"
+            "position": "Z10",
+            "location": "Area 1"
         },
         {
             "id": "6526442",
@@ -2385,7 +2649,8 @@
             "style": "Stout - Imperial / Double Coffee",
             "had": true,
             "image": "https://labels.untappd.com/6526442",
-            "position": "Z10"
+            "position": "Z10",
+            "location": "Area 1"
         },
         {
             "id": "6606498",
@@ -2394,7 +2659,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6606498",
-            "position": "Z10"
+            "position": "Z10",
+            "location": "Area 1"
         },
         {
             "id": "6606506",
@@ -2403,7 +2669,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6606506",
-            "position": "Z10"
+            "position": "Z10",
+            "location": "Area 1"
         },
         {
             "id": "6596594",
@@ -2412,7 +2679,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6596594",
-            "position": "Z11"
+            "position": "Z11",
+            "location": "Area 1"
         },
         {
             "id": "6553411",
@@ -2421,7 +2689,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6553411",
-            "position": "Z11"
+            "position": "Z11",
+            "location": "Area 1"
         },
         {
             "id": "6553414",
@@ -2430,7 +2699,8 @@
             "style": "IPA - Triple",
             "had": false,
             "image": "https://labels.untappd.com/6553414",
-            "position": "Z11"
+            "position": "Z11",
+            "location": "Area 1"
         },
         {
             "id": "6638678",
@@ -2439,7 +2709,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6638678",
-            "position": "Z11"
+            "position": "Z11",
+            "location": "Area 1"
         },
         {
             "id": "6542259",
@@ -2448,7 +2719,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6542259",
-            "position": "Z12"
+            "position": "Z12",
+            "location": "Area 1"
         },
         {
             "id": "6574654",
@@ -2457,7 +2729,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6574654",
-            "position": "Z12"
+            "position": "Z12",
+            "location": "Area 1"
         },
         {
             "id": "6455535",
@@ -2466,7 +2739,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6455535",
-            "position": "Z12"
+            "position": "Z12",
+            "location": "Area 1"
         },
         {
             "id": "6617638",
@@ -2475,7 +2749,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6617638",
-            "position": "Z12"
+            "position": "Z12",
+            "location": "Area 1"
         },
         {
             "id": "6584320",
@@ -2484,7 +2759,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6584320",
-            "position": "Z26"
+            "position": "Z26",
+            "location": "Area 1"
         },
         {
             "id": "5258261",
@@ -2493,7 +2769,8 @@
             "style": "Pilsner - German",
             "had": false,
             "image": "https://labels.untappd.com/5258261",
-            "position": "Z26"
+            "position": "Z26",
+            "location": "Area 1"
         },
         {
             "id": "4447788",
@@ -2502,7 +2779,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/4447788",
-            "position": "Z26"
+            "position": "Z26",
+            "location": "Area 1"
         },
         {
             "id": "4843710",
@@ -2511,7 +2789,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/4843710",
-            "position": "Z26"
+            "position": "Z26",
+            "location": "Area 1"
         },
         {
             "id": "6663520",
@@ -2520,7 +2799,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6663520",
-            "position": "P2"
+            "position": "P2",
+            "location": "Area 1"
         },
         {
             "id": "6571665",
@@ -2529,7 +2809,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6571665",
-            "position": "P2"
+            "position": "P2",
+            "location": "Area 1"
         },
         {
             "id": "6631821",
@@ -2538,7 +2819,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6631821",
-            "position": "P2"
+            "position": "P2",
+            "location": "Area 1"
         },
         {
             "id": "6536600",
@@ -2547,7 +2829,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6536600",
-            "position": "P2"
+            "position": "P2",
+            "location": "Area 1"
         },
         {
             "id": "6455423",
@@ -2556,7 +2839,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6455423",
-            "position": "Z31"
+            "position": "Z31",
+            "location": "Area 1"
         },
         {
             "id": "2789249",
@@ -2565,7 +2849,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/2789249",
-            "position": "Z31"
+            "position": "Z31",
+            "location": "Area 1"
         },
         {
             "id": "1997671",
@@ -2574,7 +2859,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/1997671",
-            "position": "Z31"
+            "position": "Z31",
+            "location": "Area 1"
         },
         {
             "id": "6455415",
@@ -2583,7 +2869,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6455415",
-            "position": "Z31"
+            "position": "Z31",
+            "location": "Area 1"
         },
         {
             "id": "6012203",
@@ -2592,7 +2879,8 @@
             "style": "Porter - Imperial / Double Baltic",
             "had": true,
             "image": "https://labels.untappd.com/6012203",
-            "position": "P15"
+            "position": "P15",
+            "location": "Area 1"
         },
         {
             "id": "4980200",
@@ -2601,7 +2889,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": true,
             "image": "https://labels.untappd.com/4980200",
-            "position": "P15"
+            "position": "P15",
+            "location": "Area 1"
         },
         {
             "id": "6658896",
@@ -2610,7 +2899,8 @@
             "style": "Stout - Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6658896",
-            "position": "P15"
+            "position": "P15",
+            "location": "Area 1"
         },
         {
             "id": "6658845",
@@ -2619,7 +2909,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6658845",
-            "position": "P15"
+            "position": "P15",
+            "location": "Area 1"
         },
         {
             "id": "6671134",
@@ -2628,7 +2919,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/6671134",
-            "position": "P19"
+            "position": "P19",
+            "location": "Area 1"
         },
         {
             "id": "6446829",
@@ -2637,7 +2929,8 @@
             "style": "IPA - Other",
             "had": false,
             "image": "https://labels.untappd.com/6446829",
-            "position": "P19"
+            "position": "P19",
+            "location": "Area 1"
         },
         {
             "id": "6647179",
@@ -2646,7 +2939,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6647179",
-            "position": "P19"
+            "position": "P19",
+            "location": "Area 1"
         },
         {
             "id": "6645694",
@@ -2655,7 +2949,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6645694",
-            "position": "P19"
+            "position": "P19",
+            "location": "Area 1"
         },
         {
             "id": "6583059",
@@ -2664,7 +2959,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6583059",
-            "position": "Z13"
+            "position": "Z13",
+            "location": "Area 1"
         },
         {
             "id": "6600290",
@@ -2673,7 +2969,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6600290",
-            "position": "Z13"
+            "position": "Z13",
+            "location": "Area 1"
         },
         {
             "id": "6291751",
@@ -2682,7 +2979,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6291751",
-            "position": "Z13"
+            "position": "Z13",
+            "location": "Area 1"
         },
         {
             "id": "6600238",
@@ -2691,7 +2989,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6600238",
-            "position": "Z13"
+            "position": "Z13",
+            "location": "Area 1"
         },
         {
             "id": "6317902",
@@ -2700,7 +2999,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/6317902",
-            "position": "Z30"
+            "position": "Z30",
+            "location": "Area 1"
         },
         {
             "id": "3583592",
@@ -2709,7 +3009,8 @@
             "style": "Farmhouse Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/3583592",
-            "position": "Z30"
+            "position": "Z30",
+            "location": "Area 1"
         },
         {
             "id": "6445761",
@@ -2718,7 +3019,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/6445761",
-            "position": "Z30"
+            "position": "Z30",
+            "location": "Area 1"
         },
         {
             "id": "3377067",
@@ -2727,7 +3029,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/3377067",
-            "position": "Z30"
+            "position": "Z30",
+            "location": "Area 1"
         },
         {
             "id": "6622366",
@@ -2736,7 +3039,8 @@
             "style": "Sour - Fruited Berliner Weisse",
             "had": false,
             "image": "https://labels.untappd.com/6622366",
-            "position": "Z14"
+            "position": "Z14",
+            "location": "Area 1"
         },
         {
             "id": "6277615",
@@ -2745,7 +3049,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": true,
             "image": "https://labels.untappd.com/6277615",
-            "position": "Z14"
+            "position": "Z14",
+            "location": "Area 1"
         },
         {
             "id": "6255956",
@@ -2754,7 +3059,8 @@
             "style": "Farmhouse Ale - Grisette",
             "had": true,
             "image": "https://labels.untappd.com/6255956",
-            "position": "Z14"
+            "position": "Z14",
+            "location": "Area 1"
         },
         {
             "id": "6155029",
@@ -2763,7 +3069,8 @@
             "style": "Grape Ale - Other",
             "had": true,
             "image": "https://labels.untappd.com/6155029",
-            "position": "Z14"
+            "position": "Z14",
+            "location": "Area 1"
         },
         {
             "id": "6059664",
@@ -2772,7 +3079,8 @@
             "style": "Stout - Imperial / Double",
             "had": true,
             "image": "https://labels.untappd.com/6059664",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6448067",
@@ -2781,7 +3089,8 @@
             "style": "Lager - Smoked",
             "had": true,
             "image": "https://labels.untappd.com/6448067",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6658458",
@@ -2790,7 +3099,8 @@
             "style": "Lambic - Fruit",
             "had": false,
             "image": "https://labels.untappd.com/6658458",
-            "position": "P11"
+            "position": "P11",
+            "location": "Area 1"
         },
         {
             "id": "6658453",
@@ -2799,7 +3109,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6658453",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6448022",
@@ -2808,7 +3119,8 @@
             "style": "Stout - Imperial / Double",
             "had": true,
             "image": "https://labels.untappd.com/6448022",
-            "position": "P11"
+            "position": "P11",
+            "location": "Area 1"
         },
         {
             "id": "4270997",
@@ -2817,7 +3129,8 @@
             "style": "IPA - Imperial / Double Black",
             "had": false,
             "image": "https://labels.untappd.com/4270997",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6654437",
@@ -2826,7 +3139,8 @@
             "style": "Sour - Tomato / Vegetable Gose",
             "had": false,
             "image": "https://labels.untappd.com/6654437",
-            "position": "P12"
+            "position": "P12",
+            "location": "Area 1"
         },
         {
             "id": "6654442",
@@ -2835,7 +3149,8 @@
             "style": "Sour - Fruited",
             "had": false,
             "image": "https://labels.untappd.com/6654442",
-            "position": "P12"
+            "position": "P12",
+            "location": "Area 1"
         },
         {
             "id": "6485464",
@@ -2844,7 +3159,8 @@
             "style": "Lager - Vienna",
             "had": false,
             "image": "https://labels.untappd.com/6485464",
-            "position": "Z24"
+            "position": "Z24",
+            "location": "Area 1"
         },
         {
             "id": "3579513",
@@ -2853,7 +3169,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/3579513",
-            "position": "Z24"
+            "position": "Z24",
+            "location": "Area 1"
         },
         {
             "id": "4314406",
@@ -2862,7 +3179,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/4314406",
-            "position": "Z24"
+            "position": "Z24",
+            "location": "Area 1"
         },
         {
             "id": "6583960",
@@ -2871,7 +3189,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6583960",
-            "position": "Z24"
+            "position": "Z24",
+            "location": "Area 1"
         },
         {
             "id": "6590022",
@@ -2880,7 +3199,8 @@
             "style": "Pilsner - Czech / Bohemian",
             "had": true,
             "image": "https://labels.untappd.com/6590022",
-            "position": "P7"
+            "position": "P7",
+            "location": "Area 1"
         },
         {
             "id": "6647825",
@@ -2889,7 +3209,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6647825",
-            "position": "P7"
+            "position": "P7",
+            "location": "Area 1"
         },
         {
             "id": "6430348",
@@ -2898,7 +3219,8 @@
             "style": "Stout - Pastry",
             "had": true,
             "image": "https://labels.untappd.com/6430348",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6615501",
@@ -2907,7 +3229,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6615501",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6562597",
@@ -2916,7 +3239,8 @@
             "style": "Stout - Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6562597",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6561791",
@@ -2925,7 +3249,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6561791",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6561816",
@@ -2934,7 +3259,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6561816",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "3575152",
@@ -2943,7 +3269,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/3575152",
-            "position": "Z15"
+            "position": "Z15",
+            "location": "Area 1"
         },
         {
             "id": "6670661",
@@ -2952,7 +3279,8 @@
             "style": "IPA - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/6670661",
-            "position": "P6"
+            "position": "P6",
+            "location": "Area 1"
         },
         {
             "id": "6645522",
@@ -2961,7 +3289,8 @@
             "style": "Lager - Other",
             "had": false,
             "image": "https://labels.untappd.com/6645522",
-            "position": "P6"
+            "position": "P6",
+            "location": "Area 1"
         },
         {
             "id": "6645538",
@@ -2970,7 +3299,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6645538",
-            "position": "P6"
+            "position": "P6",
+            "location": "Area 1"
         },
         {
             "id": "6645551",
@@ -2979,7 +3309,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6645551",
-            "position": "P6"
+            "position": "P6",
+            "location": "Area 1"
         },
         {
             "id": "6645744",
@@ -2988,7 +3319,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6645744",
-            "position": "Z16"
+            "position": "Z16",
+            "location": "Area 1"
         },
         {
             "id": "6392361",
@@ -2997,7 +3329,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6392361",
-            "position": "Z16"
+            "position": "Z16",
+            "location": "Area 1"
         },
         {
             "id": "6619583",
@@ -3006,7 +3339,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6619583",
-            "position": "Z16"
+            "position": "Z16",
+            "location": "Area 1"
         },
         {
             "id": "6433525",
@@ -3015,7 +3349,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6433525",
-            "position": "Z16"
+            "position": "Z16",
+            "location": "Area 1"
         },
         {
             "id": "6597465",
@@ -3024,7 +3359,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6597465",
-            "position": "Z17"
+            "position": "Z17",
+            "location": "Area 1"
         },
         {
             "id": "6636827",
@@ -3033,7 +3369,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6636827",
-            "position": "Z17"
+            "position": "Z17",
+            "location": "Area 1"
         },
         {
             "id": "6548429",
@@ -3042,7 +3379,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6548429",
-            "position": "Z17"
+            "position": "Z17",
+            "location": "Area 1"
         },
         {
             "id": "5901516",
@@ -3051,7 +3389,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/5901516",
-            "position": "Z17"
+            "position": "Z17",
+            "location": "Area 1"
         },
         {
             "id": "6588530",
@@ -3060,7 +3399,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6588530",
-            "position": "Z25"
+            "position": "Z25",
+            "location": "Area 1"
         },
         {
             "id": "2972476",
@@ -3069,7 +3409,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/2972476",
-            "position": "Z25"
+            "position": "Z25",
+            "location": "Area 1"
         },
         {
             "id": "1793659",
@@ -3078,7 +3419,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/1793659",
-            "position": "Z25"
+            "position": "Z25",
+            "location": "Area 1"
         },
         {
             "id": "6487860",
@@ -3087,7 +3429,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6487860",
-            "position": "Z25"
+            "position": "Z25",
+            "location": "Area 1"
         },
         {
             "id": "6607609",
@@ -3096,7 +3439,8 @@
             "style": "Porter - Imperial / Double Baltic",
             "had": true,
             "image": "https://labels.untappd.com/6607609",
-            "position": "P16"
+            "position": "P16",
+            "location": "Area 1"
         },
         {
             "id": "6670674",
@@ -3105,7 +3449,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6670674",
-            "position": "P16"
+            "position": "P16",
+            "location": "Area 1"
         },
         {
             "id": "6300066",
@@ -3114,7 +3459,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6300066",
-            "position": "P16"
+            "position": "P16",
+            "location": "Area 1"
         },
         {
             "id": "6522839",
@@ -3123,7 +3469,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6522839",
-            "position": "Z18"
+            "position": "Z18",
+            "location": "Area 1"
         },
         {
             "id": "6493156",
@@ -3132,7 +3479,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6493156",
-            "position": "Z18"
+            "position": "Z18",
+            "location": "Area 1"
         },
         {
             "id": "5704324",
@@ -3141,7 +3489,8 @@
             "style": "Bock - Hell / Maibock / Lentebock",
             "had": false,
             "image": "https://labels.untappd.com/5704324",
-            "position": null
+            "position": null,
+            "location": "Area 1"
         },
         {
             "id": "6591978",
@@ -3150,7 +3499,8 @@
             "style": "Stout - Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6591978",
-            "position": "Z18"
+            "position": "Z18",
+            "location": "Area 1"
         },
         {
             "id": "1400246",
@@ -3159,7 +3509,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/1400246",
-            "position": "Z23"
+            "position": "Z23",
+            "location": "Area 1"
         },
         {
             "id": "6542006",
@@ -3168,7 +3519,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/6542006",
-            "position": "Z23"
+            "position": "Z23",
+            "location": "Area 1"
         },
         {
             "id": "223839",
@@ -3177,7 +3529,8 @@
             "style": "Farmhouse Ale - Saison",
             "had": false,
             "image": "https://labels.untappd.com/223839",
-            "position": "Z23"
+            "position": "Z23",
+            "location": "Area 1"
         },
         {
             "id": "6439393",
@@ -3186,7 +3539,8 @@
             "style": "Belgian Blonde",
             "had": false,
             "image": "https://labels.untappd.com/6439393",
-            "position": "Z23"
+            "position": "Z23",
+            "location": "Area 1"
         },
         {
             "id": "6646066",
@@ -3195,7 +3549,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6646066",
-            "position": "Z19"
+            "position": "Z19",
+            "location": "Area 1"
         },
         {
             "id": "6646064",
@@ -3204,7 +3559,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6646064",
-            "position": "Z19"
+            "position": "Z19",
+            "location": "Area 1"
         },
         {
             "id": "4757328",
@@ -3213,7 +3569,8 @@
             "style": "IPA - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/4757328",
-            "position": "Z19"
+            "position": "Z19",
+            "location": "Area 1"
         },
         {
             "id": "6653861",
@@ -3222,7 +3579,8 @@
             "style": "IPA - Triple New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6653861",
-            "position": "Z19"
+            "position": "Z19",
+            "location": "Area 1"
         },
         {
             "id": "5739549",
@@ -3231,7 +3589,8 @@
             "style": "Freeze-Distilled Beer",
             "had": true,
             "image": "https://labels.untappd.com/5739549",
-            "position": "P14"
+            "position": "P14",
+            "location": "Area 1"
         },
         {
             "id": "2613719",
@@ -3240,7 +3599,8 @@
             "style": "Pale Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/2613719",
-            "position": "P14"
+            "position": "P14",
+            "location": "Area 1"
         },
         {
             "id": "2158561",
@@ -3249,7 +3609,8 @@
             "style": "Sour - Fruited Berliner Weisse",
             "had": false,
             "image": "https://labels.untappd.com/2158561",
-            "position": "P14"
+            "position": "P14",
+            "location": "Area 1"
         },
         {
             "id": "6604014",
@@ -3258,7 +3619,8 @@
             "style": "Freeze-Distilled Beer",
             "had": false,
             "image": "https://labels.untappd.com/6604014",
-            "position": "P14"
+            "position": "P14",
+            "location": "Area 1"
         },
         {
             "id": "5533467",
@@ -3267,7 +3629,8 @@
             "style": "Stout - Pastry",
             "had": false,
             "image": "https://labels.untappd.com/5533467",
-            "position": "Z27"
+            "position": "Z27",
+            "location": "Area 1"
         },
         {
             "id": "6567639",
@@ -3276,7 +3639,8 @@
             "style": "Pilsner - New Zealand",
             "had": false,
             "image": "https://labels.untappd.com/6567639",
-            "position": "Z27"
+            "position": "Z27",
+            "location": "Area 1"
         },
         {
             "id": "4736824",
@@ -3285,7 +3649,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/4736824",
-            "position": "Z27"
+            "position": "Z27",
+            "location": "Area 1"
         },
         {
             "id": "6340544",
@@ -3294,7 +3659,8 @@
             "style": "IPA - Imperial / Double New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6340544",
-            "position": "Z27"
+            "position": "Z27",
+            "location": "Area 1"
         },
         {
             "id": "6664305",
@@ -3303,7 +3669,8 @@
             "style": "Wild Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/6664305",
-            "position": "P3"
+            "position": "P3",
+            "location": "Area 1"
         },
         {
             "id": "6665280",
@@ -3312,7 +3679,8 @@
             "style": "Historical Beer - Other",
             "had": false,
             "image": "https://labels.untappd.com/6665280",
-            "position": "P3"
+            "position": "P3",
+            "location": "Area 1"
         },
         {
             "id": "6665285",
@@ -3321,7 +3689,8 @@
             "style": "Stout - Imperial / Double Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6665285",
-            "position": "P3"
+            "position": "P3",
+            "location": "Area 1"
         },
         {
             "id": "6665286",
@@ -3330,7 +3699,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6665286",
-            "position": "P3"
+            "position": "P3",
+            "location": "Area 1"
         },
         {
             "id": "6670687",
@@ -3339,7 +3709,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6670687",
-            "position": "P17"
+            "position": "P17",
+            "location": "Area 1"
         },
         {
             "id": "6357214",
@@ -3348,7 +3719,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6357214",
-            "position": "P17"
+            "position": "P17",
+            "location": "Area 1"
         },
         {
             "id": "6604043",
@@ -3357,7 +3729,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6604043",
-            "position": "P17"
+            "position": "P17",
+            "location": "Area 1"
         },
         {
             "id": "6417968",
@@ -3366,7 +3739,8 @@
             "style": "Sour - Smoothie / Pastry",
             "had": false,
             "image": "https://labels.untappd.com/6417968",
-            "position": "P17"
+            "position": "P17",
+            "location": "Area 1"
         },
         {
             "id": "6147922",
@@ -3375,7 +3749,8 @@
             "style": "IPA - American",
             "had": false,
             "image": "https://labels.untappd.com/6147922",
-            "position": "Z22"
+            "position": "Z22",
+            "location": "Area 1"
         },
         {
             "id": "361171",
@@ -3384,7 +3759,8 @@
             "style": "IPA - New England / Hazy",
             "had": true,
             "image": "https://labels.untappd.com/361171",
-            "position": "Z22"
+            "position": "Z22",
+            "location": "Area 1"
         },
         {
             "id": "467174",
@@ -3393,7 +3769,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/467174",
-            "position": "Z22"
+            "position": "Z22",
+            "location": "Area 1"
         },
         {
             "id": "4629991",
@@ -3402,7 +3779,8 @@
             "style": "Sour - Fruited Berliner Weisse",
             "had": false,
             "image": "https://labels.untappd.com/4629991",
-            "position": "Z22"
+            "position": "Z22",
+            "location": "Area 1"
         },
         {
             "id": "4151437",
@@ -3411,7 +3789,8 @@
             "style": "Sour - Berliner Weisse",
             "had": true,
             "image": "https://labels.untappd.com/4151437",
-            "position": "P5"
+            "position": "P5",
+            "location": "Area 1"
         },
         {
             "id": "5837622",
@@ -3420,7 +3799,8 @@
             "style": "Lager - Pale",
             "had": true,
             "image": "https://labels.untappd.com/5837622",
-            "position": "P5"
+            "position": "P5",
+            "location": "Area 1"
         },
         {
             "id": "6666476",
@@ -3429,7 +3809,8 @@
             "style": "Porter - Imperial / Double Baltic",
             "had": false,
             "image": "https://labels.untappd.com/6666476",
-            "position": "P5"
+            "position": "P5",
+            "location": "Area 1"
         },
         {
             "id": "6666473",
@@ -3438,7 +3819,8 @@
             "style": "Freeze-Distilled Beer",
             "had": false,
             "image": "https://labels.untappd.com/6666473",
-            "position": "P5"
+            "position": "P5",
+            "location": "Area 1"
         },
         {
             "id": "3451244",
@@ -3447,7 +3829,8 @@
             "style": "IPA - Milkshake",
             "had": true,
             "image": "https://labels.untappd.com/3451244",
-            "position": "Z20"
+            "position": "Z20",
+            "location": "Area 1"
         },
         {
             "id": "5983265",
@@ -3456,7 +3839,8 @@
             "style": "IPA - Imperial / Double",
             "had": true,
             "image": "https://labels.untappd.com/5983265",
-            "position": "Z20"
+            "position": "Z20",
+            "location": "Area 1"
         },
         {
             "id": "4056310",
@@ -3465,7 +3849,8 @@
             "style": "Wheat Beer - Witbier / Blanche",
             "had": true,
             "image": "https://labels.untappd.com/4056310",
-            "position": "Z20"
+            "position": "Z20",
+            "location": "Area 1"
         },
         {
             "id": "6171450",
@@ -3474,7 +3859,8 @@
             "style": "Lager - Japanese Rice",
             "had": false,
             "image": "https://labels.untappd.com/6171450",
-            "position": "Z20"
+            "position": "Z20",
+            "location": "Area 1"
         },
         {
             "id": "3757120",
@@ -3483,7 +3869,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/3757120",
-            "position": "Z29"
+            "position": "Z29",
+            "location": "Area 1"
         },
         {
             "id": "5853236",
@@ -3492,7 +3879,8 @@
             "style": "Wild Ale - Other",
             "had": false,
             "image": "https://labels.untappd.com/5853236",
-            "position": "Z29"
+            "position": "Z29",
+            "location": "Area 1"
         },
         {
             "id": "6584783",
@@ -3501,7 +3889,8 @@
             "style": "IPA - Triple",
             "had": false,
             "image": "https://labels.untappd.com/6584783",
-            "position": "Z29"
+            "position": "Z29",
+            "location": "Area 1"
         },
         {
             "id": "5461837",
@@ -3510,7 +3899,8 @@
             "style": "Stout - Imperial / Double",
             "had": false,
             "image": "https://labels.untappd.com/5461837",
-            "position": "Z29"
+            "position": "Z29",
+            "location": "Area 1"
         },
         {
             "id": "6645613",
@@ -3519,7 +3909,8 @@
             "style": "IPA - Triple",
             "had": false,
             "image": "https://labels.untappd.com/6645613",
-            "position": "P4"
+            "position": "P4",
+            "location": "Area 1"
         },
         {
             "id": "6663312",
@@ -3528,7 +3919,8 @@
             "style": "IPA - Imperial / Double Milkshake",
             "had": false,
             "image": "https://labels.untappd.com/6663312",
-            "position": "P4"
+            "position": "P4",
+            "location": "Area 1"
         },
         {
             "id": "6576600",
@@ -3537,7 +3929,8 @@
             "style": "Freeze-Distilled Beer",
             "had": false,
             "image": "https://labels.untappd.com/6576600",
-            "position": "P4"
+            "position": "P4",
+            "location": "Area 1"
         },
         {
             "id": "6576605",
@@ -3546,7 +3939,8 @@
             "style": "Sour - Other",
             "had": false,
             "image": "https://labels.untappd.com/6576605",
-            "position": "P4"
+            "position": "P4",
+            "location": "Area 1"
         },
         {
             "id": "2483912",
@@ -3555,7 +3949,8 @@
             "style": "Pilsner - Czech / Bohemian",
             "had": true,
             "image": "https://labels.untappd.com/2483912",
-            "position": "Z21"
+            "position": "Z21",
+            "location": "Area 1"
         },
         {
             "id": "6619655",
@@ -3564,7 +3959,8 @@
             "style": "IPA - New England / Hazy",
             "had": false,
             "image": "https://labels.untappd.com/6619655",
-            "position": "Z21"
+            "position": "Z21",
+            "location": "Area 1"
         },
         {
             "id": "6619654",
@@ -3573,7 +3969,8 @@
             "style": "Sour - Fruited Gose",
             "had": false,
             "image": "https://labels.untappd.com/6619654",
-            "position": "Z21"
+            "position": "Z21",
+            "location": "Area 1"
         },
         {
             "id": "6576572",
@@ -3582,7 +3979,8 @@
             "style": "Sour - Other Gose",
             "had": false,
             "image": "https://labels.untappd.com/6576572",
-            "position": "Z21"
+            "position": "Z21",
+            "location": "Area 1"
         }
     ]
 }

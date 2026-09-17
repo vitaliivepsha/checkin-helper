@@ -423,7 +423,14 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
   background: var(--secondary-bg); border: 1px solid var(--hint);
   color: var(--text); font-size: 13px;
 }
+.badge-tag.clickable { cursor: pointer; }
+.badge-tag.clickable:active { transform: scale(var(--tap-scale)); }
 #badge-detail-untappd-btn { margin-top: 16px; }
+
+.style-info-section { margin-bottom: 14px; }
+.style-info-section h3 { font-size: 14px; margin: 0 0 4px; color: var(--hint); }
+.style-info-section p { margin: 0; font-size: 15px; line-height: 1.4; }
+#style-info-bjcp-link { margin-top: 16px; text-decoration: none; }
 
 .rating-block { margin-bottom: 16px; }
 .rating-readout { font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 4px; }
@@ -582,6 +589,16 @@ body.map-edit-mode .brewery-pill {
    to jump into, so the "find a brewery" search doesn't apply there. */
 body.map-edit-mode #festival-map-search-input,
 body.map-edit-mode #festival-map-search-results { display: none; }
+/* Solid brand-color fill (not just the plain grey .venue-item look used
+   elsewhere) so a search match reads as a distinct, prominent suggestion
+   sitting between the input and the zone grid below it, not just another
+   flat list row - proven necessary live, the plain grey version blended
+   in enough that it wasn't obvious it was even clickable. */
+#festival-map-search-results .venue-item {
+  background: var(--button); color: var(--button-text);
+  border: none; box-shadow: var(--shadow-md); font-weight: 600;
+}
+#festival-map-search-results .venue-item:active { transform: scale(0.98); }
 
 @keyframes brewery-pill-highlight-fade {
   0% { background: var(--button); color: var(--button-text); border-color: var(--button); }

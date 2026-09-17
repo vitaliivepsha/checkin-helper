@@ -10,7 +10,10 @@ webapp_server.py importing back from bot.py would be circular.
 """
 
 import logging
+import os
 import re
+import time
+import unicodedata
 from urllib.parse import quote
 
 import had_it_index
@@ -24,6 +27,38 @@ SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # pull) - 15 gives the exact match room to surface without pulling in so
 # many candidates that two unrelated beers coincidentally share a name.
 
+# Which Untappd beer (if any) a given shop-provided (name, brewery) text
+# resolves to is impersonal, near-static data - the same text matches the
+# same catalog beer (or fails to match) for every caller, so it's cached
+# process-wide rather than re-derived from scratch on every call. This is
+# the dominant quota cost in this module by far: a single resolution can
+# retry up to ~10 cleaned name variants x however many brewery variants,
+# each one a live search_beers call (see resolve_beer's own retry loop) -
+# proven live to help push a whole account over Untappd's 100/hour limit
+# from ONE shop-page scan, let alone a repeat scan of the same page (no
+# caching at all meant every rescan re-paid the full retry cost for every
+# beer, even ones already resolved seconds earlier). Never caches "hadIt" -
+# that's genuinely personal per user_id and computed fresh below, outside
+# this cache, every call.
+_IDENTITY_CACHE_TTL_SECONDS = float(os.environ.get("BEER_MATCH_CACHE_TTL_SECONDS", str(6 * 60 * 60)))
+_identity_cache: dict[tuple[str, str], tuple[float, dict]] = {}
+_country_cache: dict[int, tuple[float, str]] = {}
+
+
+def _cache_get(cache: dict, key) -> object | None:
+    entry = cache.get(key)
+    if entry is None:
+        return None
+    stored_at, value = entry
+    if time.monotonic() - stored_at > _IDENTITY_CACHE_TTL_SECONDS:
+        del cache[key]
+        return None
+    return value
+
+
+def _cache_set(cache: dict, key, value) -> None:
+    cache[key] = (time.monotonic(), value)
+
 
 # Non-alcoholic beers get labelled inconsistently across breweries/shops/
 # languages - English "non-alcoholic"/"non alco"/"alcohol free" (a Freeky
@@ -31,12 +66,38 @@ SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # "nealko" (proven live: Untappd's own catalog name for a Litovel beer is
 # "... Nealko / Free") - and even Untappd's OWN catalog names aren't
 # consistent about which form they use (a Polish brewery's entry says
-# "Bezalko", an English-market one says "Non-Alcoholic"). Canonicalizing
-# both sides to the same token before comparing means the match succeeds
-# regardless of which spelling either side happens to use.
+# "Bezalko", an English-market one says "Non-Alcoholic"). "Bezalkoholwe"
+# (missing the second "o") is a genuine TYPO in Untappd's own catalog name
+# for a real beer (Wielka Sowa's "Sowie Bezalkoholwe Jasne") - proven live:
+# the shop spells it correctly ("Bezalkoholowe"), so without this variant
+# the two sides never canonicalize to the same token despite being the same
+# real beer. Canonicalizing both sides to the same token before comparing
+# means the match succeeds regardless of which spelling (or misspelling)
+# either side happens to use.
 _NON_ALCO_RE = re.compile(
-    r"\bnon[\s-]?alco(?:holic)?\b|\balcohol[\s-]?free\b|\bbezalkoholowe\b|\bnealko\b", re.IGNORECASE
+    r"\bnon[\s-]?alco(?:holic)?\b|\balcohol[\s-]?free\b|\bbezalkoholo?we\b|\bnealko\b", re.IGNORECASE
 )
+
+
+def _fold_diacritics(text: str) -> str:
+    """Folds accented Latin letters to their plain ASCII base (ą->a, ć->c,
+    ń->n, ó->o, ś->s, ź/ż->z, é->e, ü->u, etc.) - MUST run before
+    _simple_norm's [^a-z0-9%] stripping, which otherwise treats every
+    accented letter as punctuation and SPLITS the word there instead of
+    folding it - proven live: "Bałtycki" tokenized as two unrelated
+    fragments "ba" + "tycki" (the "ł" itself vanishing as a separator),
+    which then coincidentally exact-matched against a DIFFERENT beer's own
+    "...Old Forester BA..." substring, and "Amburaną" (grammatically
+    inflected) fragmenting to "amburan" so it could never equal the
+    catalog's own nominative "Amburana" no matter how the query was
+    otherwise cleaned. Unicode NFKD decomposition handles most of these
+    automatically (an accented letter decomposes to its base letter plus a
+    separate combining mark, which is then dropped); "ł"/"Ł" is the one
+    common exception with no such decomposition, substituted by hand
+    first."""
+    text = (text or "").replace("ł", "l").replace("Ł", "L")
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 
 def _simple_norm(text: str) -> str:
@@ -46,7 +107,7 @@ def _simple_norm(text: str) -> str:
     # "Turbo" vs "Turbo%", two genuinely different real beers) - stripping
     # it would make the two compare as the same name and pick one at
     # random between them.
-    return re.sub(r"[^a-z0-9%]+", " ", (text or "").lower()).strip()
+    return re.sub(r"[^a-z0-9%]+", " ", _fold_diacritics(text).lower()).strip()
 
 
 def scan_norm(text: str) -> str:
@@ -66,6 +127,57 @@ def _token_set(text: str) -> frozenset:
     return frozenset(scan_norm(text).split())
 
 
+# An em/en dash in a catalog beerName marks a deliberate "core name -
+# descriptive subtitle" split - proven live: Piwne Podziemie's own
+# "OVERSATURATED — Citra X Hallertau Blanc X Nelson Sauvin X Riwaka" is the
+# beer's full hop bill tacked on after the real name. Used only to compute
+# the superset CAP in pick_best_match (see _core_token_set) - tokens that
+# only ever appear after the dash don't count against
+# MAX_SUPERSET_EXTRA_TOKENS, because they're the cataloger's own explicit
+# signal that this is elaboration, not part of the identity a shop's
+# shorter title would be expected to repeat.
+_SUBTITLE_DASH_RE = re.compile(r"[—–]")
+
+
+def _core_token_set(text: str) -> frozenset:
+    """Same as _token_set, but only the portion of `text` before the first
+    em/en dash (see _SUBTITLE_DASH_RE) - the catalog name's own "core"
+    identity, without a trailing descriptive subtitle. A name with no dash
+    at all returns its full token set unchanged (nothing to strip)."""
+    return _token_set(_SUBTITLE_DASH_RE.split(text or "", maxsplit=1)[0])
+
+
+def _brewery_matches_query(result: dict, query_brewery_name: str) -> bool:
+    """Whether a search result's own brewery - or one of UNTAPPD'S OWN
+    aliases for it - plausibly matches the query's brewery text. Proven
+    live necessary: a renamed brewery's beers sometimes stay catalogued
+    under BOTH the old and new identity (Browar Stu Mostów's "Black IPA"
+    also exists as a "WRCLW" entry, cross-referenced via WRCLW's own
+    `aliases` list) - checking only `brewery.name` would miss that the two
+    entries are really the same real brewery. Substring, either direction
+    and case-insensitive - the query brewery is often a shortened form of
+    Untappd's fuller name (shop's "Stu Mostów" vs catalog's "Browar Stu
+    Mostów"), or vice versa."""
+    query_key = (query_brewery_name or "").strip().lower()
+    if not query_key:
+        return False
+    names = [(result.get("brewery") or {}).get("name") or ""]
+    names.extend(result.get("aliases") or [])
+    for name in names:
+        name_key = name.strip().lower()
+        if name_key and (name_key in query_key or query_key in name_key):
+            return True
+    return False
+
+
+# How many extra words a "fuller catalog name" superset match may add
+# beyond the query before it's refused as more likely a DIFFERENT,
+# fancier product than a fuller name for the same one - see
+# pick_best_match's own docstring for the calibration case (4 extra words
+# accepted, 5-6 refused).
+MAX_SUPERSET_EXTRA_TOKENS = 5
+
+
 def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "") -> dict | None:
     """search_beers ranks by its own relevance score, which is not reliable
     enough to trust blindly: it can rank a DIFFERENT same-brewery beer
@@ -73,30 +185,43 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "")
     (e.g. "Velvet" ranked "Gelato XTREME: Blue Velvet" above the plain
     "Velvet" IPA) and for an entire flavor LINE sharing one base name (e.g.
     "Wonders" ranked one sibling flavor above the actually-correct one) -
-    both proven live on real shelf photos.
+    both proven live on real shelf photos. A LONE result is no exception -
+    proven live: search_beers returning exactly one hit for a shop's plain
+    "Porter Bałtycki z Amburaną" was Komes' own barrel-aged "Wymrażany
+    Imperialny Porter Bałtycki Old Forester BA z Amburaną" (21% ABV) - the
+    correct, far more common plain "Porter Bałtycki Amburana" (9% ABV)
+    simply didn't rank for that exact query text, so there was no sibling
+    for Algolia itself to return alongside it, but it's still the WRONG
+    beer to hand back with full confidence.
 
     A wrong beer presented with full confidence (wrong style/ABV/link/
-    badges) is worse than admitting no match, so this refuses to guess:
-    - a single candidate is trusted as-is (no sibling to confuse it with).
-    - with multiple candidates, compares TOKEN SETS (order-independent - a
-      shop's own word order doesn't always match Untappd's, e.g. "Bezalko
-      Jasne" vs the catalog's "Jasne Bezalko"), not the joined string. The
-      brewery's own tokens are dropped from beer_name's side first (see
-      brewery_name below) - a shop's title routinely repeats the brewery
-      name as a prefix, but a real catalog beerName essentially never
-      does, so keeping those tokens in the comparison only risks a false
-      match, never a genuine one.
+    badges) is worse than admitting no match, so this refuses to guess and
+    treats every result the same way, lone or not:
+    - compares TOKEN SETS (order-independent - a shop's own word order
+      doesn't always match Untappd's, e.g. "Bezalko Jasne" vs the
+      catalog's "Jasne Bezalko"), not the joined string. The brewery's own
+      tokens are dropped from beer_name's side first (see brewery_name
+      below) - a shop's title routinely repeats the brewery name as a
+      prefix, but a real catalog beerName essentially never does, so
+      keeping those tokens in the comparison only risks a false match,
+      never a genuine one.
     - an exact token-set match wins if exactly one candidate has it; two+
       candidates with the identical name are a genuine catalog duplicate,
-      not something to guess between.
+      not something to guess between (see _brewery_matches_query below for
+      how those get narrowed instead of refused outright).
     - failing that, a query whose tokens are a STRICT SUBSET of exactly one
       candidate's tokens is accepted - the common "shop listed a shortened
       name, Untappd's is fuller" case (e.g. "Salty Love vol.1" for the
-      catalog's "Salty Love vol.1 - Mango + Peach + Coconut + Lemon", or a
-      missing "Bezalkoholowe" qualifier the shop's own listing omitted).
-      Only ever query-subset-of-candidate, never the reverse - accepting a
-      shorter candidate for a longer/noisier query would risk matching on
-      whatever of the query's words happen to overlap, not a real identity.
+      catalog's "Salty Love vol.1 - Mango + Peach + Coconut + Lemon", 4
+      extra words) - but only up to MAX_SUPERSET_EXTRA_TOKENS extra words:
+      past that, a "superset" is more likely a different, fancier product
+      sharing the same base name (the Komes case above: 5-6 extra words -
+      "wymrażany", "imperialny", "old", "forester", "ba" - for what's
+      really a different beer at a different ABV) than a fuller name for
+      the SAME one. Only ever query-subset-of-candidate, never the
+      reverse - accepting a shorter candidate for a longer/noisier query
+      would risk matching on whatever of the query's words happen to
+      overlap, not a real identity.
     - None means the caller should tell the user it couldn't confidently
       identify it, not silently substitute a lookalike.
 
@@ -110,9 +235,6 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "")
     own brewery name and so wasn't an exact match at all until "pinta" was
     dropped from the query's side of the comparison.
     """
-    if len(results) == 1:
-        return results[0]
-
     raw_query_tokens = _token_set(beer_name)
     if not raw_query_tokens:
         return None
@@ -132,12 +254,78 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "")
         return None
 
     exact = [r for r in results if _token_set(r.get("beerName") or "") == query_tokens]
+    if len(exact) > 1:
+        # Multiple identically-named catalog entries - not necessarily
+        # ambiguous. The exact-match check above deliberately never looks
+        # at brewery (see brewery_name's own docstring note), so narrow by
+        # it now before giving up: proven live, a shop's generic "Pale
+        # Ale"/"American IPA"/"Black IPA" each matched TWO real Untappd
+        # entries under the query's own brewery (one current, one an older
+        # duplicate Untappd itself marks "no longer in production" - a
+        # field search_beers doesn't expose at all) - genuinely ambiguous
+        # by name alone, not by brewery.
+        brewery_matched = [r for r in exact if _brewery_matches_query(r, brewery_name)]
+        if brewery_matched:
+            exact = brewery_matched
+        else:
+            return None  # no brewery signal to narrow by - genuinely ambiguous
     if len(exact) == 1:
         return exact[0]
     if len(exact) > 1:
-        return None  # genuine catalog duplicates (e.g. two identically-named "LAGER" entries) - can't tell them apart
+        # Still tied after brewery narrowing - genuine same-brewery catalog
+        # duplicates. The higher bid is the more recently catalogued entry
+        # - confirmed live to correlate with "currently in production" in
+        # every observed case, DESPITE having fewer ratings than the
+        # older, retired entry (which accumulated ratings for longer
+        # before being superseded) - ratingCount would pick the wrong one.
+        return max(exact, key=lambda r: r.get("bid") or 0)
 
-    supersets = [r for r in results if raw_query_tokens < _token_set(r.get("beerName") or "")]
+    if raw_query_tokens != query_tokens:
+        # The brewery-token subtraction above (query_tokens) exists to stop
+        # an UNRELATED brewery's incidental name-credit inside its own
+        # beerName from exact-matching (the Pinta case in this docstring),
+        # but it can itself strip a token that was genuinely part of the
+        # correct beer's own name - proven live: Maryensztadt's "Freeky"
+        # sub-line is catalogued under its OWN brewery "FREEKY non-
+        # alcoholic", whose real beerName is "Freeky APA" - subtracting the
+        # brewery's own tokens from the query ("freeky", "non", "alcoholic")
+        # left only "apa", no longer an exact match for the real "Freeky
+        # APA" entry. Retried here against the FULL, unstripped tokens, but
+        # ONLY accepted when the candidate's own actual brewery genuinely
+        # matches the query brewery (_brewery_matches_query) - that extra
+        # check is what keeps this safe from reintroducing the Pinta false
+        # positive it would otherwise cause (there, the wrong candidate's
+        # real brewery is "Upside Down", not "Pinta", so this guard refuses
+        # it and the brewery-stripped comparison above remains the deciding
+        # one for that case).
+        raw_exact = [
+            r for r in results
+            if _token_set(r.get("beerName") or "") == raw_query_tokens
+            and _brewery_matches_query(r, brewery_name)
+        ]
+        if len(raw_exact) == 1:
+            return raw_exact[0]
+
+    def _within_superset_cap(name: str) -> bool:
+        # The cap only ever counts extra tokens within the candidate's own
+        # CORE name (see _core_token_set) - a trailing "— full hop/flavor
+        # bill" subtitle doesn't count against it, proven live necessary
+        # (Piwne Podziemie's "OVERSATURATED — Citra X Hallertau Blanc X
+        # Nelson Sauvin X Riwaka", 7 extra tokens past the dash for a shop's
+        # bare "Oversaturated" - the ONLY beer of that name on Untappd, so
+        # the cap isn't protecting against anything by refusing it here).
+        # Komes' own "Wymrażany Imperialny Porter Bałtycki Old Forester BA
+        # z Amburaną" - the case the cap exists for - has no dash at all,
+        # so its extra tokens are still fully counted and still refused.
+        core = _core_token_set(name)
+        extra_in_core = core - raw_query_tokens
+        return len(extra_in_core) <= MAX_SUPERSET_EXTRA_TOKENS
+
+    supersets = [
+        r for r in results
+        if raw_query_tokens < _token_set(r.get("beerName") or "")
+        and _within_superset_cap(r.get("beerName") or "")
+    ]
     if len(supersets) == 1:
         return supersets[0]
     return None
@@ -165,6 +353,16 @@ KNOWN_TERM_SUBSTITUTIONS = {
 # brewery has no override for that particular term.
 BREWERY_TERM_SUBSTITUTIONS = {
     "3 sons": {"bcbs": "Broward County Brand Stout"},
+    # Zichovec's own shorthand for its yearly "Winter Affair" imperial
+    # stout series/collabs (e.g. a shop's "WA Gossip Pūhaste 28") - proven
+    # live: search_beers returns ZERO results for "Zichovec WA Gossip
+    # Pühaste" (with or without a trailing edition number like "28"), but
+    # finds the real "Winter Affair Gossip: Pühaste" instantly once "WA" is
+    # either dropped or expanded - bare "wa" is too ambiguous a 2-letter
+    # token to add to the generic KNOWN_TERM_SUBSTITUTIONS above (it isn't
+    # a fixed abbreviation for anything outside this one brewery's own
+    # labeling convention).
+    "zichovec": {"wa": "Winter Affair"},
 }
 
 # A brewery sometimes spins a whole sub-line off into its own separate
@@ -208,6 +406,15 @@ BREWERY_RENAME = {
     # Untappd has long since catalogued the brewery under just "Zichovec" -
     # the full name returns nothing.
     "zichovec": "Zichovec",
+    # onemorebeer.pl abbreviates "Browar Stu Mostów" down to its bare
+    # initials "BSM" in its own Producent field - proven live: "BSM Schops"
+    # returns only unrelated junk (no beer of theirs is catalogued under
+    # the literal initials "BSM" at all), while "Stu Mostów Schops" finds
+    # the real beer ("WRCLW Schöps" - Stu Mostów's own beers are catalogued
+    # under its "WRCLW" sub-brand, cross-referenced via that entry's own
+    # "Stu Mostów"/"Browar Stu Mostów" aliases, which search_beers already
+    # matches on).
+    "bsm": "Stu Mostów",
 }
 
 # A brewery is sometimes catalogued under MULTIPLE names on Untappd at
@@ -289,9 +496,23 @@ def _apply_known_terms(text: str, brewery_name: str = "") -> str:
 # (catalogued as plain "PINTA"), and hoptimaal.com's own vendor field lists
 # breweries as "Brasserie Caulier" (French), "Arpus Brewing Co." / "Polly's
 # Brew Co." (English), "X Brouwerij"/"X Bierbrouwerij" (Dutch) - same
-# pattern, just not Polish.
+# pattern, just not Polish. The separator is EITHER real whitespace OR (via
+# the lookahead) a following capital letter with no space at all - proven
+# live: onemorebeer.pl's own producer field for Trzech Kumpli is
+# "BreweryTrzech Kumpli", the generic label glued directly onto the real
+# name with no space (a template bug on the shop's own side) - requiring at
+# least one space meant this prefix never matched, leaving the whole glued
+# string in the query, which returns ZERO results (confirmed live) where
+# "Trzech Kumpli" alone finds the beer instantly. The lookahead's capital-
+# letter requirement is deliberately case-SENSITIVE even though the prefix
+# word itself is matched case-insensitively (scoped via `(?i:...)`, not the
+# whole pattern) - a bare `\s*` would also wrongly strip "browar" out of an
+# unrelated real word that merely starts with those letters in lowercase
+# (e.g. "Browarnia"), which this avoids: a glued run-on only looks like a
+# genuine second word, not a continuation of the same one, when the next
+# letter is capitalized.
 _BREWERY_PREFIX_RE = re.compile(
-    r"^(browar|brewery|brewing|piwowarnia|brasserie|brouwerij|bierbrouwerij)\s+", re.IGNORECASE
+    r"^(?i:browar|brewery|brewing|piwowarnia|brasserie|brouwerij|bierbrouwerij)(?:\s+|(?=[A-ZĄĆĘŁŃÓŚŹŻ]))"
 )
 
 # Strips exactly ONE trailing generic word - used iteratively (see
@@ -324,6 +545,31 @@ _COLLAB_SUFFIX_RE = re.compile(r"\s+x\s+\S.*$", re.IGNORECASE)
 # for a health-halo claim instead of an edition tier.
 _NOISE_WORDS_RE = re.compile(
     r"\b(series|festiwal|festival|platinum|gold|silver|bronze|prozdrowotne|gluten)\b", re.IGNORECASE
+)
+
+# A shop appends the physical packaging (container word + volume, in
+# EITHER order, English or Polish) to the product title - never part of
+# Untappd's own catalog name - proven live, both word orders and both
+# languages independently confirmed to make search_beers return zero
+# results when left in: "Black IPA - bottle 500 ml", "Pale Ale - 500 ml
+# bottle", "For.rest - butelka 500 ml". Anchored to the END of the string
+# (with an optional leading "-") rather than a bare \b(...)\b scan - a
+# generic word like "can" is too common a real word/name fragment to
+# safely strip wherever it appears, but "can/bottle/etc immediately next
+# to a volume number, trailing the whole title" is unambiguously packaging
+# metadata. The third branch is a BARE trailing volume with no container
+# word at all - proven live (onemorebeer.pl's own "... Bezalkoholowe 0,5
+# L", no "butelka"/"but." anywhere in the title) - a beer name never
+# legitimately ends in a bare volume unit either way.
+_PACKAGING_SUFFIX_RE = re.compile(
+    r"\s*-?\s*(?:"
+    r"(?:bottle|can|keg|growler|crowler|butelka|puszka|beczka)\s*\d+(?:[.,]\d+)?\s*m?l"
+    r"|"
+    r"\d+(?:[.,]\d+)?\s*m?l\s*(?:bottle|can|keg|growler|crowler|butelka|puszka|beczka)"
+    r"|"
+    r"\d+(?:[.,]\d+)?\s*m?l\b"
+    r")\s*$",
+    re.IGNORECASE,
 )
 
 # "Polish Vintage:" - a collection/series label a shop prepends, never
@@ -362,6 +608,26 @@ _DANGLING_CONNECTOR_RE = re.compile(r"(^|\s)[&/](\s|$)")
 # token comparison after.
 _POLISH_AND_RE = re.compile(r"\bi\b", re.IGNORECASE)
 
+# Polish "z" ("with") - a grammatical connector, not identifying content,
+# same spirit as _POLISH_AND_RE's "i" above. Unlike "i" though, Untappd's
+# OWN catalog name sometimes genuinely keeps a "z ..." phrase verbatim
+# (this file's own earlier example: "Bestbir Piwo z Sokiem Malina -
+# Pigwa") - so this is NOT stripped because "z" breaks the search the way
+# "i" does. It's stripped because leaving it in the query can make a
+# SPECIALTY/limited variant whose fuller catalog name happens to also
+# start with the same "z ..." phrase look like a confident match ahead of
+# the plain, far more common sibling beer that has no "z" in its name at
+# all - proven live: a shop's plain "Porter Bałtycki z Amburaną" (0.5 L,
+# a few zł) exact-name-matched Komes' own barrel-aged "Wymrażany
+# Imperialny Porter Bałtycki Old Forester BA z Amburaną" (21% ABV, a
+# completely different, far pricier product) instead of the correct plain
+# "Porter Bałtycki Amburana" - dropping "z" turns that into an exact
+# match against the RIGHT beer instead (Untappd's own search still finds
+# a z-containing catalog name fine without "z" in the query - it's
+# grammatically empty content, same as "i" - see MAX_SUPERSET_EXTRA_TOKENS
+# below for the other half of this fix).
+_POLISH_WITH_RE = re.compile(r"\bz\b", re.IGNORECASE)
+
 # Same concept as _NON_ALCO_RE, but used to DETECT the concept in a shop's
 # raw text (including a bare "0%"/"0.0%" ABV callout, another common way
 # shops flag a non-alcoholic beer) rather than to canonicalize it - see
@@ -382,10 +648,27 @@ _NON_ALCO_TRIGGER_RE = re.compile(
 # name is common enough as an actual beer-name substring elsewhere that
 # stripping it unconditionally on every query is riskier, so this is only
 # ever tried as a fallback variant (see _style_stripped_variant) after the
-# untouched name already failed.
+# untouched name already failed. "Grodziskie"/"Grätzer" (a historic Polish
+# smoked-wheat style, named after the town Grodzisk) is the same pattern -
+# proven live: a specialty brewery's own "Grodziskie Pils Bezalkoholowy"
+# left the single real Untappd match ("Bezalkoholowy Pils") unmatched
+# because "Grodziskie" isn't part of the catalog beerName at all (the
+# catalog style field is plain "Lager", not "Grodziskie") and the word
+# doesn't collapse into the brewery name ("Browar Grodzisk") either, so it
+# sat as an unmatched extra token blocking both the exact and superset
+# checks. "West Coast" (an IPA sub-style descriptor) is the same pattern
+# again, and proven live to be actively HARMFUL rather than just inert
+# noise: Pinta's own beerName for "IIPPAA" is literally just that one word
+# (a pun, no style text baked in at all) - a shop's fuller "IIPPAA West
+# Coast Double IPA" made search_beers return ZERO results outright (not
+# just a worse-ranked one), where "Pinta IIPPAA" alone finds it instantly.
+# Stripping "West Coast" here (alongside the already-handled "IPA") leaves
+# "IIPPAA Double" as the safe-strip variant, which _drop_trailing_words
+# then reduces the rest of the way down to the bare catalog name.
 _STYLE_WORDS_RE = re.compile(
     r"\b(stout|porter|ipa|lager|pils(?:ner)?|ale|sour|gose|saison|wheat|kriek|lambic|"
-    r"witbier|weisse|bock|barleywine|quad(?:rupel)?|tripel|dubbel|munich helles|helles)\b",
+    r"witbier|weisse|bock|barleywine|quad(?:rupel)?|tripel|dubbel|munich helles|helles|"
+    r"grodziskie|gr[ae]tzer|west[\s-]coast)\b",
     re.IGNORECASE,
 )
 
@@ -428,16 +711,24 @@ _POLISH_SKIE_ADJECTIVE_RE = re.compile(r"\b(\w+)skie\b", re.IGNORECASE)
 # translated - the Polish spelling alone came back ambiguous even with the
 # brewery name included; a shop's "AleBrowar Kwas Chlebowy JASNY" (Polish
 # "light/pale") returned ZERO results, while Untappd's real name for that
-# exact variant is the English "Kwas Chlebowy Light". Not a general rule
-# (no pattern could infer a translation), so a small hand-maintained pair
-# list, same spirit as KNOWN_TERM_SUBSTITUTIONS - but tried as a fallback
-# VARIANT rather than substituted unconditionally, since both words are
-# also perfectly normal Polish words elsewhere and blindly rewriting every
-# occurrence would break those.
-_FLAVOR_TRANSLATION_RE = re.compile(r"\b(miodowy|miodowe|miodowa|jasny|jasne|jasna)\b", re.IGNORECASE)
+# exact variant is the English "Kwas Chlebowy Light". A third case is a
+# plain catalog SPELLING variant rather than a translation - proven live:
+# Maryensztadt's "New Black: Bakalia w Czekoladzie" is Untappd's own name,
+# but a shop's title says "Bakalie" (the ordinary Polish plural of
+# "bakalia", "assorted dried fruit/nuts") - close enough for Untappd's own
+# fuzzy search to still find it, but not an exact/superset token match
+# either way. Not a general rule (no pattern could infer any of these), so
+# a small hand-maintained pair list, same spirit as KNOWN_TERM_SUBSTITUTIONS
+# - but tried as a fallback VARIANT rather than substituted unconditionally,
+# since these words are also perfectly normal Polish words elsewhere and
+# blindly rewriting every occurrence would break those.
+_FLAVOR_TRANSLATION_RE = re.compile(
+    r"\b(miodowy|miodowe|miodowa|jasny|jasne|jasna|bakalie)\b", re.IGNORECASE
+)
 _FLAVOR_TRANSLATIONS = {
     "miodowy": "Medový", "miodowe": "Medový", "miodowa": "Medový",
     "jasny": "Light", "jasne": "Light", "jasna": "Light",
+    "bakalie": "Bakalia",
 }
 
 
@@ -529,11 +820,13 @@ def _collapse_non_alco_markers(text: str, replacement: str | None = None) -> str
 
 def _clean_beer_name_query(beer_name: str, brewery_name: str = "") -> str:
     cleaned = _apply_known_terms(beer_name or "", brewery_name)
+    cleaned = _PACKAGING_SUFFIX_RE.sub("", cleaned)
     cleaned = _NOISE_WORDS_RE.sub("", cleaned)
     cleaned = _KRAFT_ROKU_RE.sub("", cleaned)
     cleaned = _IN_OUT_RE.sub("", cleaned)
     cleaned = _POLISH_VINTAGE_RE.sub("", cleaned)
     cleaned = _POLISH_AND_RE.sub("", cleaned)
+    cleaned = _POLISH_WITH_RE.sub("", cleaned)
     cleaned = _collapse_non_alco_markers(cleaned)
     # Cleanup above can leave a dangling "&"/"/" behind (e.g. stripping
     # "Gluten" out of "Gluten & Alcohol Free" leaves "& Alcohol Free") -
@@ -780,6 +1073,151 @@ def _as_candidate(r: dict) -> dict:
     }
 
 
+def _query_context(beer_name: str, brewery_name: str) -> tuple[list[str], str, str]:
+    """Pure string-derived inputs shared by the (cached) identity search
+    and the (always-fresh) not-found search URL: the ordered brewery-name
+    variants to try, the original un-overridden/un-aliased brewery core
+    (still needed by _query_name_variants for name-prefix-duplicate
+    detection even when an override is in play - the beer name duplicates
+    what the shop actually printed, not whatever brewery ends up being
+    queried under), and the brewery-duplication-stripped clean beer name.
+    Cheap (no I/O) - never cached, always recomputed from the CURRENT
+    call's exact text."""
+    brewery_variants = _brewery_query_variants(brewery_name)
+    original_brewery_core = brewery_variants[0]
+    brewery_override = _brewery_override(brewery_name, beer_name)
+    if brewery_override:
+        brewery_variants = [brewery_override] + brewery_variants
+    # Appended at the END, tried only once the shop-provided brewery
+    # variants have all failed - see BREWERY_ALIASES for why (the shop's
+    # own brewery name already works fine for MOST of that brewery's own
+    # beers, this only helps the exceptions).
+    for alias in _brewery_aliases(brewery_name):
+        if alias not in brewery_variants:
+            brewery_variants.append(alias)
+    brewery_base = _brewery_query_base(brewery_name)
+    clean_name = _clean_beer_name_query(beer_name, brewery_base)
+    return brewery_variants, original_brewery_core, clean_name
+
+
+def _not_found_search_url(beer_name: str, brewery_name: str) -> str:
+    brewery_variants, original_brewery_core, clean_name = _query_context(beer_name, brewery_name)
+    # Same "most reduced" name the search retry loop itself would end up
+    # trying (see _query_name_variants) - proven live necessary
+    # (onemorebeer.pl's "Litovel Litovel Černy Citron 4%"): the plain
+    # clean_name still has the brewery duplicated AND a trailing ABV
+    # percent, and Untappd's own search page finds nothing for that
+    # either, same as the raw text this replaced earlier.
+    _url_brewery_prefix_stripped = (
+        _brewery_prefix_stripped_variant(clean_name, original_brewery_core)
+        or _brewery_prefix_stripped_variant(clean_name, brewery_variants[-1])
+    )
+    _url_abv_stripped = _abv_percent_stripped_variant(clean_name)
+    url_name = (
+        (_url_brewery_prefix_stripped and _abv_percent_stripped_variant(_url_brewery_prefix_stripped))
+        or _url_brewery_prefix_stripped
+        or _url_abv_stripped
+        or clean_name
+    )
+    return build_search_url(brewery_variants[-1], url_name)
+
+
+async def _resolve_identity(token: str, beer_name: str, brewery_name: str) -> dict:
+    """Which Untappd beer (if any) this (name, brewery) text resolves to -
+    the expensive, impersonal part of resolve_beer, cached process-wide
+    (see the module-level cache comment). Returns EITHER
+    {"matched": False, "candidates": [...]} or {"matched": True, "bid",
+    "name", "brewery", "style", "abv", "rating", "ratingCount"} - never
+    query_name/query_brewery/searchUrl (those must reflect the CURRENT
+    call's exact text, not whatever casing first populated the cache -
+    see _not_found_search_url) and never country/hadIt (see resolve_beer:
+    country is cached separately by bid, hadIt is genuinely personal and
+    never cached at all)."""
+    cache_key = (beer_name.strip().lower(), brewery_name.strip().lower())
+    cached = _cache_get(_identity_cache, cache_key)
+    if cached is not None:
+        return cached
+
+    brewery_variants, original_brewery_core, clean_name = _query_context(beer_name, brewery_name)
+
+    match, query = None, ""
+    # Prefer the FIRST attempt's candidate list for the "couldn't tell
+    # which one" fallback shown to the user (see _as_candidate below) - the
+    # least-truncated query is also the one closest to what was actually
+    # on the shelf/page, so its candidates are the most relevant set to
+    # offer as alternatives. Only fall back to a later attempt's results if
+    # the first one found literally nothing to show.
+    first_results: list[dict] | None = None
+    last_nonempty_results: list[dict] = []
+    for brewery_variant in brewery_variants:
+        # Recomputed per brewery_variant (cheap - pure string ops, no I/O):
+        # the brewery-prefix-stripped name variant (see
+        # _brewery_prefix_stripped_variant) needs to match against WHICHEVER
+        # brewery form is being tried this iteration, not just one fixed
+        # form - proven live necessary (onemorebeer.pl's "Browar Jana"): the
+        # beer name duplicates the FULL "Browar Jana", but the fully-
+        # stripped brewery variant is just "Jana", which doesn't match that
+        # duplicate at all, so the name-side strip silently never fired.
+        # original_brewery_core is passed alongside it for when an override
+        # is in play (see _query_name_variants' docstring) - the beer name
+        # still duplicates what the shop actually printed, not the override.
+        name_variants = _query_name_variants(clean_name, brewery_variant, original_brewery_core)
+        for candidate_name in name_variants:
+            match, query, results = await _search_and_match(token, brewery_variant, candidate_name)
+            if first_results is None:
+                first_results = results
+            if results:
+                last_nonempty_results = results
+            if match is not None:
+                break
+        if match is not None:
+            break
+
+    if match is None:
+        source = first_results if first_results else last_nonempty_results
+        if source:
+            # Last resort, no extra search_beers call (reuses results
+            # already in hand): some shops don't split brewery from beer
+            # name the way Untappd itself does - proven live, onemorebeer.pl's
+            # "Miłosław: IPA" splits into brewery="Miłosław"/name="IPA", but
+            # Untappd's real brewery for it is "Browar Fortuna" and the
+            # catalog beerName is "Miłosław IPA" (the sub-brand folded INTO
+            # the name, not a separate brewery at all) - every attempt above
+            # excludes brewery_name's own tokens from the comparison by
+            # design (see pick_best_match's docstring), so "Miłosław" never
+            # once entered the comparison and the bare "IPA" leftover
+            # superset-matched every other IPA from the same brewery too.
+            # Retried here with brewery_name folded INTO the name text
+            # instead of subtracted from it (brewery_name="" - nothing left
+            # to exclude) - safe because it goes through the exact same
+            # strict exact/superset rules, so it only ever succeeds when a
+            # real catalog beerName happens to equal (or be a superset of)
+            # that merged text, which a genuinely separate brewery/name pair
+            # essentially never does.
+            match = pick_best_match(source, f"{brewery_name} {clean_name}".strip(), "")
+            if match is not None:
+                query = f"{brewery_name} {clean_name}".strip()
+
+    if match is None:
+        source = first_results if first_results else last_nonempty_results
+        identity = {"matched": False, "candidates": [_as_candidate(r) for r in source[:3]]}
+    else:
+        bid = match.get("bid")
+        logger.info("resolve_beer: query=%r -> %r (bid=%s)", query, match.get("beerName"), bid)
+        identity = {
+            "matched": True,
+            "bid": bid,
+            "name": match.get("beerName") or beer_name,
+            "brewery": (match.get("brewery") or {}).get("name") or brewery_name,
+            "style": match.get("style") or "",
+            "abv": match.get("abv"),
+            "rating": match.get("globalRating"),
+            "ratingCount": match.get("ratingCount"),
+        }
+    _cache_set(_identity_cache, cache_key, identity)
+    return identity
+
+
 async def resolve_beer(
     token: str, user_id: int, beer_name: str, brewery_name: str, *,
     need_country: bool = True, live_fallback: bool = True,
@@ -818,99 +1256,41 @@ async def resolve_beer(
     beer_id already in had_it_index" membership check instead of asking
     Untappd live. For a caller resolving dozens of beers from one shop page
     at once (the lens endpoint), both of these together eliminate every
-    quota-costing call - only the free search_beers lookup remains - which
-    also sidesteps the real, tight per-second burst limit that a handful of
-    concurrent quota calls was hitting in practice (observed live: nearly
-    every get_beer/check_i_had_beer call 429'd when several ran at once)."""
-    brewery_variants = _brewery_query_variants(brewery_name)
-    # Captured before any override is prepended - see _query_name_variants'
-    # docstring on why the ORIGINAL shop-provided brewery is still needed
-    # for name-prefix-duplicate detection even when searching under an
-    # override (the beer name duplicates what the shop actually printed,
-    # not whatever brewery we end up querying under).
-    original_brewery_core = brewery_variants[0]
-    brewery_override = _brewery_override(brewery_name, beer_name)
-    if brewery_override:
-        brewery_variants = [brewery_override] + brewery_variants
-    # Appended at the END, tried only once the shop-provided brewery
-    # variants have all failed - see BREWERY_ALIASES for why (the shop's
-    # own brewery name already works fine for MOST of that brewery's own
-    # beers, this only helps the exceptions).
-    for alias in _brewery_aliases(brewery_name):
-        if alias not in brewery_variants:
-            brewery_variants.append(alias)
-    brewery_base = _brewery_query_base(brewery_name)
-    clean_name = _clean_beer_name_query(beer_name, brewery_base)
-    # Same "most reduced" name the search retry loop itself would end up
-    # trying (see _query_name_variants) - proven live necessary
-    # (onemorebeer.pl's "Litovel Litovel Černy Citron 4%"): the plain
-    # clean_name still has the brewery duplicated AND a trailing ABV
-    # percent, and Untappd's own search page finds nothing for that
-    # either, same as the raw text this replaced earlier.
-    _url_brewery_prefix_stripped = (
-        _brewery_prefix_stripped_variant(clean_name, original_brewery_core)
-        or _brewery_prefix_stripped_variant(clean_name, brewery_variants[-1])
-    )
-    _url_abv_stripped = _abv_percent_stripped_variant(clean_name)
-    url_name = (
-        (_url_brewery_prefix_stripped and _abv_percent_stripped_variant(_url_brewery_prefix_stripped))
-        or _url_brewery_prefix_stripped
-        or _url_abv_stripped
-        or clean_name
-    )
-    not_found = {
-        "matched": False, "query_name": beer_name, "query_brewery": brewery_name,
-        "candidates": [], "searchUrl": build_search_url(brewery_variants[-1], url_name),
-    }
+    PERSONAL quota-costing call, leaving only the identity search below -
+    which also sidesteps the real, tight per-second burst limit that a
+    handful of concurrent quota calls was hitting in practice (observed
+    live: nearly every get_beer/check_i_had_beer call 429'd when several
+    ran at once). That identity search (which beer this text even refers
+    to) is itself cached process-wide across ALL callers and users - see
+    _resolve_identity - so a repeat or concurrent lookup of the same
+    (name, brewery) text spends no quota at all beyond the first time."""
+    identity = await _resolve_identity(token, beer_name, brewery_name)
 
-    match, query = None, ""
-    # Prefer the FIRST attempt's candidate list for the "couldn't tell
-    # which one" fallback shown to the user (see _as_candidate below) - the
-    # least-truncated query is also the one closest to what was actually
-    # on the shelf/page, so its candidates are the most relevant set to
-    # offer as alternatives. Only fall back to a later attempt's results if
-    # the first one found literally nothing to show.
-    first_results: list[dict] | None = None
-    last_nonempty_results: list[dict] = []
-    for brewery_variant in brewery_variants:
-        # Recomputed per brewery_variant (cheap - pure string ops, no I/O):
-        # the brewery-prefix-stripped name variant (see
-        # _brewery_prefix_stripped_variant) needs to match against WHICHEVER
-        # brewery form is being tried this iteration, not just one fixed
-        # form - proven live necessary (onemorebeer.pl's "Browar Jana"): the
-        # beer name duplicates the FULL "Browar Jana", but the fully-
-        # stripped brewery variant is just "Jana", which doesn't match that
-        # duplicate at all, so the name-side strip silently never fired.
-        # original_brewery_core is passed alongside it for when an override
-        # is in play (see _query_name_variants' docstring) - the beer name
-        # still duplicates what the shop actually printed, not the override.
-        name_variants = _query_name_variants(clean_name, brewery_variant, original_brewery_core)
-        for candidate_name in name_variants:
-            match, query, results = await _search_and_match(token, brewery_variant, candidate_name)
-            if first_results is None:
-                first_results = results
-            if results:
-                last_nonempty_results = results
-            if match is not None:
-                break
-        if match is not None:
-            break
+    if not identity["matched"]:
+        return {
+            "matched": False, "query_name": beer_name, "query_brewery": brewery_name,
+            "candidates": identity["candidates"],
+            "searchUrl": _not_found_search_url(beer_name, brewery_name),
+        }
 
-    if match is None:
-        source = first_results if first_results else last_nonempty_results
-        not_found["candidates"] = [_as_candidate(r) for r in source[:3]]
-        return not_found
-
-    bid = match.get("bid")
-    logger.info("resolve_beer: query=%r -> %r (bid=%s)", query, match.get("beerName"), bid)
+    bid = identity["bid"]
 
     country = ""
     if bid is not None and need_country:
-        try:
-            detail = await untappd_mcp.get_beer(token, bid)
-            country = ((detail.get("beer") or {}).get("brewery") or {}).get("country_name") or ""
-        except untappd_mcp.UntappdMCPError as exc:
-            logger.warning(f"resolve_beer: get_beer failed for bid={bid}: {exc}")
+        # Cached by bid, separately from the identity cache above - a
+        # beer's brewery/country never changes, so this is safe to reuse
+        # even for a DIFFERENT (name, brewery) query text that happens to
+        # resolve to the same bid.
+        cached_country = _cache_get(_country_cache, bid)
+        if cached_country is not None:
+            country = cached_country
+        else:
+            try:
+                detail = await untappd_mcp.get_beer(token, bid)
+                country = ((detail.get("beer") or {}).get("brewery") or {}).get("country_name") or ""
+                _cache_set(_country_cache, bid, country)
+            except untappd_mcp.UntappdMCPError as exc:
+                logger.warning(f"resolve_beer: get_beer failed for bid={bid}: {exc}")
 
     had_it = None
     if bid is not None:
@@ -940,14 +1320,14 @@ async def resolve_beer(
         "matched": True,
         "query_name": beer_name,
         "query_brewery": brewery_name,
-        "name": match.get("beerName") or beer_name,
-        "brewery": (match.get("brewery") or {}).get("name") or brewery_name,
-        "style": match.get("style") or "",
-        "abv": match.get("abv"),
+        "name": identity["name"],
+        "brewery": identity["brewery"],
+        "style": identity["style"],
+        "abv": identity["abv"],
         "bid": bid,
         "url": f"https://untappd.com/beer/{bid}" if bid is not None else None,
-        "rating": match.get("globalRating"),
-        "ratingCount": match.get("ratingCount"),
+        "rating": identity["rating"],
+        "ratingCount": identity["ratingCount"],
         "country": country,
         "hadIt": had_it,
     }

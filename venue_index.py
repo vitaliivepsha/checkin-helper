@@ -64,6 +64,13 @@ def _entry(user_id: int) -> dict:
             "quick_max_id": None,
             "quick_checkins_seen": 0,
             "last_quick_synced_at": None,
+            # Cumulative check-ins paged through THIS full-walk cycle (reset
+            # to 0 whenever a new one starts - see next_turn's resync
+            # branch) - lets a caller report real "N of ~total_checkins"
+            # progress instead of a raw, uninterpretable max_id cursor
+            # (checkin_id is a platform-wide counter, not per-user, so its
+            # own value/delta says nothing about % complete on its own).
+            "full_checkins_seen": 0,
         }
     return data[key]
 
@@ -148,6 +155,7 @@ async def record_page(
         entry["username"] = username
         _merge_venues(entry, items)
         entry["next_max_id"] = next_max_id
+        entry["full_checkins_seen"] = entry.get("full_checkins_seen", 0) + page_len
         entry["last_fetch_at"] = time.time()
         entry["last_error"] = None
         if page_len == 0 or page_len < requested_limit:
@@ -277,6 +285,7 @@ async def next_turn(
             if now - last_synced > full_resync_cooldown_seconds:
                 entry["next_max_id"] = None
                 entry["fully_synced"] = False
+                entry["full_checkins_seen"] = 0
                 _save()
                 _rotation_cursor = (idx + 1) % n
                 return user_id, entry["next_max_id"], "full"

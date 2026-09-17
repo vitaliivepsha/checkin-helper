@@ -16,9 +16,7 @@ import logging
 import os
 import re
 import time
-from datetime import datetime
 from urllib.parse import parse_qsl
-from zoneinfo import ZoneInfo
 
 import aiohttp
 from aiohttp import web
@@ -29,6 +27,7 @@ import auto_toast
 import badge_index
 import badge_stats
 import beer_match
+import bjcp_styles
 import checkin_queue
 import comment_watch
 import event_log
@@ -123,24 +122,6 @@ VENUE_QUICK_RECHECK_COOLDOWN_SECONDS = float(os.environ.get("VENUE_QUICK_RECHECK
 VENUE_QUICK_RECHECK_LIMIT = int(os.environ.get("VENUE_QUICK_RECHECK_LIMIT", "400"))
 
 _venue_backfill_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
-
-# Quiet-hours gate shared by both backfill loops - confines their quota use
-# to a low-activity window rather than ticking all day. Reuses the same
-# BOT_TIMEZONE/TZ convention untappd_mcp.py already established (default
-# Europe/Warsaw) so "14:30" means the same wall-clock time users see
-# elsewhere in this app, not server-local time.
-BACKFILL_WINDOW_START = os.environ.get("BACKFILL_WINDOW_START", "14:30")
-BACKFILL_WINDOW_END = os.environ.get("BACKFILL_WINDOW_END", "15:30")
-
-
-def _in_backfill_window() -> bool:
-    tz_name = os.getenv("BOT_TIMEZONE") or os.getenv("TZ") or "Europe/Warsaw"
-    try:
-        tz = ZoneInfo(tz_name)
-    except Exception:
-        tz = ZoneInfo("UTC")
-    now_hm = datetime.now(tz).strftime("%H:%M")
-    return BACKFILL_WINDOW_START <= now_hm < BACKFILL_WINDOW_END
 
 # Auto-toast pacing - see _auto_toast_loop. Its own independent quota
 # consumer, same reasoning as VENUE_BACKFILL_* above. Polls more eagerly
@@ -1259,6 +1240,35 @@ async def handle_badges_get(request: web.Request) -> web.Response:
     return web.json_response({"badges": rows})
 
 
+BJCP_GENERAL_GUIDE_URL = "https://www.bjcp.org/beer-styles/beer-style-guidelines/"
+
+
+async def handle_style_info(request: web.Request) -> web.Response:
+    """The badge-detail screen's clickable style tags - "what actually IS
+    this style" for one of a style badge's own catalog tags (e.g. "Stout
+    - Pastry"). See bjcp_styles.py's own module docstring for why BJCP
+    (not Untappd, which has no such page/API of its own) is the
+    description source, and why a fuzzy but ungrounded guess is refused
+    rather than risking a wrong style's description shown as fact."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    style = (body.get("style") or "").strip()
+    if not style:
+        return _json_error("invalid_style")
+
+    match = bjcp_styles.find_style(style)
+    if not match:
+        return web.json_response({"matched": False, "guideUrl": BJCP_GENERAL_GUIDE_URL})
+    return web.json_response({"matched": True, **match})
+
+
 async def handle_lens_lookup(request: web.Request) -> web.Response:
     """Batch beer lookup for a browser userscript (see LENS_API_TOKEN's own
     comment above): given raw {name, brewery} pairs scraped from a shop's
@@ -1933,6 +1943,7 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/events/get", handle_events_get)
     app.router.add_post("/api/checkin/events/reply", handle_events_reply)
     app.router.add_post("/api/checkin/badges/get", handle_badges_get)
+    app.router.add_post("/api/checkin/style_info", handle_style_info)
     app.router.add_post("/api/lens/lookup", handle_lens_lookup)
     return app
 
@@ -2081,13 +2092,16 @@ async def _had_it_backfill_loop() -> None:
     list - see next_turn's own docstring for why both passes still exist).
     Round-robins fairly across multiple connected users and backs off
     whenever the shared quota is getting tight, so live festival search/
-    check-in traffic is never starved by this background job."""
+    check-in traffic is never starved by this background job. Used to also
+    be confined to a fixed 1h/day clock window ("quiet hours") on top of
+    that - removed once it became clear the two protections weren't
+    equivalent: the quota gate reacts to REAL headroom in real time, while
+    the clock window blocked all progress for the other 23h/day regardless
+    of how much quota sat unused (see _venue_backfill_loop's own note - same
+    change, same reasoning, its own independent quota consumer)."""
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:
-            if not _in_backfill_window():
-                await asyncio.sleep(HAD_IT_BACKFILL_IDLE_SLEEP_SECONDS)
-                continue
             user_ids = await user_tokens.list_user_ids()
             turn = (
                 await had_it_index.next_turn(
@@ -2162,13 +2176,22 @@ async def _venue_backfill_loop() -> None:
     get_my_recent_venues gives - and so badge_index.py's ground-truth badge
     levels (see handle_badges_get) stay reasonably fresh. Same two-kind
     full/quick split as _had_it_backfill_loop (see venue_index.next_turn),
-    as its own independent quota consumer."""
+    as its own independent quota consumer.
+
+    Used to also only run inside a fixed 1h/day clock window ("quiet
+    hours", BACKFILL_WINDOW_START/END) on top of the _quota_allows gate
+    below - removed: proven live the two aren't equivalent safeguards. The
+    quota gate already backs off in real time whenever headroom is
+    actually tight, which is the thing that matters for not starving live
+    festival traffic; the clock window on top of that just blocked ALL
+    progress for the other 23h/day even when quota sat completely unused
+    (e.g. overnight) - confirmed live to stretch a single full walk over a
+    large, heavily-checked-in account (53k+ check-ins between two users)
+    across many days, with badge discovery (badge_index.record, called
+    from this same walk below) stalled the entire time."""
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:
-            if not _in_backfill_window():
-                await asyncio.sleep(VENUE_BACKFILL_IDLE_SLEEP_SECONDS)
-                continue
             user_ids = await user_tokens.list_user_ids()
             turn = (
                 await venue_index.next_turn(

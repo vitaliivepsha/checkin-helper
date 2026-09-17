@@ -26,18 +26,24 @@
   const ICON_CHAT = '<svg class="icon"><use href="#icon-chat"/></svg>';
   const ICON_TROPHY = '<svg class="icon"><use href="#icon-trophy"/></svg>';
 
+  // Telegram's own WebView doesn't reliably handle a plain <a target="_blank">
+  // - tg.openLink is the documented way to hand a URL off to the system
+  // browser/app from inside a Mini App.
+  function openExternalLink(url) {
+    if (tg && tg.openLink) {
+      tg.openLink(url);
+    } else {
+      window.open(url, "_blank");
+    }
+  }
+
   // Escape valve for the Untappd MCP quota (100/rolling-hour per access
   // token, confirmed live via get_untappd_api_usage) - opening the beer's
   // real Untappd page costs nothing on our side, so it's always available
   // even when the quota's tight or check_in itself is failing.
   function openUntappdBeer(beerId, e) {
     if (e) e.stopPropagation();
-    const url = `https://untappd.com/beer/${beerId}`;
-    if (tg && tg.openLink) {
-      tg.openLink(url);
-    } else {
-      window.open(url, "_blank");
-    }
+    openExternalLink(`https://untappd.com/beer/${beerId}`);
   }
 
   // Android-Gallery-style long-press-to-select (queue + "Мій список") -
@@ -267,6 +273,9 @@
     }
     if (name === "badge-detail") {
       renderBadgeDetail();
+    }
+    if (name === "style-info") {
+      renderStyleInfo();
     }
     if (name === "festival-map") {
       fetchFestivalMap();
@@ -825,6 +834,12 @@
       const el = document.createElement("span");
       el.className = "badge-tag";
       el.textContent = tag;
+      // Only style tags open the BJCP info screen - a country/venue-
+      // category tag (b.kind) isn't a beer style, nothing to look up.
+      if (b.kind === "style") {
+        el.classList.add("clickable");
+        el.addEventListener("click", () => openStyleInfo(tag));
+      }
       tagsEl.appendChild(el);
     });
     // personalUrl (untappd.com/user/{username}/badges/{user_badge_id}) is
@@ -840,13 +855,97 @@
     const untappdBtn = $("badge-detail-untappd-btn");
     if (openUrl) {
       untappdBtn.classList.remove("hidden");
-      untappdBtn.onclick = () => {
-        if (tg && tg.openLink) tg.openLink(openUrl);
-        else window.open(openUrl, "_blank");
-      };
+      untappdBtn.onclick = () => openExternalLink(openUrl);
     } else {
       untappdBtn.classList.add("hidden");
     }
+  }
+
+  // ---- Style info (BJCP description for a badge-detail style tag) ----
+  // Untappd has no style-description page/API of its own (confirmed -
+  // see bjcp_styles.py's own docstring) - BJCP's real 2021 guidelines are
+  // the only real source, and only cover official styles, so a modern/
+  // informal Untappd-only term (Pastry, Milkshake, Smoothie, ...) often
+  // has no confident match at all - handled as its own graceful state
+  // below, not an error.
+
+  function openStyleInfo(style) {
+    state.selectedStyle = style;
+    showScreen("style-info");
+  }
+
+  async function renderStyleInfo() {
+    const style = state.selectedStyle;
+    if (!style) return;
+    $("style-info-title").textContent = style;
+    $("style-info-status").textContent = "Завантажую…";
+    $("style-info-body").innerHTML = "";
+    const bjcpLink = $("style-info-bjcp-link");
+    bjcpLink.classList.add("hidden");
+
+    const { ok, data } = await apiPost("/api/checkin/style_info", { style });
+    if (!ok) {
+      $("style-info-status").textContent = "Не вдалося завантажити опис.";
+      return;
+    }
+
+    if (!data.matched) {
+      $("style-info-status").textContent =
+        "Точного відповідника BJCP немає — це, схоже, сучасна/неформальна категорія Untappd, якої немає в офіційних гайдлайнах.";
+      $("style-info-bjcp-link-text").textContent = "Відкрити гайдлайни стилів BJCP";
+      bjcpLink.onclick = () => openExternalLink(data.guideUrl);
+      bjcpLink.classList.remove("hidden");
+      return;
+    }
+
+    // approximate: true covers two different DISTINCT cases from
+    // bjcp_styles.py, both meaning "not a literal named-style identification"
+    // but for different reasons - data.note (when present) explains which:
+    // either a hand-curated editorial opinion for a style BJCP has no
+    // category for at all (e.g. "Stout - Pastry" -> Sweet Stout, no note),
+    // or an actual BJCP classification RULE ("<style> - Fruited" always
+    // falls under Fruit Beer by BJCP's own stated definition - note
+    // present). Neither should be worded as if BJCP named that exact tag.
+    if (data.approximate) {
+      $("style-info-status").textContent = data.note
+        ? `${data.note} ${data.styleId ? data.styleId + ". " : ""}${data.name}`
+        : `Неофіційне наближення (BJCP не має такого стилю): ${data.styleId ? data.styleId + ". " : ""}${data.name}`;
+    } else {
+      $("style-info-status").textContent = `Найближчий стиль за BJCP: ${data.styleId ? data.styleId + ". " : ""}${data.name}`;
+    }
+    const sections = [
+      ["Загальне враження", data.overallImpression],
+      ["Аромат", data.aroma],
+      ["Зовнішній вигляд", data.appearance],
+      ["Смак", data.flavor],
+      ["Відчуття в роті", data.mouthfeel],
+    ];
+    let bodyHtml = sections
+      .filter(([, text]) => text)
+      .map(([label, text]) => `<div class="style-info-section"><h3>${escapeHtml(label)}</h3><p>${escapeHtml(text)}</p></div>`)
+      .join("");
+    // alternates: other BJCP entries tied for the same best-effort score
+    // as the primary one (see bjcp_styles.py's find_style) - a genuine
+    // ambiguity, not a single confident answer, so offered as extra
+    // links rather than silently hidden.
+    if (data.alternates && data.alternates.length) {
+      bodyHtml += `<div class="style-info-section style-info-alternates">
+        <h3>Також могло б підійти</h3>
+        ${data.alternates
+          .map(
+            (a) =>
+              `<button class="secondary-btn style-info-alt-btn" data-url="${escapeHtml(a.url || "")}">${escapeHtml(a.styleId ? a.styleId + ". " : "")}${escapeHtml(a.name || "")}</button>`
+          )
+          .join("")}
+      </div>`;
+    }
+    $("style-info-body").innerHTML = bodyHtml;
+    $("style-info-body").querySelectorAll(".style-info-alt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => openExternalLink(btn.dataset.url));
+    });
+    $("style-info-bjcp-link-text").textContent = "Відкрити на BJCP";
+    bjcpLink.onclick = () => openExternalLink(data.url);
+    bjcpLink.classList.remove("hidden");
   }
 
   // ---- Session drill-down (list of beers in one session, with search) ----
@@ -1100,6 +1199,22 @@
       return `<span class="badge">❤️</span> `;
     }
     return "";
+  }
+
+  // Folds accented Latin letters to their plain ASCII base (ą->a, ć->c,
+  // ń->n, ó->o, ś->s, ź/ż->z, ā->a, etc.) - same technique and same "ł"/"Ł"
+  // special case as beer_match.py's own _fold_diacritics (Unicode NFKD
+  // decomposes most accented letters into a base letter + a separate
+  // combining mark, which is then dropped; "ł"/"Ł" has no such
+  // decomposition, so it's substituted by hand first). Used to make the
+  // festival-map brewery search diacritic-insensitive in general, instead
+  // of hand-maintaining a plain-ASCII display alias for every brewery whose
+  // real name happens to have special characters.
+  function foldDiacritics(text) {
+    return (text || "")
+      .replace(/ł/g, "l").replace(/Ł/g, "L")
+      .normalize("NFKD")
+      .replace(/[̀-ͯ]/g, "");
   }
 
   function escapeHtml(s) {
@@ -1667,10 +1782,64 @@
     return card;
   }
 
+  // Some breweries' real Untappd/festival names are too long to read as a
+  // single map pill (the perimeter grid gives each pill only a narrow
+  // column's width) - a small hand-maintained shortened DISPLAY label,
+  // same spirit as beer_match.py's own hand-maintained substitution
+  // tables. Only ever affects what's shown - the pill's `dataset.brewery`
+  // (used for search highlighting, drag/drop, and the click-through to
+  // openBreweryBeers) always stays the real, full name, so this can't
+  // silently break matching the way a shortened name baked into the data
+  // itself would.
+  const BREWERY_DISPLAY_ALIASES = {
+    "Wunderkammer Biermanufaktur": "Wunderkammer",
+    "Brasserie du Bas-Canada": "du Bas-Canada",
+    "Kemker Kultuur (Brauerei J. Kemker)": "Kemker Kultuur",
+    "Frequentem Brewing Co.": "Frequentem",
+    "DEYA Brewing Company": "DEYA",
+    "Goose Island Beer Co.": "Goose Island",
+    "Duckpond Brewing": "Duckpond",
+    "Factory Brewing": "Factory",
+    "Browar Artezan": "Artezan",
+    "Browar Birbant": "Birbant",
+    "Clandestin Beer": "Clandestin",
+    "is/was brewing": "is/was",
+    "Lubrow Brewery": "Lubrow",
+    "Neon Raptor Brewing Co.": "Neon Raptor",
+    "Other Half Brewing Co.": "Other Half",
+    "Sante Adairius Rustic Ales": "SARA",
+    "Browar Spółdzielczy": "Spółdzielczy",
+    "Browar Stu Mostów": "Stu Mostów",
+    "Trillium Brewing Company": "Trillium",
+    "Varietal Beer Company": "Varietal",
+    "Underwood Brewery": "Underwood",
+    "The Attic": "Attic Meadery",
+    "Rodinný pivovar Zichovec": "Zichovec",
+    "Augustowska Miodosytnia": "Augustowska",
+    "Ārpus Brewing Co.": "Ārpus",
+    "Apex Brewing Company": "Apex",
+    "Blackout Brewing": "Blackout",
+    "Cydr Chyliczki": "Chyliczki",
+    "Browar Cztery Ściany / Four Walls Brewery": "Cztery Ściany",
+    "Duality Brewing": "Duality",
+    "Harpagan Craft Beer": "Harpagan",
+    "Brasserie La Malpolon": "La Malpolon",
+    "Lubrow Brett & Barrel": "Lubrow",
+    "Moon Lark Brewery": "Moon Lark",
+    "Nepo Brewing": "Nepo",
+    "Piwne Podziemie / Beer Underground": "Piwne Podziemie",
+    "LOKO* by Sáez & Son": "LOKO*",
+    "SOMA Beer": "SOMA",
+    "Spyglass Brewing Company": "Spyglass",
+    "TankBusters.Co": "TankBusters",
+    "Calderona Lagers by Sáez & Son": "Sáez & Son",
+  };
+
   function makeBreweryPill(brewery, draggable) {
     const pill = document.createElement("div");
     pill.className = "brewery-pill";
-    pill.textContent = brewery;
+    pill.textContent = BREWERY_DISPLAY_ALIASES[brewery] || brewery;
+    pill.title = brewery;
     pill.dataset.brewery = brewery;
     if (draggable) {
       pill.addEventListener("pointerdown", onMapPillPointerDown);
@@ -1886,7 +2055,11 @@
   }
 
   $("festival-map-search-input").addEventListener("input", (e) => {
-    const q = e.target.value.trim().toLowerCase();
+    // Folded (diacritic-stripped, lowercased) so "Stu Mostow" finds the
+    // real "Browar Stu Mostów" and vice versa, regardless of which form
+    // (if either) the typed query or the catalog name happens to use -
+    // see foldDiacritics's own docstring.
+    const q = foldDiacritics(e.target.value.trim().toLowerCase());
     const resultsEl = $("festival-map-search-results");
     resultsEl.innerHTML = "";
     if (!q) {
@@ -1894,7 +2067,11 @@
       return;
     }
     const matches = allMapBreweries()
-      .filter((it) => it.brewery.toLowerCase().includes(q))
+      .filter((it) => {
+        const alias = BREWERY_DISPLAY_ALIASES[it.brewery];
+        return foldDiacritics(it.brewery.toLowerCase()).includes(q)
+          || (alias && foldDiacritics(alias.toLowerCase()).includes(q));
+      })
       .slice(0, 20);
     matches.forEach((match) => {
       const item = document.createElement("div");

@@ -101,6 +101,10 @@
       // label by ~2px, 48px clears it).
       listCorner: "top-left",
       listStackOffset: 48,
+      // This theme's own card already shows the beer's style elsewhere -
+      // our own style chip would be pure duplication, same reasoning as
+      // hopincraftbier.be's hideRating.
+      hideStyle: true,
       // The beer name has no element of its own - it's a bare text node
       // sandwiched between two <br> tags inside the same <span> as the
       // brewery name and the ABV line (confirmed live: <span><b
@@ -139,6 +143,9 @@
       // card (confirmed live) - keep the rating/candidates chip on the
       // opposite corner so nothing overlaps.
       altCorner: "bottom-right",
+      // This theme's own card already shows the beer's style elsewhere -
+      // our own style chip would be pure duplication.
+      hideStyle: true,
       // Product titles are "<Vendor> <BeerName>" with NO separator at all
       // (e.g. vendor "FrauGruber Brewing" + title "FrauGruber The
       // Pretender"), and the vendor's own words don't even always
@@ -197,6 +204,10 @@
       // show a plain Untappd link chip instead, even when we DO have our
       // own rating (see renderOverlay's `!adapter.hideRating` check).
       hideRating: true,
+      // This theme's own card already shows the beer's style (the same
+      // info bar as the rating above) - our own style chip would be pure
+      // duplication too.
+      hideStyle: true,
       // Both right corners are already status/alt, and bottom-left is the
       // theme's own rating bar (see altCorner's own comment) - top-left is
       // the only corner left, intermittently shares it with the theme's
@@ -342,6 +353,12 @@
     "background:#fff;color:#222;box-shadow:0 1px 4px rgba(0,0,0,0.35);" +
     "font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;";
 
+  // How far below the rating/Untappd-link chip (altCorner) the style chip
+  // stacks - a fixed value, unlike listStackOffset's per-adapter tuning,
+  // because it's only ever dodging OUR OWN chip above it (constant height,
+  // same CHIP_STYLE everywhere), never a site theme's own badge.
+  const STYLE_CHIP_STACK_OFFSET = 40;
+
   // "top-left" -> "top:8px;left:8px;" - lets each adapter place chips
   // wherever its own theme has free space (see ontap.pl's altCorner).
   // `offset` (default 8) lets a SECOND chip stack in the same corner as an
@@ -465,6 +482,26 @@
       wrapper.appendChild(altChip);
     }
 
+    // Style chip - stacked directly below the rating/Untappd-link chip in
+    // the SAME corner (altCorner), same idea as the list chip's own
+    // stacking below status. Skipped on adapters whose own theme already
+    // shows the style (ontap.pl, hoptimaal.com - see their own hideStyle)
+    // to avoid pure duplication, same reasoning as hideRating above.
+    // max-width+ellipsis+title keeps a long style string ("IPA - Imperial
+    // / Double New England / Hazy") from blowing out the card layout -
+    // the full text is still one hover away.
+    if (result.matched && result.style && !adapter.hideStyle) {
+      const styleChip = document.createElement("span");
+      styleChip.className = "lens-style-chip";
+      styleChip.title = result.style;
+      styleChip.textContent = result.style;
+      styleChip.style.cssText =
+        CHIP_STYLE + cornerStyle(altCorner, STYLE_CHIP_STACK_OFFSET) +
+        "display:block;max-width:110px;overflow:hidden;text-overflow:ellipsis;" +
+        "white-space:nowrap;box-sizing:border-box;";
+      wrapper.appendChild(styleChip);
+    }
+
     // A separate, third chip - not merged into the status chip's icon -
     // for "this beer is saved somewhere": the classic Untappd Wishlist
     // (inWishlist) and/or a personal Google Sheet standing in for
@@ -511,11 +548,43 @@
       btn.textContent = "…";
       saveCache({}); // wipe the 6h cache - see CACHE_TTL_MS
       document.querySelectorAll(".lens-status-chip, .lens-rating-chip, .lens-list-chip").forEach((el) => el.remove());
-      await run();
+      await runExclusive();
       btn.textContent = original;
       btn.disabled = false;
     });
     document.body.appendChild(btn);
+  }
+
+  // run() is triggered from 3 places (init, the refresh button, and
+  // watchForNewCards' mutation observer) that can legitimately fire close
+  // together - e.g. a shop's grid re-renders in several DOM batches right
+  // after the initial page load. loadCache() itself is synchronous, but
+  // run() only writes the cache back (saveCache) after its own apiLookup
+  // resolves (several seconds for a full page) - so two overlapping calls
+  // both read the SAME pre-fetch cache, both decide the same cards are
+  // uncached, and both re-run the full (expensive, uncached) Untappd
+  // search for them - confirmed live: identical queries for the same
+  // product ~8s apart, each paying for its own full search_beers retry
+  // loop. runExclusive makes overlapping triggers coalesce into the
+  // current run plus at most ONE queued follow-up, which then reads the
+  // freshly-saved cache and correctly skips whatever the first run
+  // already resolved.
+  let runInFlight = null;
+  let rerunRequested = false;
+
+  function runExclusive() {
+    if (runInFlight) {
+      rerunRequested = true;
+      return runInFlight;
+    }
+    runInFlight = run().finally(() => {
+      runInFlight = null;
+      if (rerunRequested) {
+        rerunRequested = false;
+        runExclusive();
+      }
+    });
+    return runInFlight;
   }
 
   async function run() {
@@ -587,14 +656,14 @@
       );
       if (!hasNewCards) return;
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(run, 400);
+      debounceTimer = setTimeout(runExclusive, 400);
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
   function init() {
     addRefreshButton();
-    run();
+    runExclusive();
     watchForNewCards();
   }
 
