@@ -273,6 +273,23 @@ BADGE_INDEX_SYNC_RESYNC_COOLDOWN_SECONDS = float(os.environ.get("BADGE_INDEX_SYN
 
 _badge_index_sync_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
 
+# Pulls special_badges.json (and special_badges_pending_review.json, if
+# present) from GitHub raw content once a day - the actual catalog upkeep
+# (reading untappd.com/blog, which this server's own network calls can't
+# reach through Cloudflare - confirmed live, 403 "Just a moment" even via
+# plain aiohttp) is done by a separate cloud Claude Code routine that
+# commits straight to this repo's master branch; this loop is just the
+# local half of that bridge, picking up whatever it committed and telling
+# the owner about it. See badge_stats.reload_special_badges for why only
+# this one catalog needs a live-reload path.
+SPECIAL_BADGES_SYNC_INTERVAL_SECONDS = float(os.environ.get("SPECIAL_BADGES_SYNC_INTERVAL_SECONDS", str(60 * 60)))
+SPECIAL_BADGES_RAW_BASE_URL = os.environ.get(
+    "SPECIAL_BADGES_RAW_BASE_URL",
+    "https://raw.githubusercontent.com/vitaliivepsha/checkin-helper/master",
+)
+
+_special_badges_sync_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
+
 
 @web.middleware
 async def _no_cache_middleware(request: web.Request, handler):
@@ -2385,6 +2402,7 @@ async def start_webapp_server(
     _start_comment_watch()
     _start_festival_watch_venue()
     _start_badge_index_sync()
+    _start_special_badges_sync()
 
 
 # How old a get_untappd_api_usage reading has to be before _quota_allows
@@ -3313,3 +3331,120 @@ async def _badge_index_sync_loop() -> None:
         except Exception:
             logger.exception("badge_index sync loop tick failed")
         await asyncio.sleep(BADGE_INDEX_SYNC_INTERVAL_SECONDS)
+
+
+_SPECIAL_BADGES_LOCAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "special_badges.json")
+_SPECIAL_BADGES_PENDING_LOCAL_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "special_badges_pending_review.json",
+)
+
+
+def _start_special_badges_sync() -> None:
+    global _special_badges_sync_task
+    if _special_badges_sync_task and not _special_badges_sync_task.done():
+        return
+    _special_badges_sync_task = asyncio.create_task(_special_badges_sync_loop())
+
+
+def _read_local_json(path: str):
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _write_json_atomic(path: str, data) -> None:
+    tmp_path = path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, path)
+
+
+async def _fetch_github_raw_json(session: aiohttp.ClientSession, filename: str):
+    """None if the file is missing on GitHub (special_badges_pending_review.
+    json may not exist until the cloud routine first creates one) or the
+    fetch/parse fails for any other reason - callers treat None as "no
+    change to report", never as "delete the local file"."""
+    url = f"{SPECIAL_BADGES_RAW_BASE_URL}/{filename}"
+    try:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            if resp.status != 200:
+                return None
+            text = await resp.text()
+        return json.loads(text)
+    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError) as e:
+        logger.warning("special_badges sync: failed to fetch %s: %s", filename, e)
+        return None
+
+
+async def _special_badges_sync_loop() -> None:
+    """Local half of the special-badges bridge (see the comment above
+    SPECIAL_BADGES_SYNC_INTERVAL_SECONDS): a separate cloud Claude Code
+    routine reads untappd.com/blog daily and commits catalog updates
+    straight to this repo's GitHub master branch (this server's own
+    network calls can't reach the blog - Cloudflare-blocked even via plain
+    aiohttp, confirmed live) - this loop just pulls whatever it committed,
+    writes it locally, live-reloads badge_stats' in-memory copy, and tells
+    the owner what changed. Silent on a no-op tick, per the owner's own
+    "don't ping me for nothing" preference used elsewhere in this file."""
+    await asyncio.sleep(5)  # let the server finish binding first
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                remote_catalog = await _fetch_github_raw_json(session, "special_badges.json")
+                remote_pending = await _fetch_github_raw_json(session, "special_badges_pending_review.json")
+
+            lines: list[str] = []
+
+            if remote_catalog is not None and isinstance(remote_catalog.get("special_badges"), list):
+                local_catalog = _read_local_json(_SPECIAL_BADGES_LOCAL_PATH) or {}
+                if remote_catalog != local_catalog:
+                    old_names = {b.get("badge") for b in local_catalog.get("special_badges", [])}
+                    new_badges = remote_catalog.get("special_badges", [])
+                    new_names = {b.get("badge") for b in new_badges}
+                    added = sorted(n for n in (new_names - old_names) if n)
+                    removed = sorted(n for n in (old_names - new_names) if n)
+                    _write_json_atomic(_SPECIAL_BADGES_LOCAL_PATH, remote_catalog)
+                    badge_stats.reload_special_badges()
+                    if added:
+                        lines.append("🆕 Нові спеціальні бейджі:")
+                        by_name = {b.get("badge"): b for b in new_badges}
+                        for name in added:
+                            src = (by_name.get(name) or {}).get("sourceUrl")
+                            label = html.escape(name)
+                            lines.append(f"• <a href=\"{html.escape(src)}\">{label}</a>" if src else f"• {label}")
+                    if removed:
+                        lines.append("🗑 Прибрано (термін дії сплив):")
+                        lines.extend(f"• {html.escape(n)}" for n in removed)
+
+            if remote_pending is not None and isinstance(remote_pending, list):
+                local_pending = _read_local_json(_SPECIAL_BADGES_PENDING_LOCAL_PATH) or []
+                if remote_pending != local_pending:
+                    old_urls = {e.get("url") for e in local_pending}
+                    added_pending = [e for e in remote_pending if e.get("url") not in old_urls]
+                    _write_json_atomic(_SPECIAL_BADGES_PENDING_LOCAL_PATH, remote_pending)
+                    if added_pending:
+                        lines.append("❓ Знайдено, потребує ручної перевірки:")
+                        for entry in added_pending:
+                            url = entry.get("url") or ""
+                            note = html.escape(entry.get("note") or "")
+                            link = f"<a href=\"{html.escape(url)}\">{html.escape(url)}</a>" if url else "?"
+                            lines.append(f"• {link} — {note}")
+
+            if lines and _ptb_bot:
+                text = "Оновлення каталогу спеціальних бейджів (синхронізовано з GitHub):\n\n" + "\n".join(lines)
+                try:
+                    await _ptb_bot.send_message(
+                        chat_id=int(AUTO_TOAST_OWNER_ID), text=text,
+                        parse_mode="HTML", disable_web_page_preview=True,
+                    )
+                except Exception:
+                    logger.exception("special_badges sync: failed to notify owner")
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("special_badges sync loop tick failed")
+        await asyncio.sleep(SPECIAL_BADGES_SYNC_INTERVAL_SECONDS)

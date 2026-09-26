@@ -46,15 +46,26 @@ try:
 except (OSError, json.JSONDecodeError) as _e:
     logger.warning("Could not load badge_venue_categories.json: %s", _e)
 
-try:
-    with open(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "special_badges.json"),
-        encoding="utf-8",
-    ) as _sf:
-        _special_catalog = json.load(_sf)
-    _special_badges = _special_catalog.get("special_badges", [])
-except (OSError, json.JSONDecodeError) as _e:
-    logger.warning("Could not load special_badges.json: %s", _e)
+_SPECIAL_BADGES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "special_badges.json")
+
+
+def reload_special_badges() -> None:
+    """Re-reads special_badges.json into `_special_badges`. Called both at
+    import time (below) and by webapp_server.py's special-badges sync loop
+    right after it writes a freshly-pulled catalog from GitHub - this file
+    is the only one of badge_stats.py's catalogs that changes at runtime
+    (the others are only ever hand-edited, needing a real process restart),
+    so it's the only one that needs a live-reload path."""
+    global _special_badges
+    try:
+        with open(_SPECIAL_BADGES_PATH, encoding="utf-8") as _sf:
+            _special_catalog = json.load(_sf)
+        _special_badges = _special_catalog.get("special_badges", [])
+    except (OSError, json.JSONDecodeError) as _e:
+        logger.warning("Could not load special_badges.json: %s", _e)
+
+
+reload_special_badges()
 
 # Deprecated/retired Untappd style names found in real had_it_index data,
 # each confirmed absent from Untappd's own current style dropdown (live,
