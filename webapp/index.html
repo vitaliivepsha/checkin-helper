@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Festival Check-in</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap">
 <link rel="stylesheet" href="/static/checkin/style.css">
 </head>
 <body>
@@ -38,18 +41,48 @@
   <symbol id="icon-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
   <symbol id="icon-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></symbol>
   <symbol id="icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="icon-beer" viewBox="0 0 24 24"><path d="M5 7h10v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM15 10h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M8 11v6M12 11v6M5 7a2.5 2.5 0 0 1 2.2-3.7 3 3 0 0 1 5.6 0A2.5 2.5 0 0 1 15 7"/></symbol>
+  <symbol id="icon-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
+  <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+  <symbol id="icon-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
 </svg>
+
+<!-- Global maintenance splash (app.js checks /api/checkin/maintenance/get
+     once on load) - hidden by default, shown full-screen on top of
+     everything else while the owner has /maintenance on toggled. Sits
+     outside every .screen so showScreen()'s own show/hide logic never
+     touches it. -->
+<div id="maintenance-overlay" class="maintenance-overlay hidden">
+  <div class="maintenance-card">
+    <div class="maintenance-icon"><svg class="icon"><use href="#icon-refresh"/></svg></div>
+    <div class="maintenance-title">Технічні роботи</div>
+    <div class="maintenance-message" id="maintenance-message">Ми ненадовго відлучились щось покращити. Спробуй за кілька хвилин.</div>
+  </div>
+</div>
 
 <div id="screen-search" class="screen active">
   <div class="topbar">
     <div class="topbar-top-row">
-      <button id="settings-bar-btn" class="icon-btn" title="Налаштування сповіщень">
-        <svg class="icon"><use href="#icon-settings"/></svg>
-      </button>
-      <button id="events-bar-btn" class="icon-btn" title="Останні події">
+      <div class="topbar-title">
+        <div class="app-title">Чекін</div>
+        <!-- Filled in by app.js once /api/checkin/usage answers; stays
+             empty (and collapses) until then. -->
+        <div class="usage-badge hidden" id="usage-wrap">
+          <svg class="usage-ring" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" class="usage-ring-track"/>
+            <circle cx="12" cy="12" r="9" class="usage-ring-fill" id="usage-ring-fill"/>
+          </svg>
+          <span id="usage-badge"></span>
+        </div>
+      </div>
+      <button id="events-bar-btn" class="icon-btn" title="Останні події" aria-label="Останні події">
         <svg class="icon"><use href="#icon-bell"/></svg>
       </button>
-      <div id="usage-badge" class="usage-badge"></div>
+      <button id="settings-bar-btn" class="icon-btn" title="Налаштування" aria-label="Налаштування">
+        <svg class="icon"><use href="#icon-settings"/></svg>
+      </button>
     </div>
   </div>
   <input id="search-input" type="text" inputmode="search"
@@ -121,11 +154,23 @@
 
 <div id="screen-queue" class="screen">
   <button class="back-btn" data-back="search">Назад</button>
+  <!-- Shown only while festival mode is on (CSS keys off
+       body.festival-mode-active) - same reminder as the settings row. -->
+  <div class="festival-banner">
+    <span class="festival-banner-icon"><svg class="icon"><use href="#icon-tent"/></svg></span>
+    <div>
+      <div class="festival-banner-title">Festival mode</div>
+      <div class="festival-banner-text">Фонова синхронізація на паузі — квота для чекінів</div>
+    </div>
+  </div>
   <div class="queue-header" id="queue-header-normal">
-    <h2>Спільна черга</h2>
+    <div>
+      <h2>Спільна черга</h2>
+      <div class="screen-subtitle" id="queue-subtitle"></div>
+    </div>
     <button id="queue-clear-btn" class="queue-clear-btn">
       <svg class="icon"><use href="#icon-trash"/></svg>
-      Очистити все
+      Очистити
     </button>
   </div>
   <div class="queue-header selection-bar hidden" id="queue-selection-bar">
@@ -140,6 +185,7 @@
   </div>
   <div id="queue-status" class="hint"></div>
   <div id="queue-list" class="results"></div>
+  <div class="hint queue-select-hint hidden" id="queue-select-hint">Утримуй рядок, щоб обрати кілька</div>
 </div>
 
 <div id="screen-wishlist" class="screen">
@@ -159,6 +205,12 @@
   </div>
   <input id="wishlist-search-input" type="text" inputmode="search"
          placeholder="Пошук у списку…" autocomplete="off">
+  <div class="pills" id="wishlist-sort-pills">
+    <button class="pill active" data-sort="date">Дата додавання</button>
+    <button class="pill" data-sort="alpha">Назва</button>
+    <button class="pill" data-sort="brewery">Пивоварня</button>
+    <button class="pill" data-sort="abv">ABV</button>
+  </div>
   <div id="wishlist-status" class="hint"></div>
   <div id="wishlist-list" class="results"></div>
 </div>
@@ -189,7 +241,7 @@
     </label>
   </div>
   <input id="autotoast-search-input" type="text" inputmode="search"
-         placeholder="🔍 Пошук серед друзів…" autocomplete="off">
+         placeholder="Пошук серед друзів…" autocomplete="off">
   <div id="autotoast-status" class="hint"></div>
   <div id="autotoast-friends-list" class="results"></div>
 </div>
@@ -204,14 +256,20 @@
     </label>
   </div>
   <div id="festival-watch-status" class="hint"></div>
+  <div id="festival-watch-venue-hint" class="hint hidden"></div>
   <button id="festival-watch-here-btn" class="secondary-btn">
     <svg class="icon"><use href="#icon-compass"/></svg>
     Встановити мою поточну локацію
   </button>
-  <input id="festival-watch-search-input" type="text" placeholder="🔍 Або знайти локацію за назвою…" autocomplete="off">
+  <input id="festival-watch-search-input" type="text" placeholder="Або знайти локацію за назвою…" autocomplete="off">
   <div id="festival-watch-search-results" class="venue-list hidden"></div>
-  <label class="checkbox-label festival-watch-radius-label">Радіус сповіщень (метри)</label>
-  <input id="festival-watch-radius-input" type="number" min="50" max="5000" step="50" value="500">
+  <div id="festival-watch-radius-row">
+    <label class="checkbox-label festival-watch-radius-label">Радіус сповіщень (метри)</label>
+    <input id="festival-watch-radius-input" type="number" min="50" max="5000" step="50" value="500">
+  </div>
+  <label class="checkbox-label">
+    <input type="checkbox" id="festival-watch-notify-listed-toggle"> Сповіщати і про пиво зі списку фестивалю, яке ще не в черзі
+  </label>
 </div>
 
 <div id="screen-festival-map" class="screen">
@@ -225,7 +283,7 @@
   <div id="festival-map-status" class="hint"></div>
   <div id="festival-map-overview">
     <input id="festival-map-search-input" type="text" inputmode="search"
-           placeholder="🔍 Пошук пивоварні…" autocomplete="off">
+           placeholder="Пошук пивоварні…" autocomplete="off">
     <div id="festival-map-search-results" class="venue-list hidden"></div>
     <!-- Zone cards (however many the current festival defines) and any
          read-only bonus categories are built at runtime by app.js's
@@ -235,7 +293,7 @@
     <div id="festival-map-bonus-categories"></div>
   </div>
   <div id="festival-map-detail" class="hidden">
-    <button class="secondary-btn" id="festival-map-detail-back">← Усі зони</button>
+    <button class="secondary-btn back-arrow-btn" id="festival-map-detail-back">Усі зони</button>
     <div class="map-zone-header">
       <span class="map-zone-label" id="festival-map-detail-label"></span>
       <span class="map-zone-count" id="festival-map-detail-count"></span>
@@ -243,7 +301,7 @@
     <div class="perimeter-grid" id="festival-map-detail-pills">
       <div class="perimeter-top"></div>
       <div class="perimeter-left"></div>
-      <div class="perimeter-mid">🍺</div>
+      <div class="perimeter-mid"><svg class="icon"><use href="#icon-beer"/></svg></div>
       <div class="perimeter-right"></div>
       <div class="perimeter-bottom"></div>
     </div>
@@ -259,13 +317,23 @@
 
 <div id="screen-badges" class="screen">
   <button class="back-btn" data-back="search">Назад</button>
-  <h2>Прогрес бейджів</h2>
+  <div class="queue-header">
+    <div>
+      <h2>Бейджі</h2>
+      <div class="screen-subtitle" id="badges-subtitle"></div>
+    </div>
+    <button id="badges-view-toggle" class="icon-btn" aria-label="Показати списком">
+      <svg class="icon" id="badges-view-toggle-icon"><use href="#icon-list"/></svg>
+    </button>
+  </div>
+  <div id="special-badges-list"></div>
   <input id="badges-search-input" type="text" inputmode="search"
          placeholder="Пошук за назвою або тегом…" autocomplete="off">
   <div class="pills" id="badges-sort-pills">
-    <button class="pill active" data-sort="level_desc">Рівень <svg class="icon"><use href="#icon-arrow-down"/></svg></button>
-    <button class="pill" data-sort="level_asc">Рівень <svg class="icon"><use href="#icon-arrow-up"/></svg></button>
-    <button class="pill" data-sort="alpha">За алфавітом</button>
+    <button class="pill active" data-sort="closest">Майже готові</button>
+    <button class="pill" data-sort="level_desc">Рівень</button>
+    <button class="pill" data-sort="alpha">А–Я</button>
+    <button class="pill" data-sort="kind">За типом</button>
   </div>
   <div id="badges-status" class="hint"></div>
   <div id="badges-list" class="results"></div>
@@ -285,6 +353,7 @@
     <svg class="icon"><use href="#icon-external-link"/></svg>
     Відкрити бейдж на Untappd
   </button>
+  <div class="hint hidden" id="badge-detail-stale-hint"></div>
 </div>
 
 <div id="screen-style-info" class="screen">
@@ -361,7 +430,7 @@
         <svg class="icon"><use href="#icon-pin"/></svg>
         Карта фестивалю
       </div>
-      <div class="settings-row-hint">Розташування пивоварень по зонах MBCC</div>
+      <div class="settings-row-hint">Розташування пивоварень по зонах фестивалю</div>
     </div>
     <svg class="icon settings-row-arrow"><use href="#icon-chevron-right"/></svg>
   </div>
@@ -406,7 +475,7 @@
     <svg class="icon"><use href="#icon-compass"/></svg>
     Локації поруч
   </button>
-  <input id="venue-search-input" type="text" placeholder="🔍 Пошук локації за назвою…">
+  <input id="venue-search-input" type="text" placeholder="Пошук локації за назвою…">
   <label class="checkbox-label">
     <input type="checkbox" id="unique-venue-checkbox"> Лише нові (де ще не був)
   </label>
@@ -448,8 +517,8 @@
      toggle + one config screen, not core moment-to-moment navigation. -->
 <nav class="bottom-nav">
   <button id="home-bar-btn" class="nav-tab active">
-    <svg class="icon"><use href="#icon-home"/></svg>
-    <span class="nav-label">Головна</span>
+    <svg class="icon"><use href="#icon-search"/></svg>
+    <span class="nav-label">Пошук</span>
   </button>
   <button id="queue-bar-btn" class="nav-tab hidden">
     <span class="nav-icon-wrap">

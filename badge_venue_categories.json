@@ -5,7 +5,9 @@
     {
       "badge": "Adventurer",
       "categories": [
-        "Amusement Park"
+        "Amusement Park",
+        "Theme Park",
+        "Theme Park Ride / Attraction"
       ],
       "count": 5,
       "levels": 100,
@@ -15,7 +17,7 @@
     {
       "badge": "Ahoy Matey!",
       "categories": [
-        "Boat / Ferry",
+        "Boat or Ferry",
         "Cruise",
         "Harbor / Marina",
         "Marine Terminal",
@@ -55,7 +57,8 @@
       "categories": [
         "Beach",
         "Beach Bar",
-        "Surf Spot"
+        "Surf Spot",
+        "Nudist Beach"
       ],
       "count": 5,
       "levels": 100,
@@ -192,12 +195,63 @@
     {
       "badge": "By The Campfire",
       "categories": [
-        "Great Outdoors"
+        "Beach",
+        "Beach Bar",
+        "Surf Spot",
+        "Mountain",
+        "Hill",
+        "Mountain Hut",
+        "Zoo",
+        "Zoo Exhibit",
+        "Ski Area",
+        "Ski Lodge",
+        "Campground",
+        "RV Park",
+        "Park",
+        "Urban Park",
+        "National Park",
+        "Natural Park",
+        "Nature Preserve",
+        "Garden",
+        "Botanical Garden",
+        "Sculpture Garden",
+        "Forest",
+        "Trail",
+        "Scenic Lookout",
+        "Lake",
+        "River",
+        "Bay",
+        "Canal",
+        "Reservoir",
+        "Waterfall",
+        "Waterfront",
+        "Island",
+        "Harbor / Marina",
+        "Lighthouse",
+        "Bridge",
+        "Cemetery",
+        "Dog Run",
+        "Farm",
+        "Field",
+        "Playground",
+        "Plaza",
+        "Pedestrian Plaza",
+        "Pool",
+        "Water Park",
+        "Vineyard",
+        "Volcano",
+        "Well",
+        "Windmill",
+        "Nudist Beach",
+        "Outdoor Event Space",
+        "Outdoor Sculpture",
+        "Other Great Outdoors"
       ],
       "count": 5,
       "levels": 100,
       "icon": "https://assets.untappd.com/badges/bdg_ByTheCampfire_md.jpg",
-      "url": "https://badges.untappd.com/3673-by-the-campfire"
+      "url": "https://badges.untappd.com/3673-by-the-campfire",
+      "note": "'Great Outdoors' is Untappd's own umbrella label in this badge's public 'How to earn it' text, but is NEVER the actual Foursquare category name a real check-in's venue.categories carries - confirmed live against two real accounts' own already-synced venue_index.json data (thousands of venues, hundreds of distinct category names, not one of them literally 'Great Outdoors') - so the exact-match comparison in badge_stats.compute_venue_progress could never match anything, leaving this badge permanently stuck at 0 regardless of real progress. Expanded to the actual leaf category names beneath that umbrella, cross-checked against archived Foursquare venue-category taxonomy dumps (Great Outdoors' known child list) AND the real category names already seen in those two accounts' own venue_index.json - several (Beach/Beach Bar/ Surf Spot, Mountain/Hill, Zoo, Ski Area, Campground, Park) were already independently confirmed correct elsewhere in this same catalog, under their own narrower badges (Beach Bum, At the Top, Brew at the Zoo, Hitting the Slopes, S'more Beer Please, Parks & Beer) - By The Campfire is Untappd's broader catch-all across the whole Great Outdoors parent, not a competing/duplicate badge."
     },
     {
       "badge": "By the Wing",
@@ -227,7 +281,7 @@
       "badge": "Catch of the Day",
       "categories": [
         "Seafood Restaurant",
-        "Fish and Chips Shop"
+        "Fish & Chips Shop"
       ],
       "count": 5,
       "levels": 100,
@@ -301,7 +355,12 @@
     {
       "badge": "Layover",
       "categories": [
-        "Airport"
+        "Airport",
+        "Airport Gate",
+        "International Airport",
+        "Airport Terminal",
+        "Airport Service",
+        "Airport Food Court"
       ],
       "count": 5,
       "levels": 100,
@@ -344,7 +403,9 @@
       "badge": "Parks & Beer",
       "categories": [
         "Park",
-        "State / Provincial Park"
+        "State / Provincial Park",
+        "National Park",
+        "Urban Park"
       ],
       "count": 5,
       "levels": 100,
@@ -420,7 +481,15 @@
       "badge": "Tailgater",
       "categories": [
         "Sporting Area",
-        "Stadium"
+        "Stadium",
+        "Soccer Stadium",
+        "College Stadium",
+        "Football Stadium",
+        "Track Stadium",
+        "College Soccer Field",
+        "College Football Field",
+        "Rugby Pitch",
+        "Racetrack"
       ],
       "count": 5,
       "levels": 100,
@@ -440,7 +509,13 @@
     {
       "badge": "Taste the Music",
       "categories": [
-        "Music Venue"
+        "Theater",
+        "Rock Club",
+        "Concert Hall",
+        "Music Venue",
+        "Performing Arts Venue",
+        "Indie Theater",
+        "Jazz Club"
       ],
       "count": 5,
       "levels": 100,
@@ -493,13 +568,22 @@
       "levels": 100,
       "note": "Seen only in the initial catalog scrape text ('That's 5 different venues with the category of Chines...'); its detail-page URL could not be located this session (missing from both the DOM link scrape and in-page search) - category name may be incomplete/unverified.",
       "url": "https://badges.untappd.com/417285"
+    },
+    {
+      "badge": "Brew Traveler",
+      "categories": [],
+      "regionBased": true,
+      "count": 5,
+      "levels": 100,
+      "icon": null,
+      "note": "Pools two different kinds of geographic unit into one count: for the US/Canada/Mexico specifically, each distinct STATE counts on its own; every other country counts once as a whole regardless of how many of its own regions were visited. Computed from venue_index.py location data (country/state), not a plain category match like every other entry here - see badge_stats.py's own _travel_region_key.",
+      "url": null
     }
   ],
   "_non_category_venue_badges": [
     "Bar Explorer (any 5 distinct venues, no specific category)",
     "Beer Gathering (10+ people within 5 hours, any venue)",
     "Beer Party (4+ people within 2 hours, any venue)",
-    "Brew Traveler (5+ states/countries, not venue-category)",
     "Happy Hour Hound (time-of-day + location, any category)",
     "Here Comes the Brew (comment tag 'Wedding', not category)",
     "Local Flavor (brewery proximity, not a venue category)",

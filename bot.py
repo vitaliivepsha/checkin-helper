@@ -17,7 +17,7 @@ from collections import defaultdict
 from datetime import datetime
 import anthropic
 import httpx
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, WebAppInfo
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, WebAppInfo, MenuButtonDefault
 from telegram import BotCommandScopeAllGroupChats, BotCommandScopeAllPrivateChats, BotCommandScopeChat
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 from telegram.ext import (
@@ -34,8 +34,10 @@ import wishlist_sheets
 import auto_toast
 import festival_watch
 import comment_watch
+import group_membership
 import badge_stats
 import beer_match
+import maintenance_mode
 
 # ── Persistent data directory ────────────────────────────────────────────────
 # Most container hosts have an ephemeral root filesystem. Mount a persistent
@@ -59,6 +61,7 @@ had_it_index.init(DATA_DIR)
 auto_toast.init(DATA_DIR)  # same reasoning - /auto_toast must work regardless of the Mini App
 festival_watch.init(DATA_DIR)  # same - /festival_watch's config commands must work regardless of the Mini App
 comment_watch.init(DATA_DIR)  # same - /comment_watch's on/off command must work regardless of the Mini App
+maintenance_mode.init(DATA_DIR)  # same - /maintenance must work regardless of the Mini App
 
 # Public HTTPS base URL this bot is reachable at (the deployed app's own URL)
 # - needed to build the Telegram Mini App link for the festival check-in webapp.
@@ -1768,7 +1771,7 @@ async def _build_scan_beer_text(token: str, user_id: int, lng: str, beer_name: s
     profile = await user_tokens.get_profile(user_id)
     is_supporter = bool((profile or {}).get("is_supporter"))
     rows = badge_stats.compute_progress(beers, is_supporter=is_supporter)
-    matching_badges = badge_stats.badges_matching_beer(rows, style, result["country"])
+    matching_badges = badge_stats.badges_matching_beer(rows, style, result["country"], result["name"])
 
     text = t(lng, "scan_result_header", beer=h(result["name"]), brewery=h(result["brewery"]))
     if style:
@@ -2784,7 +2787,19 @@ async def _apply_search_result(context, pending: dict, match: dict, user_id):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 async def checkin_webapp_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Open the festival check-in Mini App (private chats only)."""
+    """Open the festival check-in Mini App (private chats only).
+
+    REVERTED to a plain InlineKeyboardButton (attached to this one message,
+    not a persistent bottom-panel button) - a KeyboardButton.web_app button
+    (ReplyKeyboardMarkup, tried here briefly) was confirmed live to break
+    EVERY /api/checkin/* call: Telegram Desktop's WebView opened a Mini App
+    that way with a genuinely EMPTY tg.initData (confirmed via a temporary
+    server-side log - every request logged "empty init_data string", not a
+    hash mismatch or a stale cached page as first suspected), so nothing
+    could authenticate at all. InlineKeyboardButton.web_app doesn't have
+    this problem - confirmed working for this exact command earlier this
+    session. Stability wins over the bottom-panel convenience until/unless
+    that Desktop-specific gap gets independently confirmed fixed."""
     lng = lang(update)
     if update.effective_chat.type != "private":
         await update.message.reply_text(t(lng, "checkin_webapp_group_hint"))
@@ -2797,6 +2812,41 @@ async def checkin_webapp_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(t(lng, "checkin_webapp_intro"), reply_markup=keyboard)
     except TelegramError as e:
         logger.warning(f"/checkin failed: {e}")
+
+
+async def join_group_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Sets the caller's active group (see group_membership.py) to THIS
+    chat - group chats only, mirror image of /checkin's private-only guard.
+    Scopes the Mini App's shared queue so two different festivals' crowds
+    never see each other's beers; re-running this in a different chat
+    switches groups (one active group at a time, no separate "leave")."""
+    lng = lang(update)
+    if update.effective_chat.type == "private":
+        await update.message.reply_text(t(lng, "join_group_private_hint"))
+        return
+    chat = update.effective_chat
+    await group_membership.set_active_group(update.effective_user.id, chat.id, chat.title or "")
+    await update.message.reply_text(t(lng, "join_group_success", title=chat.title or ""))
+
+
+async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Auto-registers the active group (see group_membership.py) for anyone
+    freshly ADDED to a group chat the bot is in - the one case where
+    Telegram tells the bot about a person's group membership without them
+    doing anything themselves. There's no equivalent for people already in
+    a group when this feature shipped (or added to a group before this
+    code existed): the Bot API has no "list this group's members" call at
+    all, for anyone, admin or not - so those people still need to run
+    /join_group once. Silent (no reply) since this can fire for several
+    people at once (a bulk add) and for groups that have nothing to do with
+    a festival at all - unlike /join_group, which is a deliberate action
+    worth confirming, this is a background default the person may never
+    even notice, exactly as intended."""
+    chat = update.effective_chat
+    for member in update.message.new_chat_members:
+        if member.id == context.bot.id:
+            continue  # the bot itself being added to the chat, not a real member
+        await group_membership.set_active_group(member.id, chat.id, chat.title or "")
 
 
 async def connect_untappd_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -3204,6 +3254,8 @@ def private_commands_for(lng: str, *, include_auto_toast: bool = False):
     if include_auto_toast:
         commands.append(BotCommand("auto_toast", t(lng, "cmd_auto_toast")))
         commands.append(BotCommand("scan", t(lng, "cmd_scan")))
+        commands.append(BotCommand("restart", t(lng, "cmd_restart")))
+        commands.append(BotCommand("maintenance", t(lng, "cmd_maintenance")))
     commands += [
         BotCommand("festival_watch", t(lng, "cmd_festival_watch")),
         BotCommand("comment_watch", t(lng, "cmd_comment_watch")),
@@ -3217,10 +3269,26 @@ def status_commands_for(lng: str):
         BotCommand("back", t(lng, "cmd_back")),
         BotCommand("status", t(lng, "cmd_status")),
         BotCommand("limited", t(lng, "cmd_limited")),
+        BotCommand("join_group", t(lng, "cmd_join_group")),
     ]
 
 
 async def post_init(app):
+    # Follow-up to /restart (see restart_cmd) - this fresh NSSM-relaunched
+    # process has no memory of that command, only the file it left behind
+    # under DATA_DIR, so this is the only place that can turn
+    # "Перезапускаю…" into a confirmed "✅ Перезапущено" instead of leaving
+    # it looking hung.
+    restart_notify_path = data_path("restart_notify.json")
+    if os.path.exists(restart_notify_path):
+        try:
+            with open(restart_notify_path, encoding="utf-8") as f:
+                info = json.load(f)
+            os.remove(restart_notify_path)
+            await app.bot.send_message(chat_id=info["chatId"], text=t(info.get("lang") or "en", "restart_done"))
+        except Exception:
+            logger.warning("Could not send restart-done notification", exc_info=True)
+
     for lng in ("en", "uk", "ru"):
         await app.bot.set_my_commands(
             private_commands_for(lng),
@@ -3251,8 +3319,104 @@ async def post_init(app):
         global _webapp_server_task
         from webapp_server import start_webapp_server
         _webapp_server_task = asyncio.create_task(start_webapp_server(app, ALL_BEERS, DATA_DIR, SESSIONS_RAW))
+        # Menu Button reverted back to the plain commands list
+        # (MenuButtonDefault - shows the registered /commands, same as
+        # never touching this API at all). Briefly tried MenuButtonWebApp
+        # here (the round icon next to the text input) as an "always
+        # there" mini-app launcher, but it occupies the SAME UI slot as
+        # the commands menu - Telegram only shows one or the other, never
+        # both - so it silently took over that icon and hid the commands
+        # list. No longer needed for that job anyway: the bot's Main Mini
+        # App (configured once via @BotFather, see README.md) now gives an
+        # "Open" button in the chat list/profile that's *more* persistent
+        # than the menu button ever was (survives regardless of message
+        # flow, doesn't even need the chat open) - so the commands menu
+        # gets this slot back instead of competing with it.
+        try:
+            await app.bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+        except Exception:
+            logger.warning("Could not reset default chat menu button", exc_info=True)
     else:
         logger.info("Festival check-in webapp disabled (UNTAPPD_MCP_URL/PUBLIC_BASE_URL not set)")
+
+
+async def maintenance_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Owner-only global maintenance-mode switch - see maintenance_mode.py
+    and webapp_server.py's handle_maintenance_get. Shows a splash screen in
+    the Mini App for EVERY viewer while enabled, so planned work (a
+    migration, a risky deploy) doesn't look like the app is just broken.
+    Only meaningful while this process is actually alive and serving
+    requests - see maintenance_mode.py's own docstring on why this can't
+    help with a genuine crash (that's watchdog.ps1's job instead).
+
+    /maintenance - show current status
+    /maintenance on [текст] - enable, with an optional custom message
+    /maintenance off - disable"""
+    lng = lang(update)
+    user_id = update.effective_user.id
+    if str(user_id) != AUTO_TOAST_OWNER_ID:
+        return
+    args = context.args
+    if not args:
+        status = await maintenance_mode.get_status()
+        key = "maintenance_status_on" if status["enabled"] else "maintenance_status_off"
+        await update.message.reply_text(t(lng, key, message=status.get("message") or ""))
+        return
+    sub = args[0].lower()
+    if sub == "on":
+        message = " ".join(args[1:]) if len(args) > 1 else None
+        await maintenance_mode.set_enabled(True, message)
+        await update.message.reply_text(t(lng, "maintenance_on"))
+    elif sub == "off":
+        await maintenance_mode.set_enabled(False)
+        await update.message.reply_text(t(lng, "maintenance_off"))
+    else:
+        await update.message.reply_text(t(lng, "maintenance_usage"))
+
+
+async def restart_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Owner-only manual restart, for when the process is still alive but
+    stuck/misbehaving, or needs to pick up an updated .env/dependency/code
+    change.
+
+    Used to re-exec itself via os.execv - but on WINDOWS, os.execv does NOT
+    replace the process image in place the way it does on Linux; the stdlib
+    emulates it by spawning a brand-new child process and exiting the
+    current one. Under NSSM (this bot now runs as a Windows service -
+    AppExit Default Restart, see README.md/tray-monitor's setup notes) that
+    old-process exit ALSO looks like a crash to NSSM, which races to relaunch
+    its own fresh copy - so a single /restart could produce two or three
+    processes all long-polling the same bot token at once, each getUpdates
+    call kicking the others' out with `Conflict: terminated by other
+    getUpdates request`, and the "back online" notification below either
+    never firing or firing from a process that got killed before it flushed.
+    Confirmed live: exactly this Conflict loop after two rapid /restart
+    presses, no restart_done notification either time.
+
+    Now uses stop_running() instead - the officially supported way to stop
+    run_polling() from inside a handler, which closes the getUpdates
+    connection cleanly before the process exits, then just lets it exit:
+    NSSM's own supervision (already configured to restart on exit) does the
+    actual relaunch, exactly the OS-level supervisor this command used to
+    not have. bot.py and webapp_server.py share one process/event loop
+    (webapp_server.start_webapp_server runs as an asyncio task started from
+    post_init above), so this still restarts both the Telegram bot and the
+    Mini App server together."""
+    lng = lang(update)
+    user_id = update.effective_user.id
+    if str(user_id) != AUTO_TOAST_OWNER_ID:
+        return
+    await update.message.reply_text(t(lng, "restart_confirm"))
+    logger.info("Manual restart requested by owner %s", user_id)
+    # A file, not an env var - NSSM's own relaunch starts a genuinely fresh
+    # process from its configured Application/AppParameters, which does NOT
+    # inherit whatever os.environ this dying process happened to have, so
+    # only something that outlives the process (a file under DATA_DIR, same
+    # pattern as maintenance_mode.json) can tell the NEXT process where/in
+    # what language to send its own "back online" follow-up.
+    with open(data_path("restart_notify.json"), "w", encoding="utf-8") as f:
+        json.dump({"chatId": update.effective_chat.id, "lang": lng}, f)
+    context.application.stop_running()
 
 def main():
     token = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -3273,6 +3437,7 @@ def main():
     app.add_handler(CommandHandler("clear", clear_cmd))
     app.add_handler(CommandHandler("cancel", cancel_cmd))
     app.add_handler(CommandHandler("checkin", checkin_webapp_cmd))
+    app.add_handler(CommandHandler("join_group", join_group_cmd))
     app.add_handler(CommandHandler("connect_untappd", connect_untappd_cmd))
     app.add_handler(CommandHandler("wishlist_sheet", wishlist_sheet_cmd))
     app.add_handler(CommandHandler("import_history", import_history_cmd))
@@ -3280,9 +3445,12 @@ def main():
     app.add_handler(CommandHandler("auto_toast", auto_toast_cmd))
     app.add_handler(CommandHandler("festival_watch", festival_watch_cmd))
     app.add_handler(CommandHandler("comment_watch", comment_watch_cmd))
+    app.add_handler(CommandHandler("restart", restart_cmd))
+    app.add_handler(CommandHandler("maintenance", maintenance_cmd))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_chat_members))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     register_status_handlers(app)  # comment out to disable

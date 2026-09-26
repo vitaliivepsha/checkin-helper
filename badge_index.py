@@ -22,9 +22,18 @@ import asyncio
 import json
 import os
 import re
+import time
 
 _path: str | None = None
 _lock = asyncio.Lock()
+
+# Separate file/lock from the badge data above - sync-cursor bookkeeping for
+# the full-refresh loop (see next_sync_turn/record_sync_page below), kept
+# apart so it never risks colliding with get_all()'s assumption that every
+# key under a user entry in badge_index.json is a badge name.
+_sync_path: str | None = None
+_sync_lock = asyncio.Lock()
+_sync_rotation_cursor = 0
 
 _LEVEL_SUFFIX_RE = re.compile(r"\s*\(Level (\d+)\)\s*$")
 
@@ -44,8 +53,9 @@ def _parse(badge_name: str) -> tuple[str, int | None]:
 
 
 def init(data_dir: str) -> None:
-    global _path
+    global _path, _sync_path
     _path = os.path.join(data_dir, "badge_index.json")
+    _sync_path = os.path.join(data_dir, "badge_index_sync.json")
 
 
 def _load() -> dict:
@@ -102,3 +112,73 @@ async def get_all(user_id: int) -> dict:
             name: (v if isinstance(v, dict) else {"userBadgeId": v, "level": None})
             for name, v in entry.items()
         }
+
+
+def _load_sync() -> dict:
+    if not _sync_path or not os.path.exists(_sync_path):
+        return {}
+    try:
+        with open(_sync_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_sync(data: dict) -> None:
+    tmp_path = _sync_path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+    os.replace(tmp_path, _sync_path)
+
+
+async def next_sync_turn(user_ids: list[int], full_resync_cooldown_seconds: float) -> tuple[int, int] | None:
+    """Round-robin entry point for the untappd_direct-powered full-badge-
+    list sync loop (webapp_server._badge_index_sync_loop) - (user_id,
+    offset) for whoever needs the next page of GET /v4/user/badges/
+    {username} fetched. Simpler than had_it_index/venue_index's own
+    next_turn: no "quick recheck" tier, since a full walk here is cheap
+    (a badge list is a small fraction the size of a beer/check-in history -
+    a handful of pages even for a badge-heavy account) rather than
+    something that needs interleaved freshness the way a 30k+-beer walk
+    does. Advances the rotation cursor on every call (even when nobody
+    turns out to be eligible), so one problem user can never wedge the
+    rotation and starve everyone else - same reasoning as
+    had_it_index.next_turn."""
+    global _sync_rotation_cursor
+    if not user_ids:
+        return None
+    async with _sync_lock:
+        data = _load_sync()
+        now = time.time()
+        n = len(user_ids)
+        for i in range(n):
+            idx = (_sync_rotation_cursor + i) % n
+            user_id = user_ids[idx]
+            entry = data.setdefault(str(user_id), {"offset": 0, "fullySynced": False, "lastSyncedAt": None})
+            if not entry.get("fullySynced"):
+                _sync_rotation_cursor = (idx + 1) % n
+                _save_sync(data)
+                return user_id, entry.get("offset", 0)
+            last_synced = entry.get("lastSyncedAt") or 0
+            if now - last_synced > full_resync_cooldown_seconds:
+                entry["offset"] = 0
+                entry["fullySynced"] = False
+                _sync_rotation_cursor = (idx + 1) % n
+                _save_sync(data)
+                return user_id, 0
+        _sync_rotation_cursor = (_sync_rotation_cursor + 1) % n
+        return None
+
+
+async def record_sync_page(user_id: int, offset_after: int, got_count: int, page_size: int) -> None:
+    """Advances the walk's offset; got_count < page_size is the real
+    end-of-list signal (see get_user_badges' own docstring) - marks this
+    pass complete and resets the resync clock."""
+    async with _sync_lock:
+        data = _load_sync()
+        entry = data.setdefault(str(user_id), {"offset": 0, "fullySynced": False, "lastSyncedAt": None})
+        entry["offset"] = offset_after
+        if got_count < page_size:
+            entry["fullySynced"] = True
+            entry["lastSyncedAt"] = time.time()
+        _save_sync(data)

@@ -1595,6 +1595,41 @@
       "brewery": "ÅBEN",
       "location": "Area 4",
       "url": "https://untappd.com/beer/6212459"
+    },
+    {
+      "id": "6280016",
+      "name": "Organic Ice Cold Pilsner",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6280016"
+    },
+    {
+      "id": "5205017",
+      "name": "Blanche De Mikkeller",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/5205017"
+    },
+    {
+      "id": "6819271",
+      "name": "Sticky Situation",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6819271"
+    },
+    {
+      "id": "6653654",
+      "name": "Zing Thing",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6653654"
+    },
+    {
+      "id": "6743341",
+      "name": "Peach Out",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6743341"
     }
   ],
   "blue": [
@@ -3207,6 +3242,41 @@
       "brewery": "ÅBEN",
       "location": "Area 4",
       "url": "https://untappd.com/beer/5230635"
+    },
+    {
+      "id": "3775455",
+      "name": "Passion Pool",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/3775455"
+    },
+    {
+      "id": "6428571",
+      "name": "Pretzel Bock",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6428571"
+    },
+    {
+      "id": "5535714",
+      "name": "#YearoftheLager",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/5535714"
+    },
+    {
+      "id": "6894992",
+      "name": "Peach Treaty",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6894992"
+    },
+    {
+      "id": "4479303",
+      "name": "Lager Apparatus: Goldhüte",
+      "brewery": "Compañía Cervecera Hércules S.A. de C.V.",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/4479303"
     }
   ],
   "red": [
@@ -4812,6 +4882,34 @@
       "brewery": "ÅBEN",
       "location": "Area 4",
       "url": "https://untappd.com/beer/5899814"
+    },
+    {
+      "id": "6516608",
+      "name": "Black Hole (2025)",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6516608"
+    },
+    {
+      "id": "3022912",
+      "name": "Japanese Rice Lager",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/3022912"
+    },
+    {
+      "id": "380973",
+      "name": "Drink'in The Sun (0.3%)",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/380973"
+    },
+    {
+      "id": "6792315",
+      "name": "Don't Gose Chasing Watermelons",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6792315"
     }
   ],
   "green": [
@@ -6438,6 +6536,34 @@
       "brewery": "ÅBEN",
       "location": "Area 4",
       "url": "https://untappd.com/beer/6614304"
+    },
+    {
+      "id": "6791149",
+      "name": "Feeding Pigeons Rugbrød",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6791149"
+    },
+    {
+      "id": "6576194",
+      "name": "Berry Dust",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6576194"
+    },
+    {
+      "id": "2068818",
+      "name": "Windy Hill",
+      "brewery": "Mikkeller CPH Airport",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/2068818"
+    },
+    {
+      "id": "6606605",
+      "name": "Over Hegnet",
+      "brewery": "Æblerov",
+      "location": "CPH Airport",
+      "url": "https://untappd.com/beer/6606605"
     }
   ]
 }

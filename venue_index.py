@@ -106,7 +106,15 @@ def _merge_venues(entry: dict, items: list[dict]) -> None:
     style/brewery/country: never a dedicated per-venue lookup). A venue
     recorded before this field existed (or via record_checkin's immediate
     insert, which has no category data available) stores {} until a resync
-    happens to revisit it - an expected transient gap, not a bug."""
+    happens to revisit it - an expected transient gap, not a bug.
+
+    `name` (the venue's own display name, e.g. "Gdańsk Główny Ferry
+    Terminal") is captured the same way, purely for investigating category-
+    matching questions by hand later (see webapp_server.py's own
+    venue_name field on a checkin's own "venue" dict for the matching
+    convention) - nothing currently reads it back programmatically, so a
+    venue recorded before this existed just has no name until a resync
+    revisits it, same as categories above."""
     for it in items:
         venue = it.get("venue") or {}
         fsq = (venue.get("foursquare") or {}).get("foursquare_id")
@@ -116,6 +124,26 @@ def _merge_venues(entry: dict, items: list[dict]) -> None:
         if not isinstance(record, dict):
             record = {}
             entry["venues"][fsq] = record
+        venue_name = venue.get("venue_name")
+        if venue_name:
+            record["name"] = venue_name
+        # country/state - needed for badge_stats.py's "Brew Traveler"
+        # (distinct US states/Canadian provinces/Mexican states OR distinct
+        # non-US/CA/MX countries, pooled into one count - see that badge's
+        # own real "How to Earn It" text). Both come from the checkin's own
+        # venue.location, already-paid-for, same free-ride principle as
+        # categories/name above. venue_country/venue_state are apparently
+        # localized to wherever the venue itself is (confirmed live: a
+        # Polish venue returns "Polska", not "Poland") - badge_stats.py's
+        # own region-matching accounts for that, this module just stores
+        # whatever string Untappd sent verbatim.
+        location = venue.get("location") or {}
+        country = location.get("venue_country")
+        if country:
+            record["country"] = country
+        state = location.get("venue_state")
+        if state:
+            record["state"] = state
         categories = venue.get("categories") or []
 
         if isinstance(categories, dict):
@@ -227,6 +255,33 @@ async def get_visited_venue_categories(user_id: int) -> list[list[str]]:
         if not entry:
             return []
         return [(v.get("categories") or []) if isinstance(v, dict) else [] for v in entry["venues"].values()]
+
+
+async def get_visited_regions(user_id: int) -> list[tuple[str | None, str | None]]:
+    """One (country, state) pair per distinct visited venue - used by
+    badge_stats.py's "Brew Traveler" region count. A venue with no captured
+    location yet contributes (None, None), which that counting logic
+    already ignores, same as an empty categories list does for the other
+    venue badges."""
+    async with _lock:
+        data = _load()
+        entry = data.get(str(user_id))
+        if not entry:
+            return []
+        return [
+            ((v.get("country"), v.get("state")) if isinstance(v, dict) else (None, None))
+            for v in entry["venues"].values()
+        ]
+
+
+async def is_fully_synced(user_id: int) -> bool:
+    """Whether this user's full walk has ever completed at least once - see
+    had_it_index.is_fully_synced's own docstring for why webapp_server.py's
+    handle_badges_get needs this (same reasoning, for venue badges)."""
+    async with _lock:
+        data = _load()
+        entry = data.get(str(user_id))
+        return bool(entry and entry.get("fully_synced"))
 
 
 _rotation_cursor = 0

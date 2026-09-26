@@ -89,8 +89,12 @@ async def lookup_had_it(user_id: int, beer_id) -> dict | None:
         return None
 
 
-async def enrich_from_checkin(user_id: int, beer_id, style: str | None, brewery_name: str | None, country: str | None) -> None:
-    """Fills in style/brewery/country for an ALREADY-known beer from a
+async def enrich_from_checkin(
+    user_id: int, beer_id, style: str | None, brewery_name: str | None, country: str | None,
+    name: str | None = None, state: str | None = None,
+    abv: float | None = None, ibu: float | None = None, brewery_type: str | None = None,
+) -> None:
+    """Fills in style/brewery/country/name for an ALREADY-known beer from a
     single checkin item's embedded beer/brewery data - called from
     webapp_server's venue backfill loop (get_user_checkins, paged by the
     monotonic checkin_id cursor `maxId`), never creates a bare entry (that
@@ -120,6 +124,9 @@ async def enrich_from_checkin(user_id: int, beer_id, style: str | None, brewery_
         if record is None:
             return  # not yet seen by the main get_user_beers walk - not this function's job to create it
         changed = False
+        if name and not record.get("name"):
+            record["name"] = name
+            changed = True
         if style and not record.get("style"):
             record["style"] = style
             changed = True
@@ -128,6 +135,18 @@ async def enrich_from_checkin(user_id: int, beer_id, style: str | None, brewery_
             changed = True
         if country and not record.get("country"):
             record["country"] = country
+            changed = True
+        if state and not record.get("state"):
+            record["state"] = state
+            changed = True
+        if brewery_type and not record.get("breweryType"):
+            record["breweryType"] = brewery_type
+            changed = True
+        if abv is not None and record.get("abv") is None:
+            record["abv"] = abv
+            changed = True
+        if ibu is not None and record.get("ibu") is None:
+            record["ibu"] = ibu
             changed = True
         if changed:
             _save()
@@ -146,21 +165,51 @@ def _merge_beers(entry: dict, items: list[dict]) -> None:
             continue
         record = entry["beers"].setdefault(str(bid), {})
         record["rating"] = it.get("rating_score")
-        # Style/brewery/country - added later than `rating` (see
+        # Name/style/brewery/country - added later than `rating` (see
         # README.md) - captured for free from this same already-paid-for
         # get_user_beers page, never a dedicated per-beer lookup. Only
         # overwrite when actually present, so a page that's somehow
         # missing one of these (shouldn't happen) can't erase what an
-        # earlier pass already recorded.
+        # earlier pass already recorded. `name` exists specifically for
+        # badge_stats.py's "matchName" badges (e.g. Winter Wonderland,
+        # whose own real Untappd rule counts a beer whose NAME - not
+        # formal style - contains a themed keyword) - every other badge
+        # still only ever looks at `style`.
+        name = beer.get("beer_name")
+        if name:
+            record["name"] = name
         style = beer.get("beer_style")
         if style:
             record["style"] = style
         brewery_name = brewery.get("brewery_name")
         if brewery_name:
             record["brewery"] = brewery_name
+        brewery_type = brewery.get("brewery_type")
+        if brewery_type:
+            record["breweryType"] = brewery_type
         country = brewery.get("country_name")
         if country:
             record["country"] = country
+        # brewery_state - for badge_stats.py's "Beer of the World" (distinct
+        # state-or-province+country regions, confirmed live via the badge's
+        # own real "Your Regions List" - every country gets sub-national
+        # granularity there, not just US/CA/MX like Brew Traveler's own
+        # region rule - see _beer_region_key).
+        state = (brewery.get("location") or {}).get("brewery_state")
+        if state:
+            record["state"] = state
+        # abv/ibu - for badge_stats.py's range-matched badges (Riding
+        # Steady, Sky's the Limit, Hopped Down, Hopped Up, Middle of the
+        # Road - see compute_range_progress). IBU is frequently absent on
+        # Untappd's own data (not every beer has it recorded) - a missing
+        # value here just never matches an IBU-range badge, same as every
+        # other "not yet known" field in this file.
+        abv = beer.get("beer_abv")
+        if abv is not None:
+            record["abv"] = abv
+        ibu = beer.get("beer_ibu")
+        if ibu is not None:
+            record["ibu"] = ibu
 
 
 async def record_page(user_id: int, username: str, items: list[dict], offset_after: int, total_count: int) -> None:
@@ -305,6 +354,20 @@ async def get_all_beers(user_id: int) -> dict:
         data = _load()
         entry = data.get(str(user_id))
         return dict(entry["beers"]) if entry else {}
+
+
+async def is_fully_synced(user_id: int) -> bool:
+    """Whether this user's full walk has ever completed at least once - used
+    by webapp_server.py's handle_badges_get to decide whether a style/
+    country badge's own compute_progress count is trustworthy enough to
+    justify showing a KNOWN-stale personal badge link (see badge_index.py) -
+    a full walk still in progress could plausibly be undercounting, so that
+    fallback is only offered once there's nothing more passive discovery
+    could still turn up on its own."""
+    async with _lock:
+        data = _load()
+        entry = data.get(str(user_id))
+        return bool(entry and entry.get("fully_synced"))
 
 
 _rotation_cursor = 0

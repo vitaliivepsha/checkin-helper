@@ -93,11 +93,29 @@ async def get_layout(
     """Returns the current zone layout (for the given `zones` - whatever
     the caller currently considers the festival's main, editable zones),
     seeding in any brewery from `known_breweries` that isn't placed on any
-    side of any zone yet."""
+    side of any zone yet, and dropping any placed brewery that ISN'T in
+    `known_breweries` - proven live necessary: the underlying festival beer
+    data file is swappable (webapp_server.py's FESTIVAL_BEERS_FILE), and
+    without this, switching from one festival's data to a completely
+    different one left the OLD festival's breweries stuck on the map
+    forever (this module has no concept of "which dataset" a saved
+    position came from, and get_layout previously only ever ADDED, never
+    removed), making the two datasets' breweries visibly pile up together
+    in the same zones. A brewery whose name happens to be identical across
+    both datasets keeps its existing position rather than being reset -
+    harmless, and avoids needlessly reshuffling a coincidental overlap."""
     if not zones:
         return {}
     async with _lock:
         loaded = _load(zones)
+        known = set(known_breweries)
+        pruned = False
+        for zone in loaded.values():
+            for side in SIDES:
+                filtered = [b for b in zone[side] if b in known]
+                if len(filtered) != len(zone[side]):
+                    pruned = True
+                    zone[side] = filtered
         placed = {b for zone in loaded.values() for side in zone.values() for b in side}
         new_by_zone: dict[str, list[str]] = {}
         for brewery in known_breweries:
@@ -113,6 +131,7 @@ async def get_layout(
                 seeded = _seed_sides(breweries)
                 for side in SIDES:
                     loaded[zone][side].extend(seeded[side])
+        if new_by_zone or pruned:
             _save(loaded)
         return loaded
 

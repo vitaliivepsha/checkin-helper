@@ -175,7 +175,8 @@
       "badge": "Fields of Gold",
       "styles": [
         "Blonde Ale",
-        "Golden Ale"
+        "Golden Ale",
+        "Belgian Blonde"
       ],
       "count": 5,
       "levels": 100,
@@ -613,7 +614,8 @@
     {
       "badge": "Session Life",
       "styles": [
-        "=IPA - Session"
+        "=IPA - Session",
+        "=IPA - Session New England / Hazy"
       ],
       "count": 5,
       "levels": 100,
@@ -645,7 +647,8 @@
     {
       "badge": "So Udderly Sweet",
       "styles": [
-        "Stout - Milk / Sweet"
+        "Stout - Milk / Sweet",
+        "Stout - Imperial / Double Milk"
       ],
       "count": 5,
       "levels": 100,
@@ -771,7 +774,8 @@
       "badge": "Take A Dunk!",
       "styles": [
         "Wheat Beer - Dunkelweizen",
-        "Lager - Munich Dunkel"
+        "Lager - Munich Dunkel",
+        "Kellerbier / Zwickelbier - Dunkel"
       ],
       "count": 5,
       "levels": 100,
@@ -849,7 +853,8 @@
     {
       "badge": "Tripping on TIPAs",
       "styles": [
-        "IPA - Triple"
+        "IPA - Triple",
+        "IPA - Triple New England / Hazy"
       ],
       "count": 5,
       "levels": 100,
@@ -929,7 +934,8 @@
       "levels": 100,
       "icon": "https://assets.untappd.com/badges/bdg_wonderland_lg.jpg",
       "note": "Matches beers whose NAME or STYLE contains the word \"Winter\" (a themed keyword match, not one formal style category).",
-      "url": "https://badges.untappd.com/49-winter-wonderland"
+      "url": "https://badges.untappd.com/49-winter-wonderland",
+      "matchName": true
     },
     {
       "badge": "Wit, Weiss, and Weizen",
@@ -988,6 +994,76 @@
       "levels": 100,
       "icon": "https://assets.untappd.com/badges/bdg_BeerForKeeping_lg.jpg",
       "url": "https://badges.untappd.com/12408-beer-for-keeping"
+    },
+    {
+      "badge": "Silence of the Lambics",
+      "styles": [
+        "Lambic"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_SilenceOfTheLambics_lg.jpg",
+      "url": "https://badges.untappd.com/34655-silence-of-the-lambics"
+    },
+    {
+      "badge": "Flan-didly-anders",
+      "styles": [
+        "=Sour - Flanders Red Ale",
+        "=Sour - Flanders Oud Bruin"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_FlanDiddlyAnders_lg.jpg",
+      "url": "https://badges.untappd.com/168387-flan-didly-anders"
+    },
+    {
+      "badge": "Summer Fun",
+      "styles": [
+        "Summer"
+      ],
+      "matchName": true,
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_summer2011_lg.jpg",
+      "note": "Confirmed live from the badge's own real progress text: \"Drink N different beers with the word 'Summer' in the Beer's name\" - a matchName keyword badge exactly like Winter Wonderland, just with \"Summer\" instead of \"Winter\".",
+      "url": "https://badges.untappd.com/108-summer-fun"
+    },
+    {
+      "badge": "Trappist Travesty",
+      "styles": [
+        "=Bières de Chimay",
+        "=Brasserie d'Orval",
+        "=Brouwerij der Trappisten van Westmalle",
+        "=Brouwerij De Sint-Sixtusabdij van Westvleteren",
+        "=Stift Engelszell",
+        "=Abbazia Tre Fontane",
+        "=Spencer Brewery",
+        "=Abbaye du Mont des Cats",
+        "=De Achelse Kluis",
+        "=Rochefort",
+        "=La Trappe",
+        "=Zundert",
+        "=Cardeña",
+        "=Tynt Meadow"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_trappist_lg.jpg",
+      "note": "Counts beers from Authentic Trappist Product-certified breweries only (the 14-brewery ATP list, not just any beer labeled \"Trappist\" style). matchBrewery checks the beer's BREWERY name, not its style. 9 of these 14 spellings are confirmed live against a real account's data (Chimay, Orval, Westmalle, Westvleteren, Engelszell, Tre Fontane, Spencer, Mont des Cats, Achel); the other 5 (Rochefort, La Trappe/Koningshoeven, Zundert, Cardeña, Tynt Meadow) use Untappd's commonly-seen brewery-page name but are NOT yet confirmed against real data - fix the spelling here if one of them doesn't match.",
+      "url": "https://badges.untappd.com/77-trappist-travesty",
+      "matchBrewery": true
+    },
+    {
+      "badge": "Home Brewed Goodness",
+      "styles": [
+        "Home Brewery"
+      ],
+      "count": 2,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_homebrew_lg.jpg",
+      "note": "Counts beers from a brewery whose Untappd brewery_type is \"Home Brewery\" - only 2 distinct beers needed per level (not 5, unlike almost every other style/brewery badge).",
+      "url": "https://badges.untappd.com/413-home-brewed-goodness",
+      "matchBreweryType": true
     }
   ],
   "_non_style_beer_badges_excluded": [
@@ -1005,13 +1081,31 @@
     {
       "badge": "Amazons & Andes",
       "countries": [
-        "Central America",
-        "South America"
+        "Argentina",
+        "Bolivia",
+        "Brazil",
+        "Chile",
+        "Colombia",
+        "Ecuador",
+        "Guyana",
+        "Paraguay",
+        "Peru",
+        "Suriname",
+        "Uruguay",
+        "Venezuela",
+        "French Guiana",
+        "Belize",
+        "Costa Rica",
+        "El Salvador",
+        "Guatemala",
+        "Honduras",
+        "Nicaragua",
+        "Panama"
       ],
       "count": 5,
       "levels": 100,
       "icon": "https://assets.untappd.com/badges/bdg_AmazonAndAndes_lg.jpg",
-      "note": "Region-level match (brewery located in either Central or South America), not a single country.",
+      "note": "Region-level match (brewery located in either Central or South America) - the catalog lists every real member country's own Untappd country_name, since compute_progress only ever does a flat country-name match, not true region grouping.",
       "url": "https://badges.untappd.com/12659-amazons-andes"
     },
     {
@@ -1068,7 +1162,9 @@
     {
       "badge": "Brew of the Dragon",
       "countries": [
-        "China"
+        "China",
+        "China / People's Republic of China",
+        "Hong Kong"
       ],
       "count": 5,
       "levels": 100,
@@ -1258,12 +1354,65 @@
     {
       "badge": "Going on Safari",
       "countries": [
-        "Africa"
+        "Algeria",
+        "Angola",
+        "Benin",
+        "Botswana",
+        "Burkina Faso",
+        "Burundi",
+        "Cameroon",
+        "Cape Verde",
+        "Central African Republic",
+        "Chad",
+        "Comoros",
+        "Republic of the Congo",
+        "Democratic Republic of the Congo",
+        "Djibouti",
+        "Egypt",
+        "Equatorial Guinea",
+        "Eritrea",
+        "Eswatini",
+        "Ethiopia",
+        "Gabon",
+        "Gambia",
+        "Ghana",
+        "Guinea",
+        "Guinea-Bissau",
+        "Ivory Coast",
+        "Kenya",
+        "Lesotho",
+        "Liberia",
+        "Libya",
+        "Madagascar",
+        "Malawi",
+        "Mali",
+        "Mauritania",
+        "Mauritius",
+        "Morocco",
+        "Mozambique",
+        "Namibia",
+        "Niger",
+        "Nigeria",
+        "Rwanda",
+        "São Tomé and Príncipe",
+        "Senegal",
+        "Seychelles",
+        "Sierra Leone",
+        "Somalia",
+        "South Africa",
+        "South Sudan",
+        "Sudan",
+        "Tanzania",
+        "Togo",
+        "Tunisia",
+        "Uganda",
+        "Zambia",
+        "Zimbabwe"
       ],
       "count": 5,
       "levels": 100,
       "icon": "https://assets.untappd.com/badges/bdg_GoingonSafari_lg.jpg",
-      "note": "Continent-level match (brewery located anywhere in Africa), not a single country.",
+      "note": "Continent-level match (brewery located anywhere in Africa) - the catalog lists every real member country's own Untappd country_name, same reasoning as Amazons & Andes.",
       "url": "https://badges.untappd.com/5216-going-on-safari"
     },
     {
@@ -1581,6 +1730,16 @@
       "levels": 100,
       "icon": "https://assets.untappd.com/badges/bdg_BeerSouthKorea_lg.jpg",
       "url": "https://badges.untappd.com/537344-breweries-from-south-korea"
+    },
+    {
+      "badge": "Here Come the Vikings!",
+      "countries": [
+        "Norway"
+      ],
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_HereComeTheVikings_lg.jpg",
+      "url": "https://badges.untappd.com/3623-here-come-the-vikings"
     }
   ],
   "_non_country_beer_badges_excluded": [
@@ -1592,5 +1751,100 @@
     "Pride365 (a curated 'queer-led/queer-supporting breweries' list, not a country)",
     "Untappd Groupie (beers the Untappd co-founders have had, not a country)",
     "Belgian Beer Badge (time-boxed special-edition duplicate of the evergreen 'Belgian Holiday' badge, active only Apr 2 – Dec 31, 2026)"
+  ],
+  "distinct_badges": [
+    {
+      "badge": "Wheel of Styles",
+      "field": "style",
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_WheelofStyles_lg.jpg",
+      "note": "Counts DISTINCT styles ever had (not distinct beers of one style) - confirmed live via the badge's own official badges.untappd.com page: a flat 100 levels (5/10/15/.../500), same fixed cap as most other badges - the earlier note guessing a ~51-level cap tied to Untappd's total recognized style count was WRONG (caused a real bug: a confirmed real level 52 from badge_index.py exceeded that fake 51 cap and got clamped to a premature 'done' state).",
+      "url": "https://badges.untappd.com/5115-wheel-of-styles"
+    },
+    {
+      "badge": "Beer Connoisseur",
+      "field": "country",
+      "count": 5,
+      "levels": 50,
+      "icon": "https://assets.untappd.com/badges/bdg_connoiseur_lg.jpg",
+      "note": "Counts DISTINCT countries ever had a beer from (any country, not a fixed list - contrast with region-specific badges like Amazons & Andes). levels=50 confirmed live via the badge's own official badges.untappd.com page (not 100 like most other badges) - found while fixing the same class of stale-cap bug on Wheel of Styles.",
+      "url": "https://badges.untappd.com/14-beer-connoisseur"
+    },
+    {
+      "badge": "Brewery Pioneer",
+      "field": "brewery",
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_brewery_prioneer_sm.jpg",
+      "note": "Counts DISTINCT breweries ever had a beer from - confirmed live, levels 100 = 500 distinct breweries.",
+      "url": "https://badges.untappd.com/243496-brewery-pioneer"
+    },
+    {
+      "badge": "Beer of the World",
+      "field": "region",
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_beers-of-the-world_lg.jpg",
+      "note": "Counts DISTINCT state/province+country regions a beer's own brewery is in (see _beer_region_key) - confirmed live via the badge's own real \"Your Regions List\", which breaks EVERY country down by sub-region, not just US/Canada/Mexico like Brew Traveler.",
+      "url": "https://badges.untappd.com/345817-beer-of-the-world"
+    }
+  ],
+  "range_badges": [
+    {
+      "badge": "Riding Steady",
+      "field": "abv",
+      "min": null,
+      "max": 5,
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_RidingSteady_lg.jpg",
+      "note": "Counts beers with ABV <= 5%.",
+      "url": "https://badges.untappd.com/5963-riding-steady"
+    },
+    {
+      "badge": "Sky's the Limit",
+      "field": "abv",
+      "min": 10,
+      "max": null,
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_highABV_lg.jpg",
+      "note": "Counts beers with ABV >= 10%.",
+      "url": "https://badges.untappd.com/411-skys-the-limit"
+    },
+    {
+      "badge": "Middle of the Road",
+      "field": "abv",
+      "min": 5,
+      "max": 10,
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_middle-of-the-road_lg.jpg",
+      "note": "Counts beers with ABV in the 5%-10% range. Possibly retired by Untappd around 2021 (community sources disagree on whether it's still earnable) - implemented anyway per explicit user instruction, may simply never progress further if Untappd no longer awards it.",
+      "url": "https://badges.untappd.com/34705-middle-of-the-road"
+    },
+    {
+      "badge": "Hopped Down",
+      "field": "ibu",
+      "min": null,
+      "max": 20,
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_HoppedDown_lg.jpg",
+      "note": "Counts beers with IBU <= 20. IBU is frequently missing from Untappd's own data, so this badge undercounts until had_it_index has captured it for enough beers.",
+      "url": "https://badges.untappd.com/34605-hopped-down"
+    },
+    {
+      "badge": "Hopped Up",
+      "field": "ibu",
+      "min": 65,
+      "max": null,
+      "count": 5,
+      "levels": 100,
+      "icon": "https://assets.untappd.com/badges/bdg_HoppedUp_lg.jpg",
+      "note": "Counts beers with IBU >= 65 (the complementary/opposite badge to Hopped Down). Same IBU-data-sparsity caveat applies.",
+      "url": "https://badges.untappd.com/3358-hopped-up"
+    }
   ]
 }

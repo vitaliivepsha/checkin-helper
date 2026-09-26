@@ -5,6 +5,23 @@
   if (tg) {
     tg.ready();
     tg.expand();
+    applyTelegramTheme();
+    tg.onEvent("themeChanged", applyTelegramTheme);
+  }
+
+  // The app draws its own light/dark palette (see style.css's :root) rather
+  // than Telegram's theme colors - this only mirrors WHICH scheme Telegram
+  // is in onto <html data-theme>, then paints Telegram's own header/
+  // background/bottom bar in the app's matching --bg so there's no
+  // mismatched strip around the page. Each setter is version-gated by
+  // Telegram and may throw on older clients.
+  function applyTelegramTheme() {
+    document.documentElement.dataset.theme = tg.colorScheme === "dark" ? "dark" : "light";
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+    if (!bg) return;
+    try { tg.setHeaderColor(bg); } catch (e) { /* unsupported client */ }
+    try { tg.setBackgroundColor(bg); } catch (e) { /* unsupported client */ }
+    try { if (tg.setBottomBarColor) tg.setBottomBarColor(bg); } catch (e) { /* unsupported client */ }
   }
   const initData = tg ? tg.initData : "";
 
@@ -25,6 +42,12 @@
   const ICON_COMPASS = '<svg class="icon"><use href="#icon-compass"/></svg>';
   const ICON_CHAT = '<svg class="icon"><use href="#icon-chat"/></svg>';
   const ICON_TROPHY = '<svg class="icon"><use href="#icon-trophy"/></svg>';
+  const ICON_BEER = '<svg class="icon"><use href="#icon-beer"/></svg>';
+  const ICON_STAR = '<svg class="icon icon-filled"><use href="#icon-star"/></svg>';
+  const ICON_HEART = '<svg class="icon icon-filled"><use href="#icon-heart"/></svg>';
+  const ICON_AWARD = '<svg class="icon"><use href="#icon-award"/></svg>';
+  // Maxed-out badge marker, in front of its name (replaces the old trophy emoji).
+  const DONE_MARK = `<span class="badge-done-mark" title="Максимальний рівень">${ICON_TROPHY}</span>`;
 
   // Telegram's own WebView doesn't reliably handle a plain <a target="_blank">
   // - tg.openLink is the documented way to hand a URL off to the system
@@ -80,11 +103,13 @@
     lastVenueSearch: null,   // {type:"nearby",lat,lng} | {type:"query",query} - replayed when a filter checkbox toggles
     queue: [],          // shared, server-backed - everyone in the group sees the same list
     wishlist: [],       // personal - own items merged server-side with the user's Google Sheet rows
+    wishlistSort: "date",
     currentSession: null, // which session's drill-down list is currently open
     origin: "search",    // where to return after rate/confirm: "search", "queue" or "session-beers"
     queueItemId: null,   // the server's item id, not an array index (another phone can remove items)
     badgesRaw: [],       // last /api/checkin/badges/get fetch - re-filtered/sorted client-side, no re-fetch needed
-    badgesSort: "level_desc",
+    badgesSort: "closest",
+    badgesView: "grid",
     selectedBadge: null, // drill-down target for screen-badge-detail
     festivalMode: false,        // mirrors festival_mode.py - gates festival-only UI, see applyFestivalModeUI
     autoToastAvailable: false,  // combined with festivalMode below - see updateAutoToastRowVisibility
@@ -201,6 +226,14 @@
   let queuePollHandle = null;
   let statsPollHandle = null;
   let mapPollHandle = null;
+  // Screens have no scroll container of their own (see .screen's plain
+  // display:none/block toggle in style.css) - the page itself scrolls, so
+  // "where you'd scrolled to" is just window.scrollY. Saved whenever
+  // LEAVING the badges list (a detail tap, a different tab, doesn't
+  // matter) and restored once fetchBadgeStats re-renders it - without
+  // this, going search -> badge detail -> back always dumped you back at
+  // the very top of a ~130-badge list.
+  let badgesListScrollY = 0;
   // Screens don't map 1:1 to bottom-nav tabs (e.g. session-beers/badge-
   // detail are drill-downs with no tab of their own) - this maps only the
   // ones that DO have an obvious "you're in this section" tab.
@@ -216,6 +249,9 @@
   };
 
   function showScreen(name) {
+    if (document.getElementById("screen-badges")?.classList.contains("active") && name !== "badges") {
+      badgesListScrollY = window.scrollY;
+    }
     document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
     $("screen-" + name).classList.add("active");
     document.querySelectorAll(".nav-tab.active").forEach((el) => el.classList.remove("active"));
@@ -269,7 +305,16 @@
       fetchEvents();
     }
     if (name === "badges") {
+      // Restored synchronously, BEFORE the async fetch below, against
+      // whatever's still in #badges-list from the last render - without
+      // this, the screen paints at scroll 0 for one frame (the fetch/
+      // render below only finishes after an await) and then visibly jumps,
+      // instead of just already being there. fetchBadgeStats' own restore
+      // (after the fresh render) is the fallback for when a count/order
+      // change shifts the list's height enough to matter.
+      window.scrollTo(0, badgesListScrollY);
       fetchBadgeStats();
+      fetchSpecialBadges();
     }
     if (name === "badge-detail") {
       renderBadgeDetail();
@@ -331,6 +376,10 @@
     const { ok, data } = await apiPost("/api/checkin/queue/list", {});
     state.queue = ok ? (data.items || []) : [];
     state.queueTotal = ok ? (data.total || 0) : 0;
+    // noGroup (no /join_group run yet) is distinct from a genuinely empty
+    // queue - see webapp_server.py's handle_queue_list.
+    state.queueNoGroup = ok ? !!data.noGroup : false;
+    state.queueGroupTitle = ok ? (data.groupTitle || "") : "";
     renderQueueList();
   }
 
@@ -368,7 +417,14 @@
   async function addToQueue(beer, btn) {
     const { ok, data } = await apiPost("/api/checkin/queue/add", beer);
     if (!ok || !data.ok) {
-      notify("Не вдалося додати у чергу. Спробуйте ще раз.");
+      // "Спробуйте ще раз" would be wrong advice here - retrying can't help
+      // until someone runs /join_group, so this gets its own message rather
+      // than falling into the generic failure text below.
+      if (data && data.error === "no_active_group") {
+        notify("Спершу приєднайтесь до групи: напишіть /join_group у Telegram-групі фестивалю.");
+      } else {
+        notify("Не вдалося додати у чергу. Спробуйте ще раз.");
+      }
       return;
     }
     // See checkin_queue.add_item's own docstring for what each status means -
@@ -387,9 +443,9 @@
     }
     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
     if (btn) {
-      const original = btn.textContent;
-      btn.textContent = "✓";
-      setTimeout(() => { btn.textContent = original; }, 1000);
+      const original = btn.innerHTML;
+      btn.innerHTML = ICON_CHECK;
+      setTimeout(() => { btn.innerHTML = original; }, 1000);
     }
     updateQueueCountOnly();
   }
@@ -429,6 +485,14 @@
     renderQueueList();
   }
 
+  // Ukrainian plural form: 1 пиво, 2-4 пива, 5+ пив (11-14 always "many").
+  function pluralUk(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
+  }
+
   function renderQueueList() {
     const listEl = $("queue-list");
     listEl.innerHTML = "";
@@ -437,24 +501,67 @@
     $("queue-selection-bar").classList.toggle("hidden", !queueSelectionMode);
     $("queue-selection-count").textContent = `${queueSelectedIds.size} обрано`;
     $("queue-count").textContent = String(state.queue.length);
+    // "4 пива · 2 учасники" under the title - participants are the distinct
+    // people who added what's currently visible in this viewer's queue.
+    // Prefixed with the active group's own name (when known) so it's clear
+    // whose queue this is, since it's no longer the single global one.
+    const people = new Set(state.queue.map((b) => (b.addedBy && (b.addedBy.userId ?? b.addedBy.name)) || "?"));
+    const groupPrefix = state.queueGroupTitle ? `${state.queueGroupTitle} · ` : "";
+    $("queue-subtitle").textContent = state.queue.length
+      ? `${groupPrefix}${state.queue.length} ${pluralUk(state.queue.length, "пиво", "пива", "пив")} · ${people.size} ${pluralUk(people.size, "учасник", "учасники", "учасників")}`
+      : "";
+    $("queue-select-hint").classList.toggle("hidden", state.queue.length < 2 || queueSelectionMode);
     $("queue-bar-btn").classList.toggle("hidden", (state.queueTotal || 0) === 0);
     $("queue-status").textContent = state.queue.length
       ? ""
-      : (state.queueTotal
-        ? "Усе, що зараз у черзі, ви вже відмітили як випите."
-        : "Черга порожня — додайте пиво кнопкою «+» у результатах пошуку.");
+      : (state.queueNoGroup
+        ? "Ви ще не приєднались до групи. Напишіть /join_group у Telegram-групі фестивалю."
+        : (state.queueTotal
+          ? "Усе, що зараз у черзі, ви вже відмітили як випите."
+          : "Черга порожня — додайте пиво кнопкою «+» у результатах пошуку."));
     state.queue.forEach((beer, idx) => {
       const row = document.createElement("div");
       const checked = queueSelectedIds.has(beer.id);
       const addedBy = beer.addedBy && beer.addedBy.name ? beer.addedBy.name : "?";
-      row.className = "result-row queue-row" + (beer.hadIt ? " had-it" : "");
-      row.innerHTML = `
-        <span class="row-checkbox${checked ? " checked" : ""}">${checked ? "✓" : ""}</span>
+      // The queue is append-only, so the first item this viewer still sees
+      // is the oldest one they haven't checked in or hidden - shown as a
+      // featured "Наступне" card. Selection mode falls back to plain rows
+      // so every item gets the same checkbox layout.
+      const featured = idx === 0 && !queueSelectionMode;
+      if (idx === 1 && !queueSelectionMode) {
+        const label = document.createElement("div");
+        label.className = "queue-section-label";
+        label.textContent = "Далі в черзі";
+        listEl.appendChild(label);
+      }
+      row.className = "result-row queue-row" + (featured ? " queue-next" : "") + (beer.hadIt ? " had-it" : "");
+      if (featured) {
+        row.innerHTML = `
+        <div class="queue-next-head">
+          <span class="queue-next-label">Наступне</span>
+          <span class="queue-next-by">додав(-ла) ${escapeHtml(addedBy)}</span>
+        </div>
+        <div class="queue-next-body">
+          <div class="thumb"><img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
+          <div class="result-main">
+            <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
+            ${metaLine(beer.brewery)}
+            ${metaChips(beer)}
+          </div>
+          <div class="row-actions">
+            <button class="queue-remove-btn" data-id="${beer.id}" aria-label="Прибрати з черги">${ICON_CLOSE}</button>
+            <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
+          </div>
+        </div>
+        <button class="primary-btn queue-next-btn">${ICON_CHECK} Оцінити і зачекінити</button>`;
+      } else row.innerHTML = `
+        <span class="row-checkbox${checked ? " checked" : ""}">${checked ? ICON_CHECK : ""}</span>
         <div class="queue-number">${idx + 1}</div>
+        <div class="thumb"><img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
         <div class="result-main">
           <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
           ${metaLine(beer.brewery)}
-          ${metaLine(beer.style)}
+          ${metaChips(beer)}
           <div class="result-meta">додав(-ла) ${escapeHtml(addedBy)}</div>
         </div>
         <div class="row-actions">
@@ -601,9 +708,29 @@
     renderWishlistList();
   }
 
+  // Sorts the already-fetched, already-merged (native + sheet) list
+  // client-side - same rationale as sortedBadges(): re-fetching per toggle
+  // would just round-trip data that's already sitting in state.wishlist.
+  // "date" (default) puts real native items newest-added first; sheet rows
+  // carry no addedAt at all, so they fall through to 0 and naturally sink
+  // to the bottom - same place they already sat in the unsorted list.
+  function sortedWishlist() {
+    const list = state.wishlist.slice();
+    if (state.wishlistSort === "alpha") {
+      list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (state.wishlistSort === "brewery") {
+      list.sort((a, b) => (a.brewery || "").localeCompare(b.brewery || "") || (a.name || "").localeCompare(b.name || ""));
+    } else if (state.wishlistSort === "abv") {
+      list.sort((a, b) => (b.abv ?? -1) - (a.abv ?? -1));
+    } else {
+      list.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    }
+    return list;
+  }
+
   function renderWishlistList() {
     const query = $("wishlist-search-input").value.trim().toLowerCase();
-    const items = state.wishlist.filter((beer) => wishlistMatchesQuery(beer, query));
+    const items = sortedWishlist().filter((beer) => wishlistMatchesQuery(beer, query));
     const listEl = $("wishlist-list");
     listEl.innerHTML = "";
     listEl.classList.toggle("selection-mode", wishlistSelectionMode);
@@ -611,7 +738,7 @@
     $("wishlist-selection-bar").classList.toggle("hidden", !wishlistSelectionMode);
     $("wishlist-selection-count").textContent = `${wishlistSelectedIds.size} обрано`;
     if (!state.wishlist.length) {
-      $("wishlist-status").textContent = "Список порожній — додайте пиво кнопкою «📝» у результатах пошуку.";
+      $("wishlist-status").textContent = "Список порожній — додайте пиво через меню «⋯» у результатах пошуку.";
     } else {
       $("wishlist-status").textContent = items.length ? "" : "Нічого не знайдено.";
     }
@@ -621,7 +748,7 @@
       const checked = isNative && wishlistSelectedIds.has(beer.id);
       row.className = "result-row" + (beer.hadIt ? " had-it" : "");
       row.innerHTML = `
-        ${isNative ? `<span class="row-checkbox${checked ? " checked" : ""}">${checked ? "✓" : ""}</span>` : ""}
+        ${isNative ? `<span class="row-checkbox${checked ? " checked" : ""}">${checked ? ICON_CHECK : ""}</span>` : ""}
         <div class="thumb">
           <img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt="">
           ${beer.hadIt ? `<span class="had-it-corner">${ICON_CHECK}</span>` : ""}
@@ -630,7 +757,7 @@
         <div class="result-main">
           <div class="result-name"><span class="result-name-text">${escapeHtml(beer.name || "")}</span>${ratingBadge(beer)}</div>
           ${metaLine(beer.brewery)}
-          ${metaLine(beer.style, beer.abv != null ? beer.abv + "%" : null)}
+          ${metaChips(beer)}
         </div>
         <div class="row-actions">
           ${isNative
@@ -662,6 +789,14 @@
 
   $("wishlist-bar-btn").addEventListener("click", () => showScreen("wishlist"));
   $("wishlist-search-input").addEventListener("input", renderWishlistList);
+
+  document.querySelectorAll("#wishlist-sort-pills .pill").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.wishlistSort = btn.dataset.sort;
+      document.querySelectorAll("#wishlist-sort-pills .pill").forEach((p) => p.classList.toggle("active", p === btn));
+      renderWishlistList();
+    });
+  });
 
   $("wishlist-selection-delete-btn").addEventListener("click", async () => {
     // Same reason the single-item remove handler above calls this: a
@@ -717,7 +852,7 @@
       row.className = "venue-item";
       const sPct = s.total ? Math.round((100 * s.checked) / s.total) : 0;
       row.innerHTML = `
-        <div>${SESSION_EMOJI[s.color] || "🎪"} ${sessionLabel(s.session)} — ${s.checked} / ${s.total} (${sPct}%)</div>
+        <div>${sessionDot(s.color)} ${escapeHtml(sessionLabel(s.session))} — ${s.checked} / ${s.total} (${sPct}%)</div>
         <div class="stats-bar"><div class="stats-bar-fill" style="width:${sPct}%"></div></div>`;
       row.addEventListener("click", () => openSessionBeers(s.session, s.color));
       listEl.appendChild(row);
@@ -740,17 +875,132 @@
     }
     state.badgesRaw = data.badges || [];
     renderBadgesList();
+    // Restores whatever position showScreen saved on the way out (see
+    // badgesListScrollY) - 0 on a genuinely first visit, a no-op scroll.
+    window.scrollTo(0, badgesListScrollY);
   }
+
+  // Untappd's own time-limited promotional badges (special_badges.json,
+  // hand-curated from untappd.com/blog - see badge_stats.compute_special_badges'
+  // own docstring) - a short list of "currently earnable" cards above the
+  // regular ~130-badge grid, not merged into it: these aren't in the
+  // permanent catalog those rows come from, and (unlike every other badge
+  // here) this app has no way to confirm one's actually been earned, only
+  // to suggest what would count - a fundamentally different kind of row,
+  // so it gets its own small section instead of pretending to be one more
+  // entry in the sortable/filterable list.
+  let specialBadgesRaw = [];
+  // Collapsed by default (the full style list can run to 30+ names - see
+  // the Sour Beer Day catalog entry - which swamped the screen before this
+  // existed). Transient, not persisted: which cards are expanded doesn't
+  // need to survive a fresh fetch or outlive the screen, same as
+  // badgesCollapsedKinds above.
+  const specialBadgesExpanded = new Set();
+
+  async function fetchSpecialBadges() {
+    const { ok, data } = await apiPost("/api/checkin/special_badges/get", {});
+    specialBadgesRaw = ok ? (data.badges || []) : [];
+    renderSpecialBadges();
+  }
+
+  function renderSpecialBadges() {
+    const el = $("special-badges-list");
+    if (!specialBadgesRaw.length) { el.innerHTML = ""; return; }
+    el.innerHTML = specialBadgesRaw.map((b) => {
+      const expanded = specialBadgesExpanded.has(b.badge);
+      const daysText = b.daysRemaining <= 0
+        ? "останній день!"
+        : `ще ${b.daysRemaining} ${pluralUk(b.daysRemaining, "день", "дні", "днів")}`;
+      const iconHtml = b.icon
+        ? `<img class="special-badge-icon" src="${b.icon}" alt="">`
+        : `<svg class="icon special-badge-icon-fallback"><use href="#icon-sparkle"/></svg>`;
+      let detailsHtml = "";
+      if (expanded) {
+        const criteria = b.kind === "style"
+          ? `Стилі: ${b.styles.map(escapeHtml).join(", ")}`
+          : `Країни: ${(b.countries || []).map(escapeHtml).join(", ")}`;
+        const chainNote = b.venueChain
+          ? `<div class="special-badge-chain">Лише в мережі "${escapeHtml(b.venueChain)}"</div>`
+          : "";
+        const examples = b.matchingKnownBeers.length
+          ? `<div class="special-badge-examples">Наприклад: ${b.matchingKnownBeers.slice(0, 3).map((m) => escapeHtml(m.name)).join(", ")}</div>`
+          : "";
+        detailsHtml = `
+          <div class="special-badge-details">
+            <div class="special-badge-criteria">${criteria}</div>
+            ${chainNote}
+            ${examples}
+            <div class="special-badge-footer">
+              <a href="${b.sourceUrl}" target="_blank" rel="noopener" class="special-badge-link">Джерело <svg class="icon"><use href="#icon-external-link"/></svg></a>
+              <button class="special-badge-dismiss-btn" data-badge="${escapeHtml(b.badge)}">Вже отримав</button>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="special-badge-card">
+          <div class="special-badge-header" data-badge="${escapeHtml(b.badge)}">
+            ${iconHtml}
+            <div class="special-badge-header-text">
+              <div class="special-badge-title">${escapeHtml(b.badge)}</div>
+              <div class="special-badge-days">${daysText}</div>
+            </div>
+            <svg class="icon special-badge-chevron ${expanded ? "expanded" : ""}"><use href="#icon-chevron-right"/></svg>
+          </div>
+          ${detailsHtml}
+        </div>`;
+    }).join("");
+
+    el.querySelectorAll(".special-badge-header").forEach((header) => {
+      header.addEventListener("click", () => {
+        const name = header.dataset.badge;
+        if (specialBadgesExpanded.has(name)) specialBadgesExpanded.delete(name);
+        else specialBadgesExpanded.add(name);
+        renderSpecialBadges();
+      });
+    });
+    el.querySelectorAll(".special-badge-dismiss-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const name = btn.dataset.badge;
+        await apiPost("/api/checkin/special_badges/dismiss", { badge: name });
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+        specialBadgesRaw = specialBadgesRaw.filter((b) => b.badge !== name);
+        renderSpecialBadges();
+      });
+    });
+  }
+
+  // "За типом" groups by the same `kind` compute_progress/compute_*_progress
+  // already tags each row with (see badge_stats.py's _row) - style/venue
+  // first (the two concrete, easy-to-picture kinds), "Різне" (the abstract
+  // distinct-count badges like Wheel of Styles/Brewery Pioneer) last per
+  // explicit user feedback on the first cut of this feature.
+  const BADGE_KIND_ORDER = ["style", "venue", "country", "range", "distinct"];
+  const BADGE_KIND_GROUP_LABEL = {
+    style: "Стилі", country: "Країни", distinct: "Різне",
+    range: "ABV / IBU", venue: "Локації",
+  };
+  // Per-kind collapse state for the "За типом" grouping - a plain Set (not
+  // state.*, this is transient view state that doesn't need to survive a
+  // fresh badges fetch or outlive the screen) - collapsing a group hides its
+  // cards but always keeps the header (with a count) visible.
+  const badgesCollapsedKinds = new Set();
 
   // Sorts/filters the already-fetched list client-side - a fresh fetch per
   // toggle would be pointless round-tripping for a fixed ~170-row list that
   // doesn't change mid-session.
   function sortedBadges() {
     const list = state.badgesRaw.slice();
-    if (state.badgesSort === "level_asc") {
-      list.sort((a, b) => a.level - b.level || a.pct - b.pct);
+    if (state.badgesSort === "closest") {
+      // Closest to the next level first (pct = progress within the current
+      // level); maxed-out badges have no next level, so they go last.
+      list.sort((a, b) => (a.done - b.done) || (b.pct - a.pct)
+        || ((a.nextThreshold - a.current) - (b.nextThreshold - b.current)));
     } else if (state.badgesSort === "alpha") {
       list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (state.badgesSort === "kind") {
+      list.sort((a, b) => (BADGE_KIND_ORDER.indexOf(a.kind) - BADGE_KIND_ORDER.indexOf(b.kind))
+        || b.level - a.level || b.pct - a.pct);
     } else {
       list.sort((a, b) => b.level - a.level || b.pct - a.pct);
     }
@@ -768,32 +1018,108 @@
     return (b.tags || []).some((t) => t.toLowerCase().includes(query));
   }
 
+  // "N у процесі · M майже готові" under the title - over the whole list,
+  // not the current search filter. "Майже готові" = 80%+ of the way to the
+  // next level, same idea as the "Майже готові" sort.
+  const BADGE_CLOSE_PCT = 80;
+  function renderBadgesSubtitle() {
+    const open = state.badgesRaw.filter((b) => !b.done);
+    const close = open.filter((b) => b.pct >= BADGE_CLOSE_PCT).length;
+    $("badges-subtitle").textContent = state.badgesRaw.length
+      ? `${open.length} у процесі · ${close} майже ${pluralUk(close, "готовий", "готові", "готових")}`
+      : "";
+  }
+
   function renderBadgesList() {
+    renderBadgesSubtitle();
     const query = $("badges-search-input").value.trim().toLowerCase();
     const badges = sortedBadges().filter((b) => badgeMatchesQuery(b, query));
     if (!state.badgesRaw.length) {
-      $("badges-status").textContent = "Дані ще накопичуються — почни випивати щось нове 🙂";
+      $("badges-status").textContent = "Дані ще накопичуються — почни випивати щось нове.";
     } else {
       $("badges-status").textContent = badges.length ? "" : "Нічого не знайдено.";
     }
     const listEl = $("badges-list");
     listEl.innerHTML = "";
+    const grid = state.badgesView === "grid";
+    listEl.classList.toggle("badges-grid", grid);
+    const grouped = state.badgesSort === "kind";
+    let lastKind = null;
+    let groupCollapsed = false;
     badges.forEach((b) => {
+      if (grouped && b.kind !== lastKind) {
+        lastKind = b.kind;
+        groupCollapsed = badgesCollapsedKinds.has(b.kind);
+        const count = badges.filter((x) => x.kind === b.kind).length;
+        const header = document.createElement("div");
+        header.className = "badges-group-header" + (groupCollapsed ? " collapsed" : "");
+        header.innerHTML =
+          `${escapeHtml(BADGE_KIND_GROUP_LABEL[b.kind] || b.kind)} ` +
+          `<span class="badges-group-header-count">(${count})</span>` +
+          `<svg class="icon"><use href="#icon-chevron-right"/></svg>`;
+        header.addEventListener("click", () => {
+          if (badgesCollapsedKinds.has(b.kind)) badgesCollapsedKinds.delete(b.kind);
+          else badgesCollapsedKinds.add(b.kind);
+          renderBadgesList();
+        });
+        listEl.appendChild(header);
+      }
+      if (grouped && groupCollapsed) return;
       const target = b.nextThreshold ?? b.current;
       const pct = Math.max(0, Math.min(100, b.pct));
       const row = document.createElement("div");
-      row.className = "venue-item badge-row" + (b.done ? " done" : "");
-      row.innerHTML = `
-        <img class="badge-row-icon" src="${b.icon || DEFAULT_LABEL_URL}" alt="">
-        <div class="badge-row-main">
-          <div class="badge-row-title">${b.done ? "🏆 " : ""}${escapeHtml(b.name || "")}</div>
-          <div class="badge-row-progress">${b.current} / ${target}${b.levelLabel ? " · " + escapeHtml(b.levelLabel) : ""}</div>
-          <div class="stats-bar"><div class="stats-bar-fill" style="width:${pct}%"></div></div>
-        </div>`;
+      if (grid) {
+        // Progress ring around the badge icon: r=28 in a 64-unit box, so
+        // the dash length is pct% of the circumference.
+        const circ = 2 * Math.PI * 28;
+        row.className = "badge-card" + (b.done ? " done" : "");
+        row.innerHTML = `
+          <div class="badge-card-ring">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <circle cx="32" cy="32" r="28" class="badge-card-ring-track"/>
+              <circle cx="32" cy="32" r="28" class="badge-card-ring-fill"
+                      stroke-dasharray="${(circ * pct / 100).toFixed(1)} ${circ.toFixed(1)}"/>
+            </svg>
+            <img src="${b.icon || DEFAULT_LABEL_URL}" alt="">
+          </div>
+          <div class="badge-card-title">${b.done ? DONE_MARK : ""}${escapeHtml(b.name || "")}</div>
+          ${b.levelLabel ? `<div class="badge-card-level">${escapeHtml(b.levelLabel)}</div>` : ""}
+          <div class="badge-card-count"><span>${b.current}</span> / ${target}</div>`;
+      } else {
+        row.className = "venue-item badge-row" + (b.done ? " done" : "");
+        row.innerHTML = `
+          <img class="badge-row-icon" src="${b.icon || DEFAULT_LABEL_URL}" alt="">
+          <div class="badge-row-main">
+            <div class="badge-row-title">${b.done ? DONE_MARK : ""}${escapeHtml(b.name || "")}</div>
+            <div class="badge-row-progress">${b.current} / ${target}${b.levelLabel ? " · " + escapeHtml(b.levelLabel) : ""}</div>
+            <div class="stats-bar"><div class="stats-bar-fill" style="width:${pct}%"></div></div>
+          </div>`;
+      }
       row.addEventListener("click", () => openBadgeDetail(b));
       listEl.appendChild(row);
     });
   }
+
+  // Grid/list view for the badges screen - a per-device display preference,
+  // so localStorage (wrapped: private mode / blocked storage just falls back
+  // to the grid default each time).
+  const BADGES_VIEW_KEY = "checkin.badgesView";
+  try { if (localStorage.getItem(BADGES_VIEW_KEY) === "list") state.badgesView = "list"; } catch (e) { /* ignore */ }
+
+  function syncBadgesViewToggle() {
+    const grid = state.badgesView === "grid";
+    // The button shows the view you'd switch TO, not the current one.
+    $("badges-view-toggle-icon").querySelector("use").setAttribute("href", grid ? "#icon-list" : "#icon-grid");
+    $("badges-view-toggle").setAttribute("aria-label", grid ? "Показати списком" : "Показати сіткою");
+  }
+  syncBadgesViewToggle();
+
+  $("badges-view-toggle").addEventListener("click", () => {
+    state.badgesView = state.badgesView === "grid" ? "list" : "grid";
+    try { localStorage.setItem(BADGES_VIEW_KEY, state.badgesView); } catch (e) { /* ignore */ }
+    syncBadgesViewToggle();
+    renderBadgesList();
+  });
 
   $("badges-search-input").addEventListener("input", renderBadgesList);
 
@@ -807,7 +1133,7 @@
 
   // ---- Badge detail drill-down ----
 
-  const BADGE_KIND_LABEL = { style: "стилю", country: "країни", venue: "категорії локації" };
+  const BADGE_KIND_LABEL = { style: "стилю", country: "країни", venue: "категорії локації", distinct: "різних варіантів", range: "ABV/IBU-діапазону" };
 
   function openBadgeDetail(b) {
     state.selectedBadge = b;
@@ -820,7 +1146,7 @@
     const target = b.nextThreshold ?? b.current;
     const pct = Math.max(0, Math.min(100, b.pct));
     $("badge-detail-icon").src = b.icon || DEFAULT_LABEL_URL;
-    $("badge-detail-name").textContent = (b.done ? "🏆 " : "") + (b.name || "");
+    $("badge-detail-name").innerHTML = (b.done ? DONE_MARK : "") + escapeHtml(b.name || "");
     $("badge-detail-progress").textContent =
       `${b.current} / ${target}${b.levelLabel ? " · " + b.levelLabel : ""}`;
     $("badge-detail-bar").style.width = pct + "%";
@@ -858,6 +1184,19 @@
       untappdBtn.onclick = () => openExternalLink(openUrl);
     } else {
       untappdBtn.classList.add("hidden");
+    }
+    // personalUrlStaleLevel (webapp_server.py's handle_badges_get) - the
+    // link above is real but a FROZEN snapshot of an older award moment,
+    // offered anyway once there's nothing left to passively discover (see
+    // that handler's own comment) - this caption is what keeps it from
+    // reading as "your current level" when the page itself shows a lower
+    // number than what's already displayed above.
+    const staleHint = $("badge-detail-stale-hint");
+    if (b.personalUrlStaleLevel != null) {
+      staleHint.textContent = `Посилання веде на знімок рівня ${b.personalUrlStaleLevel} - останнього, який Untappd позначив явно. Показаний вище прогрес новіший.`;
+      staleHint.classList.remove("hidden");
+    } else {
+      staleHint.classList.add("hidden");
     }
   }
 
@@ -952,7 +1291,7 @@
 
   function openSessionBeers(session, color) {
     state.currentSession = session;
-    $("session-beers-title").textContent = `${SESSION_EMOJI[color] || "🎪"} ${sessionLabel(session)}`;
+    $("session-beers-title").innerHTML = `${sessionDot(color)} ${escapeHtml(sessionLabel(session))}`;
     $("session-search-input").value = "";
     showScreen("session-beers");
   }
@@ -984,7 +1323,7 @@
         <div class="result-main">
           <div class="result-name"><span class="result-name-text">${escapeHtml(b.name || "")}</span>${ratingBadge(b)}</div>
           ${metaLine(b.brewery)}
-          ${metaLine(b.style)}
+          ${metaChips(b)}
         </div>
         <div class="row-actions">
           <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
@@ -1040,7 +1379,7 @@
       </div>
       <div class="result-main">
         <div class="result-name"><span class="result-name-text">${escapeHtml(b.name || "")}</span>${ratingBadge(b)}</div>
-        ${metaLine(b.style)}
+        ${metaChips(b)}
       </div>
       <div class="row-actions">
         <button class="add-queue-btn" title="Додати у чергу">+</button>
@@ -1079,7 +1418,8 @@
       const color = sessionColorMap[session] || session;
       const header = document.createElement("div");
       header.className = "brewery-session-header";
-      header.textContent = session ? `${SESSION_EMOJI[color] || "🎪"} ${sessionLabel(session)}` : "Інше";
+      if (session) header.innerHTML = `${sessionDot(color)} ${escapeHtml(sessionLabel(session))}`;
+      else header.textContent = "Інше";
       listEl.appendChild(header);
       const tried = groupBeers.filter((b) => b.hadIt).length;
       const stats = document.createElement("div");
@@ -1103,18 +1443,26 @@
   festivalPriorityCheckbox.addEventListener("change", rerunSearchIfActive);
   wishlistPriorityCheckbox.addEventListener("change", rerunSearchIfActive);
 
+  // Plain hint text (loading/errors/empty) vs runSearch's two-part
+  // "Результати · N знайдено" heading, which swaps in its own class.
+  function setSearchStatus(text) {
+    const el = $("search-status");
+    el.classList.remove("results-heading");
+    el.textContent = text;
+  }
+
   let searchDebounce = null;
   $("search-input").addEventListener("input", (e) => {
     const q = e.target.value.trim();
     clearTimeout(searchDebounce);
     if (q.length < 2) {
       $("results").innerHTML = "";
-      $("search-status").textContent = "";
+      setSearchStatus("");
       $("home-hero").classList.remove("hidden");
       return;
     }
     $("home-hero").classList.add("hidden");
-    $("search-status").textContent = "Шукаю…";
+    setSearchStatus("Шукаю…");
     searchDebounce = setTimeout(() => runSearch(q), 350);
   });
 
@@ -1133,13 +1481,19 @@
     const { ok, status, data } = await apiPost("/api/checkin/search", { query, festivalPriority, wishlistPriority });
     if (requestId !== searchRequestId) return; // superseded by a newer search - discard
     if (!ok) {
-      $("search-status").textContent = status === 429
+      setSearchStatus(status === 429
         ? "Untappd тимчасово обмежив запити — спробуйте за хвилину."
-        : "Помилка пошуку.";
+        : "Помилка пошуку.");
       return;
     }
     const beers = data.beers || [];
-    $("search-status").textContent = beers.length ? "" : "Нічого не знайдено.";
+    if (beers.length) {
+      const el = $("search-status");
+      el.classList.add("results-heading");
+      el.innerHTML = `<span class="results-heading-label">Результати</span><span>${beers.length} знайдено</span>`;
+    } else {
+      setSearchStatus("Нічого не знайдено.");
+    }
     closeAllRowMenus(); // about to remove whatever row it was anchored to
     $("results").innerHTML = "";
     beers.forEach((b) => {
@@ -1154,7 +1508,7 @@
         <div class="result-main">
           <div class="result-name">${sourceBadge(b)}<span class="result-name-text">${escapeHtml(b.name || "")}</span>${ratingBadge(b)}</div>
           ${metaLine(b.brewery)}
-          ${metaLine(b.style, b.abv != null ? b.abv + "%" : null)}
+          ${metaChips(b)}
         </div>
         <div class="row-actions" data-beer-id="${b.beerId}" data-wishlist-item-id="${b.wishlistItemId || ""}">
           <button class="add-queue-btn" title="Додати у чергу">+</button>
@@ -1181,10 +1535,16 @@
 
   function ratingBadge(b) {
     if (!b.hadIt || typeof b.userRating !== "number") return "";
-    return ` <span class="badge had-it-badge">${b.userRating.toFixed(2)}⭐</span>`;
+    return ` <span class="badge had-it-badge" title="Твоя оцінка">${ICON_STAR}${b.userRating.toFixed(2)}</span>`;
   }
 
-  const SESSION_EMOJI = { yellow: "🟡", blue: "🔵", red: "🔴", green: "🟢" };
+  // Session color -> a small CSS dot (see style.css's .session-dot); an
+  // unknown/non-color session gets the neutral grey dot.
+  const SESSION_DOT_COLORS = { yellow: "#f5c451", blue: "#3478f6", red: "#e5484d", green: "#2fbf7a" };
+  function sessionDot(color) {
+    const c = SESSION_DOT_COLORS[color];
+    return `<span class="session-dot"${c ? ` style="background:${c}"` : ""}></span>`;
+  }
   // raw session key -> color, filled in once from /api/checkin/festival/meta
   // (see the bottom of this file) - covers non-color session names.
   const sessionColorMap = {};
@@ -1192,11 +1552,11 @@
   function sourceBadge(b) {
     if (b.source === "festival") {
       const sessions = b.sessions && b.sessions.length ? b.sessions : [null];
-      const emojis = sessions.map((s) => SESSION_EMOJI[sessionColorMap[s] || s] || "🎪").join("");
-      return `<span class="badge">${emojis}</span> `;
+      const dots = sessions.map((s) => sessionDot(sessionColorMap[s] || s)).join("");
+      return `<span class="badge session-dots">${dots}</span> `;
     }
     if (b.source === "wishlist") {
-      return `<span class="badge">❤️</span> `;
+      return `<span class="badge wishlist-mark" title="З вішліста">${ICON_HEART}</span> `;
     }
     return "";
   }
@@ -1238,6 +1598,21 @@
   function metaLine(...parts) {
     const text = joinMeta(...parts);
     return text ? `<div class="result-meta">${text}</div>` : "";
+  }
+
+  // Global rating / style / ABV as separate chips under the brewery line.
+  // The rating chip only appears when the server actually has one - only
+  // Untappd-sourced results carry it (festival/wishlist rows come back with
+  // rating: null, and fetching it per beer would burn API quota). Renders
+  // nothing when all three are missing.
+  function metaChips(b) {
+    const chips = [];
+    if (typeof b.rating === "number" && b.rating > 0) {
+      chips.push(`<span class="meta-chip meta-chip-rating">${ICON_STAR}${b.rating.toFixed(2)}</span>`);
+    }
+    if (b.style) chips.push(`<span class="meta-chip meta-chip-style">${escapeHtml(b.style)}</span>`);
+    if (b.abv != null && b.abv !== "") chips.push(`<span class="meta-chip">${escapeHtml(b.abv + "%")}</span>`);
+    return chips.length ? `<div class="meta-chips">${chips.join("")}</div>` : "";
   }
 
   // ---- Rate screen ----
@@ -1287,7 +1662,8 @@
   const PILL_VALUES = [3.75, 4, 4.25, 4.5, 4.75, 5];
   const pillsEl = $("rating-pills");
   PILL_VALUES.forEach((v) => {
-    const pill = document.createElement("div");
+    const pill = document.createElement("button");
+    pill.type = "button";
     pill.className = "pill";
     pill.textContent = v.toFixed(2).replace(/0$/, "").replace(/\.$/, "");
     pill.dataset.value = v;
@@ -1323,7 +1699,7 @@
       if (v.matchedBadges && v.matchedBadges.length) {
         const badgesHtml = v.matchedBadges.map((b) => b.icon
           ? `<span class="venue-badge"><img src="${escapeHtml(b.icon)}" alt="" class="badge-icon"> ${escapeHtml(b.name)}</span>`
-          : `<span class="venue-badge">🏅 ${escapeHtml(b.name)}</span>`
+          : `<span class="venue-badge">${ICON_AWARD} ${escapeHtml(b.name)}</span>`
         ).join("");
         html += `<div class="venue-badges">${badgesHtml}</div>`;
       }
@@ -1627,15 +2003,37 @@
       return;
     }
     $("festival-watch-enabled-toggle").checked = !!data.enabled;
+    $("festival-watch-notify-listed-toggle").checked = !!data.notifyListedBeers;
     $("festival-watch-radius-input").value = data.radiusMeters || 500;
     $("festival-watch-status").textContent = data.lat != null
       ? `Точка: ${data.label || `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`}`
       : "Точку стеження ще не встановлено — обери нижче.";
+    // venueId set = the watch point resolved to a real Untappd venue - the
+    // radius input is meaningless in that mode (venue/checkins has no
+    // concept of distance, see _festival_watch_venue_loop server-side), so
+    // it's hidden rather than left showing a number that does nothing.
+    const venueMode = data.venueId != null;
+    $("festival-watch-radius-row").classList.toggle("hidden", venueMode);
+    const hintEl = $("festival-watch-venue-hint");
+    hintEl.classList.toggle("hidden", !venueMode);
+    if (venueMode) {
+      hintEl.innerHTML = `<svg class="icon"><use href="#icon-pin"/></svg> Прив'язано до "${escapeHtml(data.venueName || "цієї локації")}" на Untappd — бачить усіх, хто там чекіниться, не лише друзів.`;
+    }
   }
 
   $("festival-watch-enabled-toggle").addEventListener("change", async (e) => {
     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
     await apiPost("/api/checkin/festival_watch/toggle", { enabled: e.target.checked });
+  });
+
+  // Off by default - at the very start of a session almost nothing is
+  // queued yet, so "on the festival's list but not queued" would fire for
+  // nearly every check-in anyone makes (pure noise). Meant to be switched
+  // on partway through, once most of the list IS already queued, so this
+  // signal actually means something (a keg change, a limited tap).
+  $("festival-watch-notify-listed-toggle").addEventListener("change", async (e) => {
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+    await apiPost("/api/checkin/festival_watch/set_notify_listed", { enabled: e.target.checked });
   });
 
   let festivalWatchRadiusDebounce = null;
@@ -1648,8 +2046,8 @@
     }, 500);
   });
 
-  async function setFestivalWatchLocation(lat, lng, label) {
-    await apiPost("/api/checkin/festival_watch/set_location", { lat, lng, label });
+  async function setFestivalWatchLocation(lat, lng, label, foursquareId) {
+    await apiPost("/api/checkin/festival_watch/set_location", { lat, lng, label, foursquareId });
     $("festival-watch-search-results").classList.add("hidden");
     $("festival-watch-search-input").value = "";
     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
@@ -1693,6 +2091,11 @@
         alert("Не вдалося отримати геолокацію — перевір дозволи в налаштуваннях.");
         return;
       }
+      // Also seeds state.lastKnownLocation - same shared spot "Локації
+      // поруч" fills, so the search box right below (and any other
+      // location-biased search this session) gets a real geo bias too,
+      // not just this one saved watch point.
+      state.lastKnownLocation = { lat: location.latitude, lng: location.longitude };
       await setFestivalWatchLocation(location.latitude, location.longitude, "Моя локація");
     });
   });
@@ -1706,7 +2109,17 @@
       return;
     }
     festivalWatchSearchDebounce = setTimeout(async () => {
-      const { ok, data } = await apiPost("/api/checkin/venues/nearby", { query: q });
+      // Without lat/lng, Foursquare falls back to its own IP-based geo
+      // bias - and since this call runs server-side, that's the SERVER's
+      // location, not the phone's (confirmed live: always Warsaw,
+      // regardless of where the actual user is). state.lastKnownLocation
+      // is the same GPS point "Локації поруч" already captured this
+      // session, if any - reused here so text search is geo-biased to the
+      // real device location instead.
+      const loc = state.lastKnownLocation;
+      const { ok, data } = await apiPost("/api/checkin/venues/nearby", {
+        query: q, lat: loc ? loc.lat : null, lng: loc ? loc.lng : null,
+      });
       if (!ok) return;
       renderFestivalWatchResults(data.venues || []);
     }, 350);
@@ -1719,7 +2132,7 @@
       const item = document.createElement("div");
       item.className = "venue-item";
       item.textContent = v.name || v.foursquareId;
-      item.addEventListener("click", () => setFestivalWatchLocation(v.lat, v.lng, v.name));
+      item.addEventListener("click", () => setFestivalWatchLocation(v.lat, v.lng, v.name, v.foursquareId));
       listEl.appendChild(item);
     });
     listEl.classList.remove("hidden");
@@ -1775,7 +2188,7 @@
       <div class="perimeter-grid">
         <div class="perimeter-top"></div>
         <div class="perimeter-left"></div>
-        <div class="perimeter-mid">🍺</div>
+        <div class="perimeter-mid">${ICON_BEER}</div>
         <div class="perimeter-right"></div>
         <div class="perimeter-bottom"></div>
       </div>`;
@@ -1938,7 +2351,7 @@
     Object.entries(state.festivalMap.bonusCategories).forEach(([name, breweries]) => {
       const section = document.createElement("div");
       section.className = "festival-map-lagerland";
-      section.innerHTML = `<div class="map-zone-label">🍺 ${escapeHtml(name)} <span class="hint">— ця зона не редагується</span></div>`;
+      section.innerHTML = `<div class="map-zone-label">${ICON_BEER} ${escapeHtml(name)} <span class="hint">— ця зона не редагується</span></div>`;
       const pillsEl = document.createElement("div");
       pillsEl.className = "lagerland-pills";
       breweries.forEach((brewery) => pillsEl.appendChild(makeBreweryPill(brewery, false)));
@@ -2399,6 +2812,18 @@
     return `${Math.round(hours / 24)} дн тому`;
   }
 
+  // Event rows get an SVG icon per kind (see event_log.py's add_event). Older
+  // stored events still carry an emoji prefix baked into their text (🆕/💬/
+  // 🍻 etc.) - stripLeadingEmoji drops it so the icon isn't doubled.
+  const EVENT_KIND_ICON = {
+    toast: `<svg class="icon event-kind-icon"><use href="#icon-cheers"/></svg>`,
+    comment: `<svg class="icon event-kind-icon"><use href="#icon-chat"/></svg>`,
+    novelty: `<svg class="icon icon-filled event-kind-icon"><use href="#icon-sparkle"/></svg>`,
+  };
+  function stripLeadingEmoji(text) {
+    return text.replace(/^(?:\p{Extended_Pictographic}|\u{1F195}|\u{FE0F}|\u{200D}|\s)+/u, "");
+  }
+
   async function fetchEvents() {
     $("events-status").textContent = "Завантажую…";
     $("events-list").innerHTML = "";
@@ -2417,7 +2842,7 @@
       mainRow.className = "result-row event-row";
       mainRow.innerHTML = `
         <div class="event-row-main">
-          <div class="event-row-text">${escapeHtml(ev.text || "")}</div>
+          <div class="event-row-text">${EVENT_KIND_ICON[ev.kind] || ""}${escapeHtml(stripLeadingEmoji(ev.text || ""))}</div>
           <div class="event-row-time">${timeAgo(ev.at)}</div>
         </div>
         <div class="row-actions">
@@ -2514,11 +2939,31 @@
     "venue-search-input",
   ].forEach(addSearchClearButton);
 
+  // ---- Maintenance splash (loaded once on start, checked first) ----
+  // No initData/auth needed (see handle_maintenance_get) - deliberately
+  // fires before every other "loaded once on start" call below, so the
+  // splash covers the screen as early as possible if maintenance is on.
+  // Those other calls still fire and populate their own state underneath
+  // regardless (harmless - registering listeners/fetching data is not
+  // user-visible on its own), the overlay just visually blocks reaching
+  // any of it while shown.
+  apiPost("/api/checkin/maintenance/get", {}).then(({ ok, data }) => {
+    if (ok && data && data.enabled) {
+      if (data.message) $("maintenance-message").textContent = data.message;
+      $("maintenance-overlay").classList.remove("hidden");
+    }
+  });
+
   // ---- Usage badge (loaded once on start) ----
 
   apiPost("/api/checkin/usage", {}).then(({ ok, data }) => {
     if (ok && data.remaining != null) {
-      $("usage-badge").textContent = `${data.remaining}/${data.limit}`;
+      $("usage-badge").textContent = `${data.remaining}/${data.limit} запитів API`;
+      // Ring shows the share of quota still left (r=9 in the 24-unit box).
+      const circ = 2 * Math.PI * 9;
+      const left = data.limit ? Math.max(0, Math.min(1, data.remaining / data.limit)) : 0;
+      $("usage-ring-fill").setAttribute("stroke-dasharray", `${(circ * left).toFixed(1)} ${circ.toFixed(1)}`);
+      $("usage-wrap").classList.remove("hidden");
     }
     if (ok && data.lastVenue) {
       state.lastVenue = data.lastVenue;

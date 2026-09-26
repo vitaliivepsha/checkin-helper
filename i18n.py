@@ -131,6 +131,10 @@ EXTRA_STRINGS = {
         "limited_pin_failed": "⚠️ I added the limited pour, but could not pin the list. Please make the bot an admin with permission to pin messages.",
         "cmd_limited": "⏰ Limited pour",
 
+        "cmd_join_group": "🎪 Join this group's queue",
+        "join_group_private_hint": "Run /join_group inside your festival's group chat, not here.",
+        "join_group_success": "✅ Your shared queue is now scoped to \"{title}\" — everyone else here who runs /join_group shares it with you.",
+
         "cmd_checkin": "🍺 Festival check-in",
         "btn_open_checkin_webapp": "🍺 Open Festival Check-in",
         "checkin_webapp_intro": "Search a beer and check it in to Untappd 👇",
@@ -192,6 +196,17 @@ EXTRA_STRINGS = {
         "cmd_auto_toast": "🍻 Auto-toast",
         "auto_toast_group_hint": "Please message me privately to manage auto-toast.",
         "auto_toast_owner_only": "Auto-toast is still a personal test feature and isn't available for other accounts yet.",
+
+        "cmd_restart": "🔄 Restart bot",
+        "restart_confirm": "Restarting…",
+        "restart_done": "✅ Restarted and back online.",
+
+        "cmd_maintenance": "🛠 Maintenance mode",
+        "maintenance_status_on": "🛠 Maintenance mode is ON. {message}",
+        "maintenance_status_off": "Maintenance mode is off.",
+        "maintenance_on": "🛠 Maintenance mode enabled - the Mini App now shows a splash screen for everyone.",
+        "maintenance_off": "Maintenance mode disabled - the Mini App is back to normal.",
+        "maintenance_usage": "Usage: /maintenance, /maintenance on [message], /maintenance off",
         "auto_toast_not_connected": "Connect your Untappd account first with /connect_untappd, then try /auto_toast again.",
         "auto_toast_usage": "Usage:\n/auto_toast — show status\n/auto_toast add <username> [username...]\n/auto_toast remove <username>\n/auto_toast exclude <country>\n/auto_toast include <country>\n/auto_toast pause — temporarily stop toasting (e.g. during a festival, to save quota for real check-ins)\n/auto_toast resume — turn it back on\n/auto_toast legacy_only — only toast \"Legacy Drinks\" (skip Non-Alcoholic/RTD/Spirit/Wine) - on by default\n/auto_toast all_categories — toast every category, including Non-Alcoholic/RTD/Spirit/Wine",
         "auto_toast_status_empty": "No auto-toast targets yet. Add one with /auto_toast add <username>.",
@@ -282,8 +297,12 @@ EXTRA_STRINGS = {
         "limited_pin_failed": "⚠️ Я додав лімітку, але не зміг закріпити список. Дай боту права адміна із дозволом закріплювати повідомлення.",
         "cmd_limited": "⏰ Лімітка",
 
+        "cmd_join_group": "🎪 Приєднатись до черги цієї групи",
+        "join_group_private_hint": "Запусти /join_group у Telegram-групі свого фестивалю, а не тут.",
+        "join_group_success": "✅ Твоя спільна черга тепер прив'язана до \"{title}\" — усі, хто теж запустить тут /join_group, ділитимуться нею з тобою.",
+
         "cmd_checkin": "🍺 Фестивальний чекін",
-        "btn_open_checkin_webapp": "🍺 Відкрити чекін фестивалю",
+        "btn_open_checkin_webapp": "🍺 Зачекінити пиво",
         "checkin_webapp_intro": "Знайди пиво і зачекінь його в Untappd 👇",
         "checkin_webapp_group_hint": "Напиши мені в приваті, щоб скористатись фестивальним чекіном.",
 
@@ -343,6 +362,17 @@ EXTRA_STRINGS = {
         "cmd_auto_toast": "🍻 Авто-тост",
         "auto_toast_group_hint": "Напиши мені в приваті, щоб керувати авто-тостом.",
         "auto_toast_owner_only": "Авто-тост поки що особиста тестова фіча й недоступний для інших акаунтів.",
+
+        "cmd_restart": "🔄 Перезапустити бота",
+        "restart_confirm": "Перезапускаю…",
+        "restart_done": "✅ Перезапущено, знову на зв'язку.",
+
+        "cmd_maintenance": "🛠 Технічні роботи",
+        "maintenance_status_on": "🛠 Режим техробіт УВІМКНЕНО. {message}",
+        "maintenance_status_off": "Режим техробіт вимкнено.",
+        "maintenance_on": "🛠 Режим техробіт увімкнено — Mini App тепер показує заставку всім.",
+        "maintenance_off": "Режим техробіт вимкнено — Mini App повернувся до звичайного вигляду.",
+        "maintenance_usage": "Використання: /maintenance, /maintenance on [текст], /maintenance off",
         "auto_toast_not_connected": "Спершу підключи Untappd через /connect_untappd, потім спробуй /auto_toast ще раз.",
         "auto_toast_usage": "Використання:\n/auto_toast — показати статус\n/auto_toast add <юзернейм> [юзернейм...]\n/auto_toast remove <юзернейм>\n/auto_toast exclude <країна>\n/auto_toast include <країна>\n/auto_toast pause — тимчасово вимкнути тости (наприклад, на час фестивалю, щоб зберегти квоту для реальних чекінів)\n/auto_toast resume — увімкнути назад\n/auto_toast legacy_only — тостити лише \"Legacy Drinks\" (пропускати Non-Alcoholic/RTD/Spirit/Wine) — увімкнено за замовчуванням\n/auto_toast all_categories — тостити всі категорії, включно з Non-Alcoholic/RTD/Spirit/Wine",
         "auto_toast_status_empty": "Ще немає нікого в списку. Додай через /auto_toast add <юзернейм>.",

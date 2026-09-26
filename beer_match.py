@@ -787,7 +787,15 @@ def _brewery_query_variants(brewery_name: str) -> list[str]:
         if v and key not in seen:
             seen.add(key)
             deduped.append(v)
-    return deduped
+    # Proven live (a genuine crash, not just a bad match): a shop card with
+    # NO brewery text at all (brewery_name="") - e.g. a glassware/merch item
+    # scraped without a "Brand: Name" colon to split on - makes every
+    # variant above collapse to "" too, which the `if v and ...` guard then
+    # drops entirely, leaving deduped EMPTY. _query_context unconditionally
+    # indexes brewery_variants[0], so an empty list here crashed the whole
+    # /api/lens/lookup batch with an uncaught IndexError. Callers always
+    # need at least one (possibly blank) variant to index into.
+    return deduped or [brewery_name or ""]
 
 
 def _collapse_non_alco_markers(text: str, replacement: str | None = None) -> str:

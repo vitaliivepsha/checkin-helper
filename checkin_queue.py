@@ -3,6 +3,14 @@
 Replaces the earlier per-device localStorage "flight" - anyone in the group
 can add a beer someone just brought back, and everyone's phone sees it.
 
+Each item carries a `groupId` (a Telegram group chat id - see
+group_membership.py) it belongs to. Every read/write that used to operate on
+"the whole queue" now takes a `group_id` and only ever touches that group's
+own items, so two different festivals' crowds (two different Telegram group
+chats) never see each other's beers. Items from before groups existed have no
+`groupId` at all (`None`) - they never match any real group_id and simply
+stay invisible going forward, by design (no migration).
+
 Each item tracks `completedBy` - the Telegram user ids who have checked it in
 *through this queue*. This is deliberately independent of Untappd's own
 lifetime "have I ever had this beer" - someone may have tried a beer years
@@ -52,12 +60,21 @@ def _save(items: list[dict]) -> None:
     os.replace(tmp_path, _path)
 
 
-async def list_items() -> list[dict]:
+async def list_items(group_id: int | None) -> list[dict]:
+    """Only this group's own items. `group_id=None` (caller has no active
+    group) always returns empty - checked explicitly rather than relying on
+    the equality filter below, because a pre-groups legacy item's `groupId`
+    is ALSO absent/None (see module docstring), and "no active group" must
+    never be treated as equal to "belongs to no group" - proven by a direct
+    test: without this guard, a user with no active group saw every
+    orphaned legacy item's queue status leak into their own screens."""
+    if group_id is None:
+        return []
     async with _lock:
-        return _load()
+        return [it for it in _load() if it.get("groupId") == group_id]
 
 
-async def add_item(beer: dict, added_by: dict) -> tuple[dict, str]:
+async def add_item(beer: dict, added_by: dict, group_id: int) -> tuple[dict, str]:
     """Returns (item, status). status is one of:
     - "added": a genuinely new shared item was created.
     - "already_active": this beerId is already in the shared queue *and*
@@ -82,10 +99,18 @@ async def add_item(beer: dict, added_by: dict) -> tuple[dict, str]:
     deliberate re-add means this is real festival activity again, so the
     "was in queue" badge (webapp_server.py's _annotate_queue_status) should
     resume tracking it instead of staying silenced from a pre-festival
-    reset."""
+    reset.
+
+    group_id scopes the existing-item lookup too, not just new items - the
+    same beerId queued in two different groups must create two independent
+    items, never collide as "the same shared item" just because the id
+    matches."""
     async with _lock:
         items = _load()
-        existing = next((it for it in items if it.get("beerId") == beer.get("beerId")), None)
+        existing = next(
+            (it for it in items if it.get("beerId") == beer.get("beerId") and it.get("groupId") == group_id),
+            None,
+        )
         if existing:
             user_id = added_by.get("userId")
             hidden = existing.get("hiddenBy") or []
@@ -105,6 +130,7 @@ async def add_item(beer: dict, added_by: dict) -> tuple[dict, str]:
             return existing, "already_active"
         item = {
             "id": uuid.uuid4().hex,
+            "groupId": group_id,
             "beerId": beer.get("beerId"),
             "name": beer.get("name"),
             "brewery": beer.get("brewery"),
@@ -164,19 +190,21 @@ async def hide_item(item_id: str, user_id: int) -> bool:
         return True
 
 
-async def hide_all(user_id: int) -> int:
+async def hide_all(user_id: int, group_id: int) -> int:
     """Personal "clear all" - the app's queue-screen button that empties
     *your own* view of the queue in one tap. Same mechanism as hide_item
-    (adds to each item's hiddenBy), applied to every current item at once -
-    still doesn't touch the shared queue for anyone else, and a switch to a
-    new festival's beer list doesn't auto-clear this for anyone (a stale
-    queue item just becomes irrelevant, not deleted - this button is the
-    manual way to tidy that up per-person). Returns how many items were
-    newly hidden."""
+    (adds to each item's hiddenBy), applied to every current item in `group_id`
+    at once - still doesn't touch the shared queue for anyone else (or for
+    another group's items), and a switch to a new festival's beer list
+    doesn't auto-clear this for anyone (a stale queue item just becomes
+    irrelevant, not deleted - this button is the manual way to tidy that up
+    per-person). Returns how many items were newly hidden."""
     async with _lock:
         items = _load()
         newly_hidden = 0
         for item in items:
+            if item.get("groupId") != group_id:
+                continue
             hidden = item.setdefault("hiddenBy", [])
             if user_id not in hidden:
                 hidden.append(user_id)
@@ -186,7 +214,7 @@ async def hide_all(user_id: int) -> int:
         return newly_hidden
 
 
-async def reset_user(user_id: int) -> int:
+async def reset_user(user_id: int, group_id: int) -> int:
     """Settings-screen "forget my test check-ins" action - for someone who
     checked a few beers in *through the queue* before the real festival
     started (testing the app) and doesn't want add_item's
@@ -213,11 +241,14 @@ async def reset_user(user_id: int) -> int:
     which is exactly the false impression this button exists to erase.
 
     Per-user, like everything else here - doesn't touch anyone else's
-    markers. Returns how many items were touched."""
+    markers. Scoped to `group_id` like hide_all, for the same reason.
+    Returns how many items were touched."""
     async with _lock:
         items = _load()
         changed = 0
         for item in items:
+            if item.get("groupId") != group_id:
+                continue
             completed = item.get("completedBy") or []
             if user_id not in completed:
                 continue

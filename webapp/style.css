@@ -1,29 +1,71 @@
+/* The app's own palette, one per scheme, instead of Telegram's theme
+   colors - Telegram's defaults (flat white/grey, blue accent) made every
+   screen look like Telegram's own chrome. Which one applies follows
+   Telegram's light/dark setting: app.js mirrors tg.colorScheme onto
+   <html data-theme>, and prefers-color-scheme covers opening the page
+   outside Telegram. --secondary-bg is the card/field surface, --surface-2
+   the chip/button fill that sits on top of a card. */
 :root {
-  color-scheme: light dark;
-  --bg: var(--tg-theme-bg-color, #ffffff);
-  --text: var(--tg-theme-text-color, #111111);
-  --hint: var(--tg-theme-hint-color, #888888);
-  /* Deliberately NOT var(--tg-theme-link/button-color, ...) - Telegram's
-     own theme color is blue for most people, which made every button/link/
-     toggle in this app look indistinguishable from Telegram's own chrome.
-     This is the app's own brand accent instead, same idea as Festival
-     mode's override below just as the baseline rather than a special case. */
-  --link: #7c5cfc;
+  color-scheme: light;
+  --bg: #f4f3f8;
+  --secondary-bg: #ffffff;
+  --surface-2: #eeecf4;
+  --line: rgba(23, 21, 31, 0.08);
+  --text: #17151f;
+  --hint: #6c6878;
+  --link: #6b4ef0;
   --button: #7c5cfc;
   --button-text: #ffffff;
-  --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  --accent-ink: #5b3fd6;
+  --toggle-off: #d9d6e2;
+  --font-body: "Onest", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Unbounded", "Onest", -apple-system, sans-serif;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f0e14;
+  --secondary-bg: #1a1822;
+  --surface-2: #262233;
+  --line: #2c2938;
+  --text: #f2f0f7;
+  --hint: #9b97a8;
+  --link: #a996ff;
+  --accent-ink: #d9d0ff;
+  --toggle-off: #3a3648;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f0e14;
+    --secondary-bg: #1a1822;
+    --surface-2: #262233;
+    --line: #2c2938;
+    --text: #f2f0f7;
+    --hint: #9b97a8;
+    --link: #a996ff;
+    --accent-ink: #d9d0ff;
+    --toggle-off: #3a3648;
+  }
 }
 
-/* Festival mode's own accent, overriding the Telegram theme's blue while
-   active (see festival_mode.py/app.js's applyFestivalModeUI) - a visible,
-   at-a-glance "you're at a festival right now" cue that cascades through
-   every button/pill/toggle already themed off --button/--link, no
-   per-component changes needed. */
+/* Festival mode's own accent (see festival_mode.py/app.js's
+   applyFestivalModeUI) - a visible, at-a-glance "you're at a festival right
+   now" cue that cascades through every button/pill/toggle already themed
+   off --button/--link, no per-component changes needed. */
 body.festival-mode-active {
-  --link: #e08600;
+  --link: #b86e00;
   --button: #f39c12;
   --button-text: #1a1300;
+  --accent-ink: #8a5200;
 }
+:root[data-theme="dark"] body.festival-mode-active { --link: #f5b041; --accent-ink: #ffd08a; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body.festival-mode-active { --link: #f5b041; --accent-ink: #ffd08a; }
+}
+/* Tinted fill for selected chips/active tab - declared on body (not :root)
+   so it's computed from body's --button, i.e. festival mode's orange when
+   that's active rather than always the root purple. */
+body { --accent-soft: color-mix(in srgb, var(--button) 20%, transparent); }
 
 * { box-sizing: border-box; }
 
@@ -49,11 +91,21 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
-  padding: 12px;
-  padding-bottom: 88px;
+  padding: 16px;
+  /* Clears the floating .bottom-nav (68px tall + its 12px lift) */
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  -webkit-font-smoothing: antialiased;
 }
+button, input { font-family: inherit; }
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2;
+  margin: 0 0 14px;
+}
+.queue-header h2 { font-size: 24px; }
 
 .screen { display: none; }
 .screen.active { display: block; animation: screen-fade-in 0.2s ease-out; }
@@ -70,47 +122,86 @@ body {
 .icon-btn {
   position: relative;
   display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 14px;
   border: none; background: var(--secondary-bg); color: var(--text);
   cursor: pointer; flex-shrink: 0;
   transition: transform 0.1s ease;
 }
 .icon-btn:active { transform: scale(var(--tap-scale)); }
-.icon-btn .icon { width: 18px; height: 18px; vertical-align: middle; }
+.icon-btn .icon { width: 20px; height: 20px; vertical-align: middle; }
 .icon-btn.has-unread::after {
-  content: ""; position: absolute; top: 2px; right: 2px;
+  content: ""; position: absolute; top: 10px; right: 11px;
   width: 8px; height: 8px; border-radius: 50%;
-  background: #ff3b30; border: 1.5px solid var(--bg);
+  background: #ff5a5f; box-shadow: 0 0 0 2px var(--secondary-bg);
+}
+.topbar-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.app-title {
+  font-family: var(--font-display); font-weight: 700; font-size: 24px;
+  letter-spacing: -0.02em; line-height: 1.2;
 }
 .usage-badge {
-  font-size: 12px;
-  color: var(--hint);
-  margin-left: auto;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--hint);
+}
+.usage-ring { width: 14px; height: 14px; transform: rotate(-90deg); flex-shrink: 0; }
+.usage-ring circle { fill: none; stroke-width: 3; }
+.usage-ring-track { stroke: var(--surface-2); }
+.usage-ring-fill { stroke: var(--button); stroke-linecap: round; }
+
+/* Magnifier inside every search field (the mockup's leading icon) - a
+   background image rather than markup, since app.js's
+   addSearchClearButton re-wraps these inputs at runtime. Mid-grey stroke
+   reads on both schemes' field surfaces. The two ids are search fields
+   that don't set inputmode="search". */
+input[type="text"][inputmode="search"], #festival-watch-search-input, #venue-search-input {
+  padding-left: 46px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8697' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: 16px center; background-size: 20px 20px;
+}
+
+/* "РЕЗУЛЬТАТИ ··· N знайдено" heading above search results - app.js's
+   runSearch fills #search-status with two spans and this class instead of
+   the plain hint text it uses for loading/errors. */
+.hint.results-heading {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin: 8px 2px 0; font-size: 13px;
+}
+.results-heading-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* Soft fade of the scrolling content into the floating nav bar. */
+body::after {
+  content: ""; position: fixed; left: 0; right: 0; bottom: 0; z-index: 99;
+  height: calc(110px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to bottom, transparent, var(--bg) 60%);
+  pointer-events: none;
 }
 /* Bottom tab bar - only the 4 core destinations, icon-on-top/label-below,
    evenly split via flex:1 so all 4 always fit with no horizontal scroll at
    any phone width (a scrollable top row here had zero visible hint that it
    scrolled - confirmed live: 2 of 6 tabs sat fully off-screen at real
-   phone width). No "active tab" highlight - screens don't map 1:1 to a
-   tab (search/rate/drill-downs have none), so every tab stays the same
-   neutral color regardless of which screen is open. */
+   phone width). Floats off the screen edges as a rounded panel; the tab
+   for the current screen (NAV_TAB_FOR_SCREEN in app.js - drill-downs map
+   to their parent tab, search/rate to none) gets a tinted pill. */
 .bottom-nav {
-  position: fixed; bottom: 0; left: 0; width: 100%;
-  display: flex;
-  background: var(--bg);
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+  position: fixed; left: 12px; right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  height: 68px; padding: 0 6px; gap: 4px;
+  display: flex; align-items: center;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--secondary-bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), inset 0 0 0 1px var(--line);
   z-index: 100;
 }
 .nav-tab {
-  flex: 1 1 0; min-width: 0;
+  flex: 1 1 0; min-width: 0; height: 56px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  padding: 6px 4px; border: none; background: transparent; color: var(--text);
-  cursor: pointer; transition: transform 0.1s ease;
+  padding: 0 4px; border: none; border-radius: 18px; background: transparent; color: var(--hint);
+  cursor: pointer; transition: transform 0.1s ease, background-color 0.15s ease, color 0.15s ease;
 }
 .nav-tab:active { transform: scale(var(--tap-scale)); }
-.nav-tab.active { color: var(--button); }
-.nav-tab .icon { width: 24px; height: 24px; }
+.nav-tab.active { color: var(--accent-ink); background: var(--accent-soft); }
+.nav-tab .icon { width: 22px; height: 22px; }
 .nav-label {
   font-size: 11px; font-weight: 600; line-height: 1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
@@ -118,27 +209,28 @@ body {
 .nav-icon-wrap { position: relative; display: inline-flex; }
 .nav-badge {
   position: absolute; top: -5px; right: -10px;
-  min-width: 16px; height: 16px; padding: 0 3px; border-radius: 999px;
+  min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px;
   background: var(--button); color: var(--button-text);
-  font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+  font-size: 10px; font-weight: 700; line-height: 18px; text-align: center;
+  box-shadow: 0 0 0 2px var(--secondary-bg);
 }
 
 input[type="text"], input[type="number"] {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(128, 128, 128, 0.15);
+  min-height: 52px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1.5px solid transparent;
   background: var(--secondary-bg);
   color: var(--text);
   font-size: 16px;
   margin-bottom: 10px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
   transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
+input::placeholder { color: var(--hint); }
 input[type="text"]:focus, input[type="number"]:focus {
   outline: none;
   border-color: var(--button);
-  background: var(--bg);
   /* --button switches between the app's own accent and festival mode's
      orange (see :root/body.festival-mode-active) - color-mix derives the
      glow from whichever is currently active instead of a second hardcoded
@@ -153,15 +245,16 @@ input[type="text"]:focus, input[type="number"]:focus {
    through this plain, border/padding-less wrap, so spacing below it stays
    exactly what it was unwrapped. */
 .search-field-wrap { position: relative; }
-.search-field-wrap input[type="text"] { padding-right: 40px; }
+.search-field-wrap input[type="text"] { padding-right: 52px; }
 .search-clear-btn {
-  position: absolute; right: 4px; top: 0; bottom: 10px;
+  position: absolute; right: 8px; top: 8px;
   display: flex; align-items: center; justify-content: center;
-  width: 32px; border: none; background: transparent; color: var(--hint);
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: var(--surface-2); color: var(--hint);
   cursor: pointer; padding: 0;
 }
 .search-clear-btn:active { transform: scale(0.9); }
-.search-clear-btn .icon { width: 15px; height: 15px; }
+.search-clear-btn .icon { width: 14px; height: 14px; stroke-width: 2.4; }
 
 .hint { color: var(--hint); font-size: 13px; margin: 6px 2px; }
 
@@ -176,11 +269,14 @@ input[type="text"]:focus, input[type="number"]:focus {
    top - #screen-search.active overrides the generic .screen.active's
    plain display:block (higher specificity, scoped to this one screen)
    just enough to make that centering possible. */
-/* 100px = body's own 12px top padding + 88px bottom padding (clears the
-   fixed nav bar) - without subtracting those, a percentage-of-viewport
+/* 120px = body's own 16px top padding + 104px bottom padding (clears the
+   floating nav bar) - without subtracting those, a percentage-of-viewport
    min-height overshoots or undershoots the space actually available above
    the nav, leaving the icon short of true center. */
-#screen-search.active { display: flex; flex-direction: column; min-height: calc(100vh - 100px); }
+#screen-search.active {
+  display: flex; flex-direction: column;
+  min-height: calc(100vh - 120px - env(safe-area-inset-bottom, 0px));
+}
 .home-hero { flex: 1; display: flex; align-items: center; justify-content: center; }
 .home-hero-icon { width: 220px; height: 220px; border-radius: 44px; box-shadow: var(--shadow-md); opacity: 0.88; }
 .home-hero-icon-festival { display: none; }
@@ -192,32 +288,30 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
 .result-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 10px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--secondary-bg);
-  border: 1px solid rgba(128, 128, 128, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: transform 0.1s ease;
 }
-.result-row:active { transform: scale(0.99); box-shadow: none; }
-.thumb { position: relative; flex-shrink: 0; width: 40px; height: 40px; }
+.result-row:active { transform: scale(0.99); }
+.thumb { position: relative; flex-shrink: 0; width: 56px; height: 56px; }
 .thumb img {
-  width: 40px; height: 40px; border-radius: 10px; object-fit: cover;
-  background: #ddd;
+  width: 56px; height: 56px; border-radius: 14px; object-fit: cover;
+  background: var(--surface-2);
 }
 .had-it-corner {
   position: absolute; bottom: -4px; right: -4px;
-  width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
-  background: #2e7d32; color: #fff; border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--bg);
+  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+  background: #2fbf7a; color: #0f0e14; border-radius: 50%;
+  box-shadow: 0 0 0 2.5px var(--secondary-bg);
 }
 .had-it-corner .icon { width: 11px; height: 11px; stroke-width: 3; }
 .queue-status-corner {
   position: absolute; top: -4px; right: -4px;
   width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
   color: #fff; border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--bg);
+  box-shadow: 0 0 0 2px var(--secondary-bg);
 }
 .queue-status-corner .icon { width: 10px; height: 10px; stroke-width: 3; }
 .queue-status-corner.active { background: var(--button); }
@@ -227,8 +321,41 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
 .result-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .badge { font-size: 13px; flex-shrink: 0; }
 .result-row.had-it { opacity: 0.6; }
-.had-it-badge { font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+.had-it-badge {
+  font-size: 13px; white-space: nowrap; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 2px; color: var(--hint); font-weight: 600;
+}
+.had-it-badge .icon { width: 12px; height: 12px; color: #f5c451; }
+/* Festival session color dots (app.js's sessionDot) and the wishlist heart,
+   shown before a beer's name / in session headers. */
+.session-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--hint); vertical-align: 1px;
+}
+.session-dots { display: inline-flex; gap: 3px; align-items: center; }
+.wishlist-mark .icon { width: 13px; height: 13px; color: #e5484d; vertical-align: -1px; }
+.badge-done-mark { color: #e0a100; margin-right: 4px; }
+.badge-done-mark .icon { width: 1em; height: 1em; vertical-align: -0.12em; }
+.event-kind-icon { width: 16px; height: 16px; margin-right: 6px; color: var(--accent-ink); vertical-align: -3px; }
+.row-checkbox .icon { width: 13px; height: 13px; stroke-width: 3; }
+.add-queue-btn .icon { width: 18px; height: 18px; stroke-width: 2.4; }
 .result-meta { font-size: 13px; color: var(--hint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* app.js's metaChips - one line, never wraps: the style chip is the one
+   that shrinks (with an ellipsis) when the row runs out of width. */
+.meta-chips { display: flex; gap: 6px; margin-top: 5px; min-width: 0; }
+.meta-chip {
+  flex-shrink: 0; height: 22px; padding: 0 7px; border-radius: 7px;
+  display: inline-flex; align-items: center;
+  background: var(--surface-2); color: var(--text);
+  font-size: 12px; font-weight: 500; white-space: nowrap;
+}
+.meta-chip-style { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 22px; }
+.meta-chip-rating { color: #b7791f; font-weight: 700; gap: 3px; }
+.meta-chip-rating .icon { width: 11px; height: 11px; }
+:root[data-theme="dark"] .meta-chip-rating { color: #f5c451; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .meta-chip-rating { color: #f5c451; }
+}
 
 /* Shared visual language for every small circular icon button (queue-add,
    remove, Untappd-link, row-menu, event-reply) - a soft tinted fill reads
@@ -237,26 +364,53 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
    JS hooks/size tweaks; this just centralizes the shared look. */
 .add-queue-btn, .queue-remove-btn, .untappd-link-btn, .row-menu-btn, .event-reply-toggle-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  border: none; background: var(--bg); color: var(--text);
+  border: none; background: var(--surface-2); color: var(--text);
   cursor: pointer; transition: transform 0.1s ease;
-  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.18);
 }
 .add-queue-btn:active, .queue-remove-btn:active, .untappd-link-btn:active,
 .row-menu-btn:active, .event-reply-toggle-btn:active { transform: scale(var(--tap-scale)); }
 
+/* The row's one primary action - bigger and accent-tinted; its stacked
+   secondary sibling (⋯ / link) stays a smaller neutral chip. */
 .add-queue-btn {
-  flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
-  font-size: 18px; line-height: 1;
+  flex-shrink: 0; width: 44px; height: 40px; border-radius: 12px;
+  background: var(--accent-soft); color: var(--accent-ink);
+  font-size: 22px; font-weight: 500; line-height: 1;
 }
 
 .queue-number {
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
-  background: var(--button); color: var(--button-text);
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 10px;
+  background: var(--accent-soft); color: var(--accent-ink);
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 14px;
+  font-family: var(--font-display); font-weight: 700; font-size: 14px;
 }
+/* Featured "Наступне" card - the oldest item still in this viewer's queue
+   (app.js's renderQueueList). Tapping anywhere on it, including the big
+   button, opens the rate screen like any other queue row. */
+.result-row.queue-next {
+  flex-direction: column; align-items: stretch; gap: 14px;
+  padding: 16px; border-radius: 22px;
+  box-shadow: inset 0 0 0 1.5px var(--button);
+}
+.queue-next-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.queue-next-label {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.queue-next-by { font-size: 12px; color: var(--hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queue-next-body { display: flex; align-items: center; gap: 14px; }
+.queue-row.queue-next .thumb, .queue-row.queue-next .thumb img { width: 72px; height: 72px; border-radius: 18px; }
+.queue-next .result-name { font-size: 18px; }
+.queue-next-btn { margin-top: 0; min-height: 48px; }
+.queue-section-label {
+  font-size: 13px; font-weight: 600; color: var(--hint);
+  text-transform: uppercase; letter-spacing: 0.06em; margin: 10px 2px 0;
+}
+/* Queue rows: position number + a slightly smaller label than search's. */
+.queue-row .thumb, .queue-row .thumb img { width: 48px; height: 48px; border-radius: 12px; }
 .queue-remove-btn {
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  flex-shrink: 0; width: 44px; height: 36px; border-radius: 12px;
+  background: transparent; color: var(--hint);
 }
 
 .wishlist-sheet-tag {
@@ -270,11 +424,37 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
   align-items: center; gap: 6px 10px; margin-bottom: 10px;
 }
 .queue-header h2 { margin: 0; }
+.screen-subtitle { font-size: 13px; color: var(--hint); margin-top: 4px; }
+.screen-subtitle:empty { display: none; }
+#queue-header-normal { align-items: flex-end; margin-bottom: 14px; }
+.queue-select-hint { text-align: center; margin-top: 14px; }
+
+/* Queue/wishlist/badges/progress are bottom-nav tabs, not drill-downs -
+   no on-page "Назад" there (the tab bar is the way around). The button
+   stays in the DOM, hidden, because Telegram's native BackButton handler
+   (app.js) clicks the active screen's [data-back] to go back. */
+#screen-queue > .back-btn, #screen-wishlist > .back-btn,
+#screen-badges > .back-btn, #screen-stats > .back-btn { display: none; }
+
+/* Festival-mode reminder at the top of the queue (hidden otherwise). */
+.festival-banner {
+  display: none; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 16px; border-radius: 16px;
+  background: var(--accent-soft);
+}
+body.festival-mode-active .festival-banner { display: flex; }
+.festival-banner-icon {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--button); color: var(--button-text);
+}
+.festival-banner-icon .icon { width: 18px; height: 18px; }
+.festival-banner-title { font-size: 13px; font-weight: 700; color: var(--accent-ink); }
+.festival-banner-text { font-size: 12px; color: var(--hint); }
 .queue-clear-btn {
-  width: auto; margin-bottom: 0; padding: 7px 14px; border-radius: 999px;
-  border: none; background: var(--bg); color: var(--hint);
-  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.25);
-  font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  width: auto; margin-bottom: 0; min-height: 36px; padding: 0 14px; border-radius: 999px;
+  border: none; background: var(--secondary-bg); color: var(--hint);
+  font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
   display: inline-flex; align-items: center; gap: 5px;
   transition: transform 0.1s ease;
 }
@@ -296,35 +476,63 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
 .row-checkbox.checked { background: var(--button); border-color: var(--button); }
 
 .toggle-switch {
-  position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0;
+  position: relative; display: inline-block; width: 51px; height: 31px; flex-shrink: 0;
 }
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
 .toggle-slider {
   position: absolute; inset: 0; cursor: pointer;
-  background: var(--secondary-bg); border: 1px solid var(--hint);
-  border-radius: 999px; transition: background-color 0.15s ease;
+  background: var(--toggle-off);
+  border-radius: 999px; transition: background-color 0.2s ease;
 }
 .toggle-slider::before {
-  content: ""; position: absolute; width: 18px; height: 18px;
-  left: 3px; top: 3px; background: var(--hint); border-radius: 50%;
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  content: ""; position: absolute; width: 27px; height: 27px;
+  left: 2px; top: 2px; background: #ffffff; border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
 }
-.toggle-switch input:checked + .toggle-slider { background: var(--button); border-color: var(--button); }
-.toggle-switch input:checked + .toggle-slider::before {
-  transform: translateX(20px); background: var(--button-text);
-}
+.toggle-switch input:checked + .toggle-slider { background: var(--button); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+.toggle-switch input:focus-visible + .toggle-slider { outline: 2px solid var(--button); outline-offset: 2px; }
 
 .festival-watch-radius-label { margin-top: 12px; }
 
 .settings-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px; border-radius: 16px; background: var(--secondary-bg);
-  border: 1px solid rgba(128, 128, 128, 0.08);
-  margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  padding: 12px 14px; border-radius: 18px; background: var(--secondary-bg);
+  margin-bottom: 8px;
 }
 .settings-row-label { min-width: 0; }
-.settings-row-title { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+.settings-row-title { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 12px; }
 .settings-row-hint { font-size: 12px; color: var(--hint); margin-top: 2px; }
+
+/* Settings screen as one inset grouped list (iOS-style): consecutive rows
+   fuse into a single rounded block with hairline separators, each title
+   icon becomes a colored tile, and the destructive queue-reset row is
+   split off into its own block below. Pure CSS over the existing flat row
+   markup - rows are matched by position (div:nth-of-type, counting only
+   the screen's own div children) since the first two carry no id. */
+#screen-settings .settings-row { margin-bottom: 0; border-radius: 0; position: relative; }
+#screen-settings .settings-row + .settings-row::before {
+  content: ""; position: absolute; top: 0; left: 58px; right: 0;
+  height: 1px; background: var(--line);
+}
+#screen-settings .settings-row:not(.settings-row + .settings-row) { border-radius: 20px 20px 0 0; }
+#screen-settings .settings-row:has(+ #settings-row-queue-reset) { border-radius: 0 0 20px 20px; }
+#screen-settings #settings-row-queue-reset { margin-top: 20px; border-radius: 20px; color: #e5484d; }
+#screen-settings #settings-row-queue-reset::before { display: none; }
+#screen-settings .settings-row-title .icon {
+  width: 32px; height: 32px; padding: 7px; border-radius: 9px;
+  color: #ffffff; background: var(--hint); vertical-align: middle;
+}
+#screen-settings .settings-row-hint { padding-left: 44px; }
+#screen-settings div.settings-row:nth-of-type(1) .settings-row-title .icon { background: #3478f6; }
+#screen-settings div.settings-row:nth-of-type(2) .settings-row-title .icon { background: #e08600; color: #1a1300; }
+#screen-settings #settings-row-festivalwatch .settings-row-title .icon { background: #d4467a; }
+#screen-settings #settings-row-autotoast .settings-row-title .icon { background: #7c5cfc; }
+#screen-settings #settings-row-festivalmap .settings-row-title .icon { background: #25a86b; }
+#screen-settings #settings-row-queue-reset .settings-row-title .icon {
+  background: color-mix(in srgb, #e5484d 16%, transparent); color: #e5484d;
+}
 
 /* Auto-toast/festival-watch/festival-map each have a full screen beyond
    their own row (friend search, location setup, the map itself) - tapping
@@ -342,7 +550,7 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
 .event-row-text { font-size: 14px; }
 .event-row-time { font-size: 12px; color: var(--hint); }
 .event-reply-toggle-btn {
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px;
 }
 .event-reply-box {
   display: flex; gap: 6px; margin-top: 6px; padding: 0 10px;
@@ -352,8 +560,9 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
 
 .row-actions { position: relative; display: flex; flex-direction: column; gap: 6px; align-items: center; flex-shrink: 0; }
 .untappd-link-btn {
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  flex-shrink: 0; width: 44px; height: 30px; border-radius: 10px;
 }
+.untappd-link-btn .icon { width: 16px; height: 16px; }
 
 /* Search row's overflow menu ("..." next to the always-visible "+") - the
    3-icon row got cramped once the wishlist toggle joined the queue-add and
@@ -361,12 +570,13 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
    core festival use case) while the other two move here, mirroring
    Untappd's own kebab menu. */
 .row-menu-btn {
-  position: relative; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  position: relative; flex-shrink: 0; width: 44px; height: 30px; border-radius: 10px;
+  color: var(--hint); font-size: 18px; font-weight: 700; line-height: 1;
 }
 .row-menu-btn.has-wishlist-item::after {
   content: ""; position: absolute; top: -2px; right: -2px;
   width: 9px; height: 9px; border-radius: 50%;
-  background: var(--button); border: 1.5px solid var(--bg);
+  background: var(--button); box-shadow: 0 0 0 2px var(--secondary-bg);
 }
 /* One shared instance, body-level (see its markup in index.html) - top/left
    are set inline by app.js from the clicked "..." button's own
@@ -377,38 +587,48 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
    into it with no way for the menu to opt back out via its own opacity. */
 .row-menu {
   display: none; flex-direction: column;
-  position: absolute; z-index: 30; transform: translate(calc(-100% - 8px), 0);
-  background: var(--bg); border-radius: 10px; min-width: 180px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); overflow: hidden;
+  position: absolute; z-index: 101; transform: translate(calc(-100% - 8px), 0);
+  background: var(--secondary-bg); border-radius: 16px; min-width: 200px; width: max-content;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), inset 0 0 0 1px var(--line); overflow: hidden;
 }
 .row-menu.open { display: flex; }
 .row-menu-item {
-  width: 100%; display: flex; align-items: center; gap: 8px; opacity: 1;
-  padding: 10px 14px; border: none; border-radius: 0; background: transparent;
-  color: var(--text); font-size: 14px; font-weight: 400; text-align: left; cursor: pointer;
+  width: 100%; display: flex; align-items: center; gap: 10px; opacity: 1;
+  min-height: 48px; padding: 0 16px; border: none; border-radius: 0; background: transparent;
+  color: var(--text); font-size: 15px; font-weight: 500; text-align: left; cursor: pointer;
+  white-space: nowrap;
 }
-.row-menu-item:not(:last-child) { border-bottom: 1px solid var(--secondary-bg); }
-.row-menu-item.active { color: var(--button); font-weight: 600; }
+.row-menu-item:not(:last-child) { border-bottom: 1px solid var(--line); }
+.row-menu-item.active { color: var(--accent-ink); font-weight: 600; }
 
+/* Plain text-link style back action (no pill) - the screen's big h2 right
+   below it carries the hierarchy now. */
 .back-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--secondary-bg); border: none; border-radius: 999px;
-  color: var(--link); font-size: 14px; font-weight: 600;
-  padding: 8px 14px 8px 10px; margin-bottom: 14px; cursor: pointer;
-  box-shadow: var(--shadow-sm);
+  display: inline-flex; align-items: center; gap: 2px;
+  background: transparent; border: none; border-radius: 12px;
+  color: var(--link); font-size: 15px; font-weight: 600;
+  min-height: 44px; padding: 0 12px 0 0; margin: -8px 0 6px; cursor: pointer;
   transition: transform 0.1s ease, opacity 0.1s ease;
 }
 .back-btn::before {
-  content: "‹"; font-size: 20px; font-weight: 700; line-height: 1; transform: translateY(-1px);
+  content: "‹"; font-size: 28px; font-weight: 400; line-height: 1; transform: translateY(-2px);
 }
 .back-btn:active { transform: scale(0.96); opacity: 0.7; }
 
-.beer-card {
-  padding: 14px; border-radius: 16px; background: var(--secondary-bg);
-  border: 1px solid rgba(128, 128, 128, 0.08);
-  margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+/* Same "‹" glyph/weight as .back-btn's own arrow, for a back-style action
+   that isn't a compact top-of-screen pill (festival map's "Усі зони" is a
+   full-width .secondary-btn bar) - keeps the arrow itself consistent across
+   the app instead of each spot spelling its own "←" text glyph, which reads
+   visibly thinner/lower than .back-btn's. */
+.back-arrow-btn::before {
+  content: "‹"; font-size: 20px; font-weight: 700; line-height: 1; margin-right: 4px;
 }
-.beer-card .name { font-weight: 700; font-size: 17px; }
+
+.beer-card {
+  padding: 16px; border-radius: 22px; background: var(--secondary-bg);
+  margin-bottom: 16px;
+}
+.beer-card .name { font-weight: 700; font-size: 18px; }
 .beer-card .meta { color: var(--hint); font-size: 13px; margin-top: 2px; }
 
 .badge-detail-icon {
@@ -419,9 +639,9 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
 #badge-detail-card .meta { text-align: center; margin-top: 4px; }
 #badge-detail-card .stats-bar { margin-top: 10px; height: 8px; }
 .badge-tag {
-  display: inline-flex; padding: 5px 10px; border-radius: 999px;
-  background: var(--secondary-bg); border: 1px solid var(--hint);
-  color: var(--text); font-size: 13px;
+  display: inline-flex; padding: 6px 12px; border-radius: 999px;
+  background: var(--secondary-bg);
+  color: var(--text); font-size: 13px; font-weight: 500;
 }
 .badge-tag.clickable { cursor: pointer; }
 .badge-tag.clickable:active { transform: scale(var(--tap-scale)); }
@@ -433,29 +653,124 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
 #style-info-bjcp-link { margin-top: 16px; text-decoration: none; }
 
 .rating-block { margin-bottom: 16px; }
-.rating-readout { font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 4px; }
-input[type="range"] { width: 100%; }
+.rating-readout {
+  font-family: var(--font-display); font-size: 40px; font-weight: 700;
+  text-align: center; margin-bottom: 4px; letter-spacing: -0.02em;
+}
+input[type="range"] { width: 100%; accent-color: var(--button); }
+
+/* Untappd's own time-limited promotional badges (special_badges.json) -
+   a short list of cards above the regular sortable badge grid, styled
+   distinctly (accent-tinted border) since these are fundamentally
+   different from every other badge row: recommendations to go check
+   something in, never a confirmed-earned progress readout. Empty
+   (no currently-active ones) collapses to nothing via :empty, same
+   "don't reserve dead space" convention as .screen-subtitle above. */
+#special-badges-list:empty { display: none; }
+#special-badges-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.special-badge-card {
+  background: var(--secondary-bg); border: 1.5px solid var(--button);
+  border-radius: 14px; overflow: hidden;
+}
+/* Collapsed by default (see specialBadgesExpanded in app.js) - a full
+   style list can run to 30+ names (Sour Beer Day), which swamped the
+   screen before this existed. The header row alone is always visible and
+   IS the tap target to expand/collapse. */
+.special-badge-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer;
+}
+.special-badge-header:active { background: var(--surface-2); }
+.special-badge-icon {
+  width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
+}
+.special-badge-icon-fallback {
+  width: 36px; height: 36px; padding: 8px; box-sizing: border-box;
+  border-radius: 8px; background: var(--surface-2); color: var(--button); flex-shrink: 0;
+}
+.special-badge-header-text { flex: 1; min-width: 0; }
+.special-badge-title {
+  font-weight: 700; font-size: 14px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.special-badge-days { font-size: 12px; color: var(--button); font-weight: 600; }
+.special-badge-chevron {
+  width: 18px; height: 18px; color: var(--hint); flex-shrink: 0;
+  transform: rotate(90deg); transition: transform 0.15s ease;
+}
+.special-badge-chevron.expanded { transform: rotate(-90deg); }
+.special-badge-details { padding: 0 14px 12px; }
+.special-badge-criteria { font-size: 13px; color: var(--text); }
+.special-badge-chain, .special-badge-examples {
+  font-size: 12px; color: var(--hint); margin-top: 2px;
+}
+.special-badge-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 8px; font-size: 12px;
+}
+.special-badge-link {
+  display: inline-flex; align-items: center; gap: 3px;
+  color: var(--hint); text-decoration: none;
+}
+.special-badge-link .icon { width: 12px; height: 12px; }
+.special-badge-dismiss-btn {
+  border: none; background: var(--surface-2); color: var(--text);
+  border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600;
+  cursor: pointer;
+}
+.special-badge-dismiss-btn:active { transform: scale(var(--tap-scale)); }
 
 .pills { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-/* Badges' 3 sort pills wrapped to a messy second line at common phone
-   widths - a single horizontally-scrollable row (scrollbar hidden, same
-   pattern mobile filter-chip rows normally use) reads cleaner than a wrap. */
+/* Badges' 4 sort options as one segmented control - equal quarters made the
+   longest label ("Майже готові") feel cramped at narrow phone widths (real
+   user feedback on the first cut), so each pill now sizes to its own text
+   and the strip scrolls horizontally instead of squeezing - the scrollbar
+   itself is hidden (still fully scrollable via touch/trackpad/wheel), same
+   "no visible scrollbar chrome" look as the rest of the app. */
 #badges-sort-pills {
-  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+  display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px; border-radius: 14px;
+  background: var(--secondary-bg);
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
 #badges-sort-pills::-webkit-scrollbar { display: none; }
-#badges-sort-pills .pill { flex-shrink: 0; }
+#badges-sort-pills .pill {
+  flex: 0 0 auto; min-height: 36px; padding: 0 14px; border-radius: 10px;
+  background: transparent; color: var(--hint); font-weight: 600; font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  white-space: nowrap;
+}
+#badges-sort-pills .pill.active { background: var(--surface-2); color: var(--text); }
+/* "Мій список"'s own 4-option sort strip - same horizontally-scrolling
+   segmented control as badges' (#badges-sort-pills), not a wrapping flex
+   row, for the identical reason: 4 pills of different label lengths don't
+   all fit one line at narrow phone widths without squeezing. */
+#wishlist-sort-pills {
+  display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px; border-radius: 14px;
+  background: var(--secondary-bg); margin-bottom: 10px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+#wishlist-sort-pills::-webkit-scrollbar { display: none; }
+#wishlist-sort-pills .pill {
+  flex: 0 0 auto; min-height: 36px; padding: 0 14px; border-radius: 10px;
+  background: transparent; color: var(--hint); font-weight: 600; font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  white-space: nowrap;
+}
+#wishlist-sort-pills .pill.active { background: var(--surface-2); color: var(--text); }
+
+/* Rating presets on the rate screen - one row of equal-width buttons, so
+   all six always fit on one line at any phone width. */
+#rating-pills { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+#rating-pills .pill { padding: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 .pill {
-  padding: 7px 14px; border-radius: 999px; background: var(--secondary-bg);
-  border: 1px solid rgba(128, 128, 128, 0.15); box-shadow: none;
-  color: var(--text); font-size: 14px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 36px; padding: 0 14px; border-radius: 999px; background: var(--secondary-bg);
+  border: none; box-shadow: none;
+  color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer;
   transition: transform 0.1s ease;
 }
 .pill:active { transform: scale(var(--tap-scale)); }
-.pill.active {
-  background: var(--button); color: var(--button-text);
-  border-color: var(--button); box-shadow: var(--shadow-sm);
-}
+.pill.active { background: var(--button); color: var(--button-text); }
 
 /* auto-fit (not auto-fill) so a lone zone actually stretches to fill the
    row instead of sitting in a half-width column with dead space beside it
@@ -484,10 +799,8 @@ body.map-edit-mode .festival-map-zones {
   padding-bottom: 4px;
 }
 .map-zone {
-  background: var(--secondary-bg); border-radius: 16px;
-  border: 1px solid rgba(128, 128, 128, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  padding: 10px; cursor: pointer;
+  background: var(--secondary-bg); border-radius: 18px;
+  padding: 12px; cursor: pointer;
   transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 /* In edit mode the card itself isn't tappable (it's a drag surface, not a
@@ -523,11 +836,11 @@ body.map-edit-mode .map-zone-pills.preview { display: none; }
 body.map-edit-mode #festival-map-zones .perimeter-grid { display: grid; }
 .brewery-pill-preview {
   height: 12px; border-radius: 6px; background: var(--bg);
-  border: 1px solid rgba(128, 128, 128, 0.25);
+  border: 1px solid var(--pill-border);
 }
 .brewery-pill {
   padding: 6px 10px; border-radius: 999px; background: var(--bg);
-  border: 1px solid rgba(128, 128, 128, 0.15);
+  border: 1.5px solid var(--pill-border);
   color: var(--text); font-size: 12px; touch-action: none; user-select: none;
   text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   transition: transform 0.1s ease, opacity 0.1s ease;
@@ -552,7 +865,7 @@ body.map-edit-mode .brewery-pill {
   min-height: 27px;
 }
 .festival-map-lagerland { margin-top: 16px; }
-.lagerland-pills { display: grid; grid-template-columns: 1fr 1fr 1fr; margin-top: 8px; }
+.lagerland-pills { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
 .lagerland-pills .brewery-pill { color: var(--hint); opacity: 0.7; }
 
 /* The real venue layout - breweries run along the whole perimeter of a
@@ -577,10 +890,15 @@ body.map-edit-mode .brewery-pill {
 .perimeter-bottom { grid-area: bottom; }
 .perimeter-left { grid-area: left; display: flex; flex-direction: column; gap: 6px; }
 .perimeter-right { grid-area: right; display: flex; flex-direction: column; gap: 6px; }
+/* Outline for brewery pills on the festival map - derived from --hint so
+   it stays clearly visible on both the light and dark card surface. */
+body { --pill-border: color-mix(in srgb, var(--hint) 45%, transparent); }
+.perimeter-mid .icon { width: 28px; height: 28px; stroke-width: 1.6; }
+.map-zone-label .icon { width: 14px; height: 14px; vertical-align: -2px; }
 .perimeter-mid {
   grid-area: mid;
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px; opacity: 0.35;
+  color: var(--hint); opacity: 0.6;
 }
 #festival-map-detail .map-zone-header { margin: 14px 0 4px; }
 
@@ -602,7 +920,7 @@ body.map-edit-mode #festival-map-search-results { display: none; }
 
 @keyframes brewery-pill-highlight-fade {
   0% { background: var(--button); color: var(--button-text); border-color: var(--button); }
-  100% { background: var(--bg); color: var(--text); border-color: rgba(128, 128, 128, 0.15); }
+  100% { background: var(--bg); color: var(--text); border-color: var(--pill-border); }
 }
 .brewery-pill-highlight { animation: brewery-pill-highlight-fade 1.6s ease-out forwards; }
 /* Persistent "this is the search result you picked" marker - stays until a
@@ -626,9 +944,9 @@ body.map-edit-mode #festival-map-search-results { display: none; }
 .brewery-session-stats { margin-bottom: 8px; }
 
 .secondary-btn {
-  width: 100%; padding: 12px; border-radius: 14px; border: none;
-  background: var(--secondary-bg); color: var(--text); font-size: 15px;
-  margin-bottom: 8px; cursor: pointer; box-shadow: var(--shadow-sm);
+  width: 100%; min-height: 48px; padding: 12px; border-radius: 16px; border: none;
+  background: var(--secondary-bg); color: var(--text); font-size: 15px; font-weight: 600;
+  margin-bottom: 8px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: transform 0.1s ease;
 }
@@ -647,9 +965,9 @@ body.map-edit-mode #festival-map-search-results { display: none; }
 .checkbox-label input[type="checkbox"] {
   appearance: none; -webkit-appearance: none;
   width: 20px; height: 20px; flex-shrink: 0; margin: 0; position: relative;
-  border: 1.5px solid rgba(128, 128, 128, 0.35);
+  border: 1.5px solid color-mix(in srgb, var(--hint) 60%, transparent);
   border-radius: 6px;
-  background: var(--bg);
+  background: var(--secondary-bg);
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
@@ -667,30 +985,49 @@ body.map-edit-mode #festival-map-search-results { display: none; }
 }
 .checkbox-label input[type="checkbox"]:active { transform: scale(0.9); }
 
-.search-filters { display: flex; gap: 16px; margin: 4px 0 8px; }
-.search-filters .checkbox-label { margin-bottom: 0; }
+/* Search filters as toggle chips rather than checkbox + label: the real
+   checkbox stays inside (keyboard/screen-reader state, app.js's listeners
+   untouched) but is visually replaced by the chip's own fill and a ✓. */
+.search-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 10px; }
+.search-filters .checkbox-label {
+  position: relative; margin-bottom: 0; min-height: 36px; padding: 0 14px;
+  border-radius: 999px; background: var(--secondary-bg);
+  color: var(--text); font-size: 13px; font-weight: 600; gap: 6px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.search-filters .checkbox-label input[type="checkbox"] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; border: none; border-radius: 999px; margin: 0;
+}
+.search-filters .checkbox-label:has(input:checked) {
+  background: var(--accent-soft); color: var(--accent-ink); padding-left: 10px;
+}
+.search-filters .checkbox-label:has(input:checked)::before {
+  content: ""; width: 14px; height: 14px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.search-filters .checkbox-label:has(input:focus-visible) { outline: 2px solid var(--button); outline-offset: 2px; }
 
 .venue-selected-card {
   padding: 12px 14px; border-radius: 16px; background: var(--secondary-bg);
   /* The inset ring IS this card's border - it's the "you selected this
-     venue" indicator, not just decoration, so it stays instead of the
-     plain gray border the other 3 cards got alongside their own softer
-     shadow. */
-  box-shadow: inset 0 0 0 1.5px var(--button), 0 2px 8px rgba(0, 0, 0, 0.03);
+     venue" indicator, not just decoration. */
+  box-shadow: inset 0 0 0 1.5px var(--button);
   font-size: 16px; font-weight: 600;
   margin-bottom: 8px;
 }
 
 .stats-summary { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
 .stats-bar {
-  margin-top: 6px; height: 6px; border-radius: 999px; background: var(--bg); overflow: hidden;
+  margin-top: 6px; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden;
 }
 .stats-bar-fill { height: 100%; background: var(--button); border-radius: 999px; }
 
 .venue-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .venue-item {
-  padding: 10px 12px; border-radius: 12px; background: var(--secondary-bg);
-  font-size: 14px; cursor: pointer; box-shadow: var(--shadow-sm);
+  padding: 12px 14px; border-radius: 16px; background: var(--secondary-bg);
+  font-size: 14px; cursor: pointer;
   transition: transform 0.1s ease;
 }
 .venue-item:active { transform: scale(0.99); }
@@ -705,23 +1042,100 @@ body.map-edit-mode #festival-map-search-results { display: none; }
 .hidden { display: none !important; }
 
 .badge-row {
-  display: flex; gap: 10px; align-items: center;
-  padding: 10px; border-radius: 14px; background: var(--secondary-bg);
-  box-shadow: var(--shadow-sm); transition: transform 0.1s ease;
+  display: flex; gap: 12px; align-items: center;
+  padding: 10px 12px 10px 10px; border-radius: 18px; background: var(--secondary-bg);
+  transition: transform 0.1s ease;
 }
 .badge-row:active { transform: scale(0.99); }
 .badge-row.done { opacity: 0.7; }
-.badge-row-icon { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.badge-row-icon { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
 .badge-row-main { flex: 1; min-width: 0; }
-.badge-row-title { font-weight: 600; font-size: 14px; }
-.badge-row-progress { font-size: 12px; color: var(--hint); margin-top: 2px; }
+.badge-row-title { font-weight: 600; font-size: 15px; }
+.badge-row-progress { font-size: 13px; color: var(--hint); margin-top: 3px; }
+
+/* Badges grid view (app.js's renderBadgesList, state.badgesView) - two
+   columns of cards, progress drawn as a ring around the badge icon. */
+.results.badges-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* "За типом" group headers (app.js's renderBadgesList) - grid-column spans
+   both columns in grid view so a header never shares a row with a card;
+   in list view .results is a plain flex/block column, where span has no
+   effect but also does no harm. Clickable to collapse/expand the group
+   (state.badgesCollapsedKinds) - the chevron reuses #icon-chevron-right,
+   just rotated to point down when expanded. */
+.badges-group-header {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--hint);
+  text-transform: uppercase; letter-spacing: 0.02em;
+  padding: 14px 2px 2px;
+  cursor: pointer; user-select: none;
+}
+.badges-group-header-count { text-transform: none; font-weight: 500; letter-spacing: normal; }
+.badges-group-header .icon {
+  width: 14px; height: 14px; margin-left: auto;
+  transform: rotate(90deg); transition: transform 0.15s ease;
+}
+.badges-group-header.collapsed .icon { transform: rotate(0deg); }
+.badge-card {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  padding: 14px; border-radius: 20px; background: var(--secondary-bg);
+  cursor: pointer; transition: transform 0.1s ease;
+}
+.badge-card:active { transform: scale(0.98); }
+.badge-card.done { opacity: 0.7; }
+.badge-card-ring { position: relative; width: 64px; height: 64px; margin-bottom: 6px; }
+.badge-card-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.badge-card-ring circle { fill: none; stroke-width: 5; }
+.badge-card-ring-track { stroke: var(--surface-2); }
+.badge-card-ring-fill { stroke: var(--button); stroke-linecap: round; }
+.badge-card-ring img {
+  position: absolute; inset: 9px; width: 46px; height: 46px;
+  border-radius: 50%; object-fit: cover; background: var(--surface-2);
+}
+/* Up to two lines, then an ellipsis - half-width cards cut long badge
+   names hard enough that a single line loses most of them. */
+.badge-card-title {
+  font-weight: 600; font-size: 14px; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.badge-card-level { font-size: 12px; color: var(--hint); }
+.badge-card-count { font-size: 13px; color: var(--hint); margin-top: auto; padding-top: 4px; }
+.badge-card-count span { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text); }
 
 .primary-btn {
-  width: 100%; padding: 14px; border-radius: 14px; border: none;
-  background: var(--button); color: var(--button-text); font-size: 16px; font-weight: 600;
-  margin-top: 8px; cursor: pointer; box-shadow: var(--shadow-md);
+  width: 100%; min-height: 52px; padding: 14px; border-radius: 16px; border: none;
+  background: var(--button); color: var(--button-text); font-size: 16px; font-weight: 700;
+  margin-top: 8px; cursor: pointer;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--button) 30%, transparent);
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
-.primary-btn:active { transform: scale(0.98); box-shadow: var(--shadow-sm); }
+.primary-btn:active { transform: scale(0.98); box-shadow: none; }
 .primary-btn:disabled { opacity: 0.6; }
+
+/* Global maintenance splash (app.js, gated on /api/checkin/maintenance/get)
+   - sits above every .screen (z-index), captures all pointer input while
+   shown so nothing underneath is reachable, but never touches showScreen's
+   own logic since it lives outside the .screen system entirely. */
+.maintenance-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: var(--bg);
+}
+.maintenance-card {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 14px; max-width: 320px;
+}
+.maintenance-icon {
+  width: 72px; height: 72px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--button) 16%, transparent);
+  color: var(--button);
+  animation: maintenance-spin 2.4s linear infinite;
+}
+.maintenance-icon .icon { width: 32px; height: 32px; }
+@keyframes maintenance-spin { to { transform: rotate(360deg); } }
+.maintenance-title {
+  font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text);
+}
+.maintenance-message { font-size: 14px; color: var(--hint); line-height: 1.5; }
