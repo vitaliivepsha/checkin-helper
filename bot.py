@@ -32,6 +32,7 @@ import untappd_mcp
 import user_tokens
 import wishlist_sheets
 import auto_toast
+import downtime_watch
 import festival_watch
 import comment_watch
 import group_membership
@@ -3314,6 +3315,7 @@ async def post_init(app):
         )
 
     start_limited_background_tasks(app)
+    downtime_watch.start(app.bot, int(AUTO_TOAST_OWNER_ID), data_path("heartbeat.json"))
 
     if os.environ.get("UNTAPPD_MCP_URL") and PUBLIC_BASE_URL:
         global _webapp_server_task

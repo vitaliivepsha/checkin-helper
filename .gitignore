@@ -23,6 +23,7 @@ badge_index_sync.json
 group_membership.json
 maintenance_mode.json
 special_badge_dismissals.json
+heartbeat.json
 
 # Logs
 bot_log.txt
