@@ -326,6 +326,18 @@ _ptb_app = None
 # would produce.
 _data_dir: str | None = None
 
+# bot.py's reload_beer_db function reference, passed in by start_webapp_
+# server - see its own docstring for why this indirection (no circular
+# import) instead of `import bot`. None in dev_server.py's dev_mode.
+_reload_beer_db_fn = None
+
+# Which festivals.json entry is currently loaded - None means the active
+# beer-list file doesn't match any registry entry (e.g. FESTIVAL_BEERS_FILE
+# was set to something custom, or no switch has ever happened and the env
+# default isn't registered either). Set once in start_webapp_server, kept
+# in sync by handle_festival_switch on every successful switch.
+_active_festival_key: str | None = None
+
 DEPLOY_WEBHOOK_SECRET = os.environ.get("DEPLOY_WEBHOOK_SECRET", "")
 
 # bot.py's load_db() dedupes ALL_BEERS by beer id, keeping only the *first*
@@ -2384,33 +2396,19 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/style_info", handle_style_info)
     app.router.add_post("/api/lens/lookup", handle_lens_lookup)
     app.router.add_post("/api/deploy/webhook", handle_deploy_webhook)
+    app.router.add_post("/api/checkin/festival/list", handle_festival_list)
+    app.router.add_post("/api/checkin/festival/switch", handle_festival_switch)
     return app
 
 
-async def start_webapp_server(
-    ptb_app,
-    festival_beers: list | None = None,
-    data_dir: str | None = None,
-    sessions_raw: dict | None = None,
-) -> None:
-    """Bind the aiohttp app on the port Fly's http_service expects (8080).
-
-    Fire-and-forget from post_init via asyncio.create_task - returns once
-    bound, the server keeps serving on the same event loop afterward.
-    `ptb_app` is bot.py's python-telegram-bot Application - kept (as
-    `_ptb_bot`) so _auto_toast_loop can send festival_watch notifications
-    via `_ptb_bot.send_message`; nothing else here needs it. `festival_beers`
-    is bot.py's ALL_BEERS (id/name/brewery/style/session) - searched before
-    falling back to a live Untappd search. `data_dir` is bot.py's DATA_DIR
-    (the persistent volume) for per-user tokens and the shared queue.
-    `sessions_raw` is bot.py's SESSIONS_RAW (the undeduped {session: [beers]}
-    dict) - used to recover every session a beer appears in, since
-    ALL_BEERS itself only keeps the first.
-    """
-    global _festival_beers, _beer_sessions, _session_beer_ids, _session_order, _session_colors, _ptb_bot, _ptb_app, _data_dir
-    _ptb_bot = ptb_app.bot
-    _ptb_app = ptb_app
-    _data_dir = os.path.abspath(data_dir or ".")
+def _set_festival_data(festival_beers: list | None, sessions_raw: dict | None) -> None:
+    """(Re)derives every festival-dataset global from a fresh (ALL_BEERS,
+    SESSIONS_RAW) pair - the same assignment block start_webapp_server ran
+    inline before this was factored out, now also reused by
+    handle_festival_switch so an owner-triggered festival change takes
+    effect immediately, with no restart (mirrors badge_stats.
+    reload_special_badges's live-reload pattern)."""
+    global _festival_beers, _beer_sessions, _session_beer_ids, _session_order, _session_colors
     _festival_beers = festival_beers or []
     _beer_sessions = {}
     _session_beer_ids = {}
@@ -2445,6 +2443,48 @@ async def start_webapp_server(
             if bid is not None:
                 ids.add(bid)
         _session_beer_ids[session] = ids
+
+
+async def start_webapp_server(
+    ptb_app,
+    festival_beers: list | None = None,
+    data_dir: str | None = None,
+    sessions_raw: dict | None = None,
+    dev_mode: bool = False,
+    reload_beer_db=None,
+    active_festival_key: str | None = None,
+) -> None:
+    """Bind the aiohttp app on the port Fly's http_service expects (8080).
+
+    Fire-and-forget from post_init via asyncio.create_task - returns once
+    bound, the server keeps serving on the same event loop afterward.
+    `ptb_app` is bot.py's python-telegram-bot Application - kept (as
+    `_ptb_bot`) so _auto_toast_loop can send festival_watch notifications
+    via `_ptb_bot.send_message`; nothing else here needs it. `festival_beers`
+    is bot.py's ALL_BEERS (id/name/brewery/style/session) - searched before
+    falling back to a live Untappd search. `data_dir` is bot.py's DATA_DIR
+    (the persistent volume) for per-user tokens and the shared queue.
+    `sessions_raw` is bot.py's SESSIONS_RAW (the undeduped {session: [beers]}
+    dict) - used to recover every session a beer appears in, since
+    ALL_BEERS itself only keeps the first. `dev_mode` (see dev_server.py)
+    skips every `_start_*` background loop below - those hit the SAME
+    Untappd DIRECT_TOKEN and GitHub repo the production VM already polls,
+    so running them a second time from a laptop would just double the
+    quota usage and the deploy/sync noise for zero benefit in a build
+    that's only ever open in one person's own browser for a few minutes.
+    `reload_beer_db` is bot.py's own function of the same name (a plain
+    function reference, not called here) - handle_festival_switch calls it
+    later to re-read a different festival's beer list into bot.py's own
+    ALL_BEERS/SESSIONS_RAW globals (webapp_server.py can't import bot.py
+    directly - bot.py already imports this module, so that would be
+    circular), then feeds the result back into `_set_festival_data`."""
+    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key
+    _ptb_bot = ptb_app.bot
+    _ptb_app = ptb_app
+    _data_dir = os.path.abspath(data_dir or ".")
+    _reload_beer_db_fn = reload_beer_db
+    _active_festival_key = active_festival_key
+    _set_festival_data(festival_beers, sessions_raw)
     if data_dir:
         user_tokens.init(data_dir)
         checkin_queue.init(data_dir)
@@ -2469,13 +2509,80 @@ async def start_webapp_server(
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     logger.info("Festival check-in Mini App server listening on :%s", port)
-    _start_had_it_backfill()
-    _start_venue_backfill()
-    _start_auto_toast()
-    _start_comment_watch()
-    _start_festival_watch_venue()
-    _start_badge_index_sync()
-    _start_special_badges_sync()
+    if not dev_mode:
+        _start_had_it_backfill()
+        _start_venue_backfill()
+        _start_auto_toast()
+        _start_comment_watch()
+        _start_festival_watch_venue()
+        _start_badge_index_sync()
+        _start_special_badges_sync()
+
+
+def _load_festivals_registry() -> list[dict]:
+    """Same file/shape as bot.py's own load_festivals_registry - duplicated
+    rather than imported (see start_webapp_server's `reload_beer_db`
+    docstring on why webapp_server.py can't import bot.py) since it's a
+    single cheap file read, not worth threading through as another
+    callback param."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "festivals.json"), encoding="utf-8") as f:
+            return json.load(f).get("festivals", [])
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.warning("Could not load festivals.json: %s", e)
+        return []
+
+
+async def handle_festival_list(request: web.Request) -> web.Response:
+    """Owner-only: the Mini App's festival-switcher screen reads this to
+    show every festivals.json entry plus which one is currently loaded.
+    Non-owners get a fixed empty/unavailable shape (same convention as
+    handle_autotoast_status) - the settings row that would open this
+    screen is never shown to them in the first place, this is defense in
+    depth, not the primary access control."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    if not _is_auto_toast_owner(tg_user.get("id")):
+        return web.json_response({"available": False, "festivals": [], "activeKey": None})
+    festivals = [{"key": f["key"], "label": f.get("label", f["key"])} for f in _load_festivals_registry() if f.get("key")]
+    return web.json_response({"available": True, "festivals": festivals, "activeKey": _active_festival_key})
+
+
+async def handle_festival_switch(request: web.Request) -> web.Response:
+    """Owner-only: switches the ENTIRE app's active festival beer list -
+    not a per-user setting, every connected user sees the new list on
+    their next request. Live-reloads via bot.py's reload_beer_db (passed
+    in as `_reload_beer_db_fn` - see start_webapp_server's own docstring)
+    plus _set_festival_data, no process restart needed (mirrors badge_
+    stats.reload_special_badges's pattern) - unavailable entirely in
+    dev_server.py's dev_mode, where `_reload_beer_db_fn` stays None since
+    there's no real bot.py module loaded to reload from."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    if not _is_auto_toast_owner(tg_user.get("id")):
+        return _json_error("forbidden", 403)
+    if _reload_beer_db_fn is None:
+        return _json_error("not_available_in_dev_mode", 501)
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, ValueError):
+        return _json_error("invalid_json")
+    key = body.get("key")
+    if not key:
+        return _json_error("missing_key")
+    result = _reload_beer_db_fn(key)
+    if result is None:
+        return _json_error("unknown_festival")
+    new_beers, new_sessions_raw = result
+    global _active_festival_key
+    _active_festival_key = key
+    _set_festival_data(new_beers, new_sessions_raw)
+    logger.info("festival switch: now serving %r (%d beers)", key, len(new_beers))
+    return web.json_response({"ok": True, "activeKey": key, "beerCount": len(new_beers)})
 
 
 # How old a get_untappd_api_usage reading has to be before _quota_allows

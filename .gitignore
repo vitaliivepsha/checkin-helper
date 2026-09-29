@@ -24,6 +24,7 @@ group_membership.json
 maintenance_mode.json
 special_badge_dismissals.json
 heartbeat.json
+active_festival.json
 
 # Logs
 bot_log.txt

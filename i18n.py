@@ -140,6 +140,11 @@ EXTRA_STRINGS = {
         "checkin_webapp_intro": "Search a beer and check it in to Untappd 👇",
         "checkin_webapp_group_hint": "Please message me privately to use festival check-in.",
 
+        "cmd_dev_app": "🧪 Open dev build",
+        "btn_open_dev_app": "🧪 Open dev build",
+        "dev_app_intro": "Local dev build 👇",
+        "dev_app_not_configured": "DEV_PUBLIC_BASE_URL isn't set in .env - nothing to open.",
+
         "cmd_connect_untappd": "🔗 Connect Untappd",
         "connect_untappd_group_hint": "Please message me privately to connect your Untappd account.",
         "connect_untappd_prompt": "Send me your personal Untappd MCP token (the one you got from whoever shared it with you).\n_(or /cancel to abort)_",
@@ -306,6 +311,11 @@ EXTRA_STRINGS = {
         "btn_open_checkin_webapp": "🍺 Зачекінити пиво",
         "checkin_webapp_intro": "Знайди пиво і зачекінь його в Untappd 👇",
         "checkin_webapp_group_hint": "Напиши мені в приваті, щоб скористатись фестивальним чекіном.",
+
+        "cmd_dev_app": "🧪 Відкрити dev-версію",
+        "btn_open_dev_app": "🧪 Відкрити dev-версію",
+        "dev_app_intro": "Локальна dev-збірка 👇",
+        "dev_app_not_configured": "DEV_PUBLIC_BASE_URL не задано в .env - нема що відкривати.",
 
         "cmd_connect_untappd": "🔗 Підключити Untappd",
         "connect_untappd_group_hint": "Напиши мені в приваті, щоб підключити свій Untappd-акаунт.",

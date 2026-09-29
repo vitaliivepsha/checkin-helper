@@ -67,6 +67,13 @@ maintenance_mode.init(DATA_DIR)  # same - /maintenance must work regardless of t
 # Public HTTPS base URL this bot is reachable at (the deployed app's own URL)
 # - needed to build the Telegram Mini App link for the festival check-in webapp.
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "")
+
+# Owner-only /dev_app target - a LOCAL dev_server.py instance reachable via a
+# tunnel (e.g. the free static ngrok domain, unused now that the real bot
+# runs on its own VM+sslip.io domain - see dev_server.py's own docstring).
+# Left unset in production; /dev_app just says so when it is.
+DEV_PUBLIC_BASE_URL = os.environ.get("DEV_PUBLIC_BASE_URL", "")
+
 _webapp_server_task = None  # keeps the asyncio.create_task result alive (avoid GC)
 
 
@@ -531,13 +538,61 @@ async def remove_checkin(user_id, beer_id: str) -> None:
 # Which festival's beer list to load - lets a future festival switch to its
 # own JSON (e.g. FESTIVAL_BEERS_FILE=other_festival.json) without touching
 # code. Defaults to the one that's been hardcoded here from the start.
+# Overridden below by DATA_DIR/active_festival.json if the owner has ever
+# switched festivals via the Mini App (see reload_beer_db and
+# webapp_server.py's handle_festival_switch) - that file, not this env var,
+# is the source of truth once a switch has happened, so the choice survives
+# a restart.
 FESTIVAL_BEERS_FILE = os.environ.get("FESTIVAL_BEERS_FILE", "mbcc_beers.json")
 
-def load_db():
+
+def load_festivals_registry() -> list[dict]:
+    """festivals.json's [{key, label, file}, ...] - the Mini App's festival
+    switcher (see webapp_server.py's handle_festival_list/handle_festival_
+    switch) reads this to know what's selectable; add a new festival by
+    editing this one file, no code change needed. Re-read fresh every call
+    (not cached) since it's tiny and only ever hit from an owner-only,
+    low-frequency settings screen."""
+    try:
+        with open("festivals.json", encoding="utf-8") as f:
+            return json.load(f).get("festivals", [])
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.warning("Could not load festivals.json: %s", e)
+        return []
+
+
+def _active_festival_file_path() -> str:
+    return os.path.join(DATA_DIR, "active_festival.json")
+
+
+def resolve_active_festival() -> tuple[str, str | None]:
+    """(file, key) to load_db() at startup - the festival the owner last
+    switched to (DATA_DIR/active_festival.json, written by
+    reload_beer_db), falling back to FESTIVAL_BEERS_FILE's env-var default
+    if that file is missing, unreadable, or names a key no longer in
+    festivals.json (e.g. the registry entry was removed). `key` is None
+    when nothing in festivals.json matches the resolved file - the Mini
+    App's festival switcher (webapp_server.py's handle_festival_list) then
+    just shows no entry as "currently active" rather than guessing."""
+    registry = load_festivals_registry()
+    try:
+        with open(_active_festival_file_path(), encoding="utf-8") as f:
+            active_key = json.load(f).get("key")
+        match = next((f for f in registry if f.get("key") == active_key), None)
+        if match and match.get("file"):
+            return match["file"], match["key"]
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        pass
+    fallback = next((f for f in registry if f.get("file") == FESTIVAL_BEERS_FILE), None)
+    return FESTIVAL_BEERS_FILE, (fallback.get("key") if fallback else None)
+
+
+def load_db(filename: str | None = None):
+    filename = filename or FESTIVAL_BEERS_FILE
     beer_db = {}
     raw = {}
     try:
-        with open(FESTIVAL_BEERS_FILE, "r", encoding="utf-8") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             raw = json.load(f)
         if isinstance(raw, dict):
             for session, beers in raw.items():
@@ -582,12 +637,41 @@ def load_db():
             if brewery in brewery_locations:
                 beer["location"] = brewery_locations[brewery]
 
-        logger.info(f"Loaded {FESTIVAL_BEERS_FILE}: {len(beer_db)} unique beers")
+        logger.info(f"Loaded {filename}: {len(beer_db)} unique beers")
     except FileNotFoundError:
-        logger.warning(f"{FESTIVAL_BEERS_FILE} not found")
+        logger.warning(f"{filename} not found")
     return list(beer_db.values()), raw if isinstance(raw, dict) else {}
 
-ALL_BEERS, SESSIONS_RAW = load_db()
+
+def reload_beer_db(key: str) -> tuple[list, dict] | None:
+    """Owner-switched-festival path (see webapp_server.py's
+    handle_festival_switch) - looks `key` up in festivals.json, persists
+    it to DATA_DIR/active_festival.json (so the choice survives a restart,
+    read back by resolve_active_festival at next startup), then re-reads
+    that festival's file into the SAME globals load_db() sets at import
+    time, so every existing reader (the /scan flow, photo-match flow,
+    webapp_server.py's own copies set via _set_festival_data) picks it up
+    with no restart. Returns the new (ALL_BEERS, SESSIONS_RAW), or None if
+    `key` isn't in festivals.json (caller reports that as an error rather
+    than silently loading nothing) - across the bot.py/webapp_server.py
+    module boundary (see start_webapp_server's `reload_beer_db` callback
+    param) since webapp_server.py can't import bot.py back (bot.py already
+    imports webapp_server.py - a reverse import would be circular)."""
+    global ALL_BEERS, SESSIONS_RAW, FESTIVAL_BEERS, FESTIVAL_BEERS_FILE, ACTIVE_FESTIVAL_KEY
+    match = next((f for f in load_festivals_registry() if f.get("key") == key), None)
+    if not match or not match.get("file"):
+        return None
+    with open(_active_festival_file_path(), "w", encoding="utf-8") as f:
+        json.dump({"key": key}, f)
+    ALL_BEERS, SESSIONS_RAW = load_db(match["file"])
+    FESTIVAL_BEERS = ALL_BEERS
+    FESTIVAL_BEERS_FILE = match["file"]
+    ACTIVE_FESTIVAL_KEY = key
+    return ALL_BEERS, SESSIONS_RAW
+
+
+_active_festival_file, ACTIVE_FESTIVAL_KEY = resolve_active_festival()
+ALL_BEERS, SESSIONS_RAW = load_db(_active_festival_file)
 FESTIVAL_BEERS = ALL_BEERS
 
 SESSION_EMOJI = {
@@ -2815,6 +2899,33 @@ async def checkin_webapp_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.warning(f"/checkin failed: {e}")
 
 
+async def dev_app_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Owner-only: opens the Mini App against a LOCAL dev_server.py build
+    (DEV_PUBLIC_BASE_URL, typically a tunnel like ngrok pointed at
+    localhost) instead of the real production URL - real Telegram initData,
+    real WebView, but hitting code that's still only on the laptop. Not
+    listed in the default command menu (see private_commands_for's
+    include_auto_toast block) - only registered/shown for AUTO_TOAST_OWNER_ID."""
+    lng = lang(update)
+    if update.effective_chat.type != "private":
+        await update.message.reply_text(t(lng, "checkin_webapp_group_hint"))
+        return
+    if str(update.effective_user.id) != AUTO_TOAST_OWNER_ID:
+        await update.message.reply_text(t(lng, "auto_toast_owner_only"))
+        return
+    if not DEV_PUBLIC_BASE_URL:
+        await update.message.reply_text(t(lng, "dev_app_not_configured"))
+        return
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(
+        t(lng, "btn_open_dev_app"),
+        web_app=WebAppInfo(url=f"{DEV_PUBLIC_BASE_URL}/checkin"),
+    )]])
+    try:
+        await update.message.reply_text(t(lng, "dev_app_intro"), reply_markup=keyboard)
+    except TelegramError as e:
+        logger.warning(f"/dev_app failed: {e}")
+
+
 async def join_group_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Sets the caller's active group (see group_membership.py) to THIS
     chat - group chats only, mirror image of /checkin's private-only guard.
@@ -3257,6 +3368,7 @@ def private_commands_for(lng: str, *, include_auto_toast: bool = False):
         commands.append(BotCommand("scan", t(lng, "cmd_scan")))
         commands.append(BotCommand("restart", t(lng, "cmd_restart")))
         commands.append(BotCommand("maintenance", t(lng, "cmd_maintenance")))
+        commands.append(BotCommand("dev_app", t(lng, "cmd_dev_app")))
     commands += [
         BotCommand("festival_watch", t(lng, "cmd_festival_watch")),
         BotCommand("comment_watch", t(lng, "cmd_comment_watch")),
@@ -3325,7 +3437,12 @@ async def post_init(app):
     if os.environ.get("UNTAPPD_MCP_URL") and PUBLIC_BASE_URL:
         global _webapp_server_task
         from webapp_server import start_webapp_server
-        _webapp_server_task = asyncio.create_task(start_webapp_server(app, ALL_BEERS, DATA_DIR, SESSIONS_RAW))
+        _webapp_server_task = asyncio.create_task(
+            start_webapp_server(
+                app, ALL_BEERS, DATA_DIR, SESSIONS_RAW,
+                reload_beer_db=reload_beer_db, active_festival_key=ACTIVE_FESTIVAL_KEY,
+            )
+        )
         # Menu Button reverted back to the plain commands list
         # (MenuButtonDefault - shows the registered /commands, same as
         # never touching this API at all). Briefly tried MenuButtonWebApp
@@ -3444,6 +3561,7 @@ def main():
     app.add_handler(CommandHandler("clear", clear_cmd))
     app.add_handler(CommandHandler("cancel", cancel_cmd))
     app.add_handler(CommandHandler("checkin", checkin_webapp_cmd))
+    app.add_handler(CommandHandler("dev_app", dev_app_cmd))
     app.add_handler(CommandHandler("join_group", join_group_cmd))
     app.add_handler(CommandHandler("connect_untappd", connect_untappd_cmd))
     app.add_handler(CommandHandler("wishlist_sheet", wishlist_sheet_cmd))

@@ -113,6 +113,9 @@
     selectedBadge: null, // drill-down target for screen-badge-detail
     festivalMode: false,        // mirrors festival_mode.py - gates festival-only UI, see applyFestivalModeUI
     autoToastAvailable: false,  // combined with festivalMode below - see updateAutoToastRowVisibility
+    festivalSwitchAvailable: false, // owner-only, see updateFestivalSwitchRowVisibility
+    festivals: [],       // last /api/checkin/festival/list fetch - [{key, label}]
+    activeFestivalKey: null,
     festivalMap: { zones: {}, bonusCategories: {} }, // shared, server-backed - see festival_map.py
   };
   let festivalMapEditMode = false;
@@ -183,6 +186,10 @@
 
   function updateAutoToastRowVisibility() {
     $("settings-row-autotoast").classList.toggle("hidden", !state.autoToastAvailable || state.festivalMode);
+  }
+
+  function updateFestivalSwitchRowVisibility() {
+    $("settings-row-festivalswitch").classList.toggle("hidden", !state.festivalSwitchAvailable);
   }
 
   // Search row's "..." overflow menu (wishlist toggle + Untappd link) - a
@@ -321,6 +328,9 @@
     }
     if (name === "style-info") {
       renderStyleInfo();
+    }
+    if (name === "festival-switch") {
+      fetchFestivalList();
     }
     if (name === "festival-map") {
       fetchFestivalMap();
@@ -2159,6 +2169,60 @@
     showScreen("festival-map");
   });
 
+  $("settings-row-festivalswitch").addEventListener("click", () => {
+    showScreen("festival-switch");
+  });
+
+  async function fetchFestivalList() {
+    $("festival-switch-status").textContent = "Завантажую…";
+    $("festival-switch-list").innerHTML = "";
+    const { ok, data } = await apiPost("/api/checkin/festival/list", {});
+    if (!ok || !data.available) {
+      $("festival-switch-status").textContent = "Не вдалося завантажити список фестивалів.";
+      return;
+    }
+    state.festivals = data.festivals || [];
+    state.activeFestivalKey = data.activeKey;
+    renderFestivalSwitchList();
+    $("festival-switch-status").textContent = "";
+  }
+
+  function renderFestivalSwitchList() {
+    $("festival-switch-list").innerHTML = state.festivals.map((f) => {
+      const active = f.key === state.activeFestivalKey;
+      return `<div class="settings-row settings-row-clickable" data-festival-key="${escapeHtml(f.key)}">
+        <div class="settings-row-label">
+          <div class="settings-row-title">${escapeHtml(f.label)}</div>
+        </div>
+        ${active ? '<svg class="icon"><use href="#icon-check"/></svg>' : ""}
+      </div>`;
+    }).join("");
+    $("festival-switch-list").querySelectorAll("[data-festival-key]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const key = row.dataset.festivalKey;
+        if (key === state.activeFestivalKey) return;
+        const label = state.festivals.find((f) => f.key === key)?.label || key;
+        const doSwitch = async () => {
+          $("festival-switch-status").textContent = "Перемикаю…";
+          const { ok, data } = await apiPost("/api/checkin/festival/switch", { key });
+          if (!ok) {
+            $("festival-switch-status").textContent = "Не вдалося перемкнути фестиваль.";
+            return;
+          }
+          state.activeFestivalKey = data.activeKey;
+          renderFestivalSwitchList();
+          $("festival-switch-status").textContent = `Готово: ${data.beerCount} пив.`;
+        };
+        const msg = `Перемкнути активний фестиваль на "${label}" для УСІХ користувачів?`;
+        if (tg && tg.showConfirm) {
+          tg.showConfirm(msg, (confirmed) => { if (confirmed) doSwitch(); });
+        } else if (confirm(msg)) {
+          doSwitch();
+        }
+      });
+    });
+  }
+
   async function fetchFestivalMap() {
     if (mapDragActive) return; // don't yank a pill mid-gesture on an incoming poll tick
     const { ok, data } = await apiPost("/api/checkin/festival_map/get", {});
@@ -2737,14 +2801,17 @@
 
   async function fetchSettingsStatus() {
     $("settings-status").textContent = "Завантажую…";
-    const [autotoast, festivalWatch, commentWatch, festivalMode] = await Promise.all([
+    const [autotoast, festivalWatch, commentWatch, festivalMode, festivalList] = await Promise.all([
       apiPost("/api/checkin/autotoast/status", {}),
       apiPost("/api/checkin/festival_watch/get", {}),
       apiPost("/api/checkin/comment_watch/get", {}),
       apiPost("/api/checkin/festival_mode/get", {}),
+      apiPost("/api/checkin/festival/list", {}),
     ]);
     state.autoToastAvailable = !!(autotoast.ok && autotoast.data.available);
     updateAutoToastRowVisibility();
+    state.festivalSwitchAvailable = !!(festivalList.ok && festivalList.data.available);
+    updateFestivalSwitchRowVisibility();
     $("settings-autotoast-toggle").checked = !!(autotoast.ok && autotoast.data.enabled);
     $("settings-festivalwatch-toggle").checked = !!(festivalWatch.ok && festivalWatch.data.enabled);
     $("settings-commentwatch-toggle").checked = !!(commentWatch.ok && commentWatch.data.enabled);
