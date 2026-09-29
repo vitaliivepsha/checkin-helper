@@ -425,6 +425,16 @@
     </label>
     <svg class="icon settings-row-arrow"><use href="#icon-chevron-right"/></svg>
   </div>
+  <div class="settings-row settings-row-clickable" id="settings-row-myfestival">
+    <div class="settings-row-label">
+      <div class="settings-row-title">
+        <svg class="icon"><use href="#icon-compass"/></svg>
+        Мій фестиваль
+      </div>
+      <div class="settings-row-hint">Твій особистий вибір — не залежить від групи</div>
+    </div>
+    <svg class="icon settings-row-arrow"><use href="#icon-chevron-right"/></svg>
+  </div>
   <div class="settings-row settings-row-clickable" id="settings-row-festivalswitch">
     <div class="settings-row-label">
       <div class="settings-row-title">
@@ -455,6 +465,17 @@
     </div>
   </div>
   <div id="settings-status" class="hint"></div>
+</div>
+
+<div id="screen-my-festival" class="screen">
+  <button class="back-btn" data-back="settings">Назад</button>
+  <h2>Мій фестиваль</h2>
+  <div class="festival-info-note">
+    <svg class="icon"><use href="#icon-compass"/></svg>
+    <span>Змінює список пив і карту лише для тебе — не впливає на інших</span>
+  </div>
+  <div id="my-festival-list"></div>
+  <div id="my-festival-status" class="hint"></div>
 </div>
 
 <div id="screen-festival-switch" class="screen">

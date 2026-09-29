@@ -40,6 +40,7 @@ import festival_watch
 import foursquare
 import group_festivals
 import group_membership
+import user_festivals
 import had_it_index
 import untappd_direct
 import untappd_mcp
@@ -411,7 +412,7 @@ def _sessions_for(raw_id, beer_sessions: dict | None = None, session_order: list
     """Defaults to the module-global default dataset's derived data when
     called with no override - `beer_sessions`/`session_order` are passed
     explicitly by handlers that resolved a specific group's bound festival
-    (see _group_festival_key/_festival_data_for/_derive_session_data)."""
+    (see _resolve_festival_key/_festival_data_for/_derive_session_data)."""
     beer_sessions = _beer_sessions if beer_sessions is None else beer_sessions
     session_order = _session_order if session_order is None else session_order
     found = beer_sessions.get(str(raw_id), [])
@@ -516,11 +517,16 @@ async def _active_group(user_id: int) -> dict | None:
     return await group_membership.get_active_group(user_id)
 
 
-async def _group_festival_key(user_id: int) -> str | None:
-    """The festivals.json key the caller's active group has bound via
-    /set_festival (see group_festivals.py), or None if they have no active
-    group or their group never bound one - caller then falls back to the
-    global default via _festival_data_for(None)."""
+async def _resolve_festival_key(user_id: int) -> str | None:
+    """The effective festivals.json key for this user: their own personal
+    override (user_festivals - set via /set_festival in a private chat, or
+    the Mini App's "Мій фестиваль" screen) if they set one, else the
+    festival their active group has bound via /set_festival (see
+    group_festivals.py), else None - caller then falls back to the global
+    default via _festival_data_for(None)."""
+    personal = await user_festivals.get_user_festival(user_id)
+    if personal:
+        return personal
     group = await _active_group(user_id)
     if not group:
         return None
@@ -985,8 +991,8 @@ async def handle_search(request: web.Request) -> web.Response:
                 ordered.append(h)
 
     if festival_priority:
-        group_key = await _group_festival_key(user_id)
-        beers, sessions_raw = _festival_data_for(group_key)
+        festival_key = await _resolve_festival_key(user_id)
+        beers, sessions_raw = _festival_data_for(festival_key)
         beer_sessions, _, session_order, _ = _derive_session_data(beers, sessions_raw)
         _extend(_search_festival_beers(query, beers, beer_sessions, session_order))
     if wishlist_priority:
@@ -1276,8 +1282,8 @@ async def handle_festival_stats(request: web.Request) -> web.Response:
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
 
-    group_key = await _group_festival_key(user_id)
-    beers, sessions_raw = _festival_data_for(group_key)
+    festival_key = await _resolve_festival_key(user_id)
+    beers, sessions_raw = _festival_data_for(festival_key)
     _, session_beer_ids, session_order, session_colors = _derive_session_data(beers, sessions_raw)
 
     all_ids = _all_festival_beer_ids(session_beer_ids)
@@ -1337,8 +1343,8 @@ async def handle_festival_brewery(request: web.Request) -> web.Response:
     if not brewery:
         return _json_error("invalid_brewery")
 
-    group_key = await _group_festival_key(user_id)
-    festival_beers, sessions_raw = _festival_data_for(group_key)
+    festival_key = await _resolve_festival_key(user_id)
+    festival_beers, sessions_raw = _festival_data_for(festival_key)
     beer_sessions, _, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
 
     candidates = [b for b in festival_beers if (b.get("brewery") or "").strip() == brewery]
@@ -1385,8 +1391,8 @@ async def handle_festival_session(request: web.Request) -> web.Response:
     except json.JSONDecodeError:
         return _json_error("invalid_json")
 
-    group_key = await _group_festival_key(user_id)
-    festival_beers, sessions_raw = _festival_data_for(group_key)
+    festival_key = await _resolve_festival_key(user_id)
+    festival_beers, sessions_raw = _festival_data_for(festival_key)
     beer_sessions, session_beer_ids, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
 
     session = (body.get("session") or "").strip()
@@ -1921,9 +1927,9 @@ async def handle_festival_map_get(request: web.Request) -> web.Response:
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
 
-    group_key = await _group_festival_key(user_id)
-    beers, _ = _festival_data_for(group_key)
-    map_key = group_key or _active_festival_key
+    festival_key = await _resolve_festival_key(user_id)
+    beers, _ = _festival_data_for(festival_key)
+    map_key = festival_key or _active_festival_key
 
     zone_names = _festival_editable_zone_names(beers)
     zone_hint = _festival_brewery_zone_map(beers)
@@ -1948,9 +1954,9 @@ async def handle_festival_map_move(request: web.Request) -> web.Response:
     except json.JSONDecodeError:
         return _json_error("invalid_json")
 
-    group_key = await _group_festival_key(user_id)
-    beers, _ = _festival_data_for(group_key)
-    map_key = group_key or _active_festival_key
+    festival_key = await _resolve_festival_key(user_id)
+    beers, _ = _festival_data_for(festival_key)
+    map_key = festival_key or _active_festival_key
 
     brewery = body.get("brewery")
     zone = body.get("zone")
@@ -2473,6 +2479,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/deploy/webhook", handle_deploy_webhook)
     app.router.add_post("/api/checkin/festival/list", handle_festival_list)
     app.router.add_post("/api/checkin/festival/switch", handle_festival_switch)
+    app.router.add_post("/api/checkin/festival/my/get", handle_my_festival_get)
+    app.router.add_post("/api/checkin/festival/my/set", handle_my_festival_set)
     return app
 
 
@@ -2482,7 +2490,7 @@ def _derive_session_data(festival_beers: list | None, sessions_raw: dict | None)
     session_order, session_colors) for the given (beers, sessions_raw) pair
     instead of assigning globals, so it's safe to call per-request with a
     DIFFERENT dataset on every call (one group's bound festival can differ
-    from another's - see _group_festival_key/_festival_data_for). Sharing
+    from another's - see _resolve_festival_key/_festival_data_for). Sharing
     this via module globals the way _set_festival_data still does for the
     single default dataset would race: one group's request could overwrite
     the globals mid-read of another group's concurrent request."""
@@ -2533,7 +2541,7 @@ def _set_festival_data(festival_beers: list | None, sessions_raw: dict | None) -
     process-wide DEFAULT dataset (boot time, and handle_festival_switch's
     default-changing path) - a request scoped to a specific group's bound
     festival calls _derive_session_data directly instead, see
-    _group_festival_key/_festival_data_for."""
+    _resolve_festival_key/_festival_data_for."""
     global _festival_beers, _beer_sessions, _session_beer_ids, _session_order, _session_colors
     _festival_beers = festival_beers or []
     _beer_sessions, _session_beer_ids, _session_order, _session_colors = _derive_session_data(
@@ -2588,6 +2596,7 @@ async def start_webapp_server(
         checkin_queue.init(data_dir)
         group_membership.init(data_dir)
         group_festivals.init(data_dir)
+        user_festivals.init(data_dir)
         festival_map.init(data_dir)
         await festival_map.migrate_legacy_default(active_festival_key)
         had_it_index.init(data_dir)
@@ -2704,6 +2713,57 @@ async def handle_festival_switch(request: web.Request) -> web.Response:
     _set_festival_data(new_beers, new_sessions_raw)
     logger.info("festival switch: now serving %r (%d beers)", key, len(new_beers))
     return web.json_response({"ok": True, "activeKey": key, "beerCount": len(new_beers)})
+
+
+async def handle_my_festival_get(request: web.Request) -> web.Response:
+    """Open to any authenticated user (NOT owner-gated, unlike
+    handle_festival_list) - the Mini App's personal "Мій фестиваль" screen
+    reads this to show every festivals.json entry, which one (if any) this
+    user has personally overridden (user_festivals.py), and which one
+    they'd actually see right now after the full resolution chain
+    (personal override -> their group's binding -> the global default -
+    see _resolve_festival_key/_festival_data_for)."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+    personal_key = await user_festivals.get_user_festival(user_id)
+    effective_key = await _resolve_festival_key(user_id) or _active_festival_key
+    festivals = [
+        {"key": f["key"], "label": f.get("label", f["key"]), "imageUrl": _festival_image_url(f)}
+        for f in _load_festivals_registry() if f.get("key")
+    ]
+    return web.json_response({
+        "festivals": festivals,
+        "personalKey": personal_key,
+        "effectiveKey": effective_key,
+    })
+
+
+async def handle_my_festival_set(request: web.Request) -> web.Response:
+    """Sets (with a `key` from festivals.json) or clears (with `key: null`)
+    the CALLER's own personal festival override - open to any authenticated
+    user, no owner gate (unlike handle_festival_switch, which changes the
+    shared default for everyone without their own override/group). Never
+    touches group_festivals or the shared default."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, ValueError):
+        return _json_error("invalid_json")
+    key = body.get("key")
+    if key is None:
+        await user_festivals.clear_user_festival(user_id)
+        return web.json_response({"ok": True, "personalKey": None})
+    if not isinstance(key, str) or not any(f.get("key") == key for f in _load_festivals_registry()):
+        return _json_error("unknown_festival")
+    await user_festivals.set_user_festival(user_id, key)
+    return web.json_response({"ok": True, "personalKey": key})
 
 
 # How old a get_untappd_api_usage reading has to be before _quota_allows

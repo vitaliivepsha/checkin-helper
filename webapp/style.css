@@ -615,6 +615,27 @@ body.festival-mode-active .festival-banner { display: flex; }
 }
 #festival-switch-status { text-align: center; margin-top: 12px; }
 
+/* Personal "Мій фестиваль" screen - same tile grid as the owner-only
+   switcher above (reuses .festival-tile/.festival-tile-* as-is), plus a
+   neutral (non-warning) info note since this only ever affects the
+   viewer's own account, never anyone else's. */
+.festival-info-note {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-top: 10px; margin-bottom: 14px; padding: 12px 14px;
+  border-radius: 14px; background: var(--secondary-bg);
+  color: var(--hint); font-size: 13px; font-weight: 600; line-height: 1.4;
+}
+.festival-info-note .icon { flex-shrink: 0; margin-top: 1px; width: 18px; height: 18px; }
+#my-festival-list {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+}
+.festival-tile-auto-icon {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--hint);
+}
+.festival-tile-auto-icon .icon { width: 26px; height: 26px; }
+#my-festival-status { text-align: center; margin-top: 12px; }
+
 .event-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .event-row-text { font-size: 14px; }
 .event-row-time { font-size: 12px; color: var(--hint); }

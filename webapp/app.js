@@ -116,6 +116,9 @@
     festivalSwitchAvailable: false, // owner-only, see updateFestivalSwitchRowVisibility
     festivals: [],       // last /api/checkin/festival/list fetch - [{key, label}]
     activeFestivalKey: null,
+    myFestivals: [],      // last /api/checkin/festival/my/get fetch - open to everyone, no availability gate
+    myPersonalKey: null,  // this viewer's own override, or null (falls back to their group/the default)
+    myEffectiveKey: null, // what they'd actually see right now, after the full resolution chain
     festivalMap: { zones: {}, bonusCategories: {} }, // shared, server-backed - see festival_map.py
   };
   let festivalMapEditMode = false;
@@ -331,6 +334,9 @@
     }
     if (name === "festival-switch") {
       fetchFestivalList();
+    }
+    if (name === "my-festival") {
+      fetchMyFestivalList();
     }
     if (name === "festival-map") {
       fetchFestivalMap();
@@ -2175,6 +2181,10 @@
     showScreen("festival-switch");
   });
 
+  $("settings-row-myfestival").addEventListener("click", () => {
+    showScreen("my-festival");
+  });
+
   async function fetchFestivalList() {
     $("festival-switch-status").textContent = "Завантажую…";
     $("festival-switch-list").innerHTML = "";
@@ -2239,6 +2249,65 @@
         } else if (confirm(msg)) {
           doSwitch();
         }
+      });
+    });
+  }
+
+  async function fetchMyFestivalList() {
+    $("my-festival-status").textContent = "Завантажую…";
+    $("my-festival-list").innerHTML = "";
+    const { ok, data } = await apiPost("/api/checkin/festival/my/get", {});
+    if (!ok) {
+      $("my-festival-status").textContent = "Не вдалося завантажити список фестивалів.";
+      return;
+    }
+    state.myFestivals = data.festivals || [];
+    state.myPersonalKey = data.personalKey || null;
+    state.myEffectiveKey = data.effectiveKey || null;
+    renderMyFestivalList();
+    $("my-festival-status").textContent = "";
+  }
+
+  function renderMyFestivalList() {
+    const el = $("my-festival-list");
+    if (!state.myFestivals.length) {
+      el.innerHTML = `<div class="festival-switch-empty">Немає доступних фестивалів.</div>`;
+      return;
+    }
+    // "Автоматично" is always first - represents "no personal override",
+    // falling back to the user's group binding (if any) or the shared
+    // default. Its own art is a compass icon instead of a picture/initials.
+    const autoActive = !state.myPersonalKey;
+    const autoTile = `<button type="button" class="festival-tile${autoActive ? " festival-tile-active" : ""}"
+                    data-festival-key=""${autoActive ? ' aria-current="true"' : ""}>
+      <span class="festival-tile-art"><span class="festival-tile-auto-icon"><svg class="icon"><use href="#icon-compass"/></svg></span><span class="festival-tile-check"><svg class="icon"><use href="#icon-check"/></svg></span></span>
+      <span class="festival-tile-label">Автоматично</span>
+    </button>`;
+    const festivalTiles = state.myFestivals.map((f) => {
+      const active = f.key === state.myPersonalKey;
+      const art = f.imageUrl
+        ? `<img src="${escapeHtml(f.imageUrl)}" alt="" loading="lazy">`
+        : `<span class="festival-tile-initials">${escapeHtml(festivalInitials(f.label))}</span>`;
+      return `<button type="button" class="festival-tile${active ? " festival-tile-active" : ""}"
+                      data-festival-key="${escapeHtml(f.key)}"${active ? ' aria-current="true"' : ""}>
+        <span class="festival-tile-art">${art}<span class="festival-tile-check"><svg class="icon"><use href="#icon-check"/></svg></span></span>
+        <span class="festival-tile-label">${escapeHtml(f.label)}</span>
+      </button>`;
+    }).join("");
+    el.innerHTML = autoTile + festivalTiles;
+    el.querySelectorAll("[data-festival-key]").forEach((row) => {
+      row.addEventListener("click", async () => {
+        const key = row.dataset.festivalKey || null;
+        if (key === state.myPersonalKey) return;
+        $("my-festival-status").textContent = "Зберігаю…";
+        const { ok, data } = await apiPost("/api/checkin/festival/my/set", { key });
+        if (!ok) {
+          $("my-festival-status").textContent = "Не вдалося зберегти вибір.";
+          return;
+        }
+        state.myPersonalKey = data.personalKey;
+        renderMyFestivalList();
+        $("my-festival-status").textContent = "";
       });
     });
   }

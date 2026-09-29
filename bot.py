@@ -37,6 +37,7 @@ import festival_watch
 import comment_watch
 import group_festivals
 import group_membership
+import user_festivals
 import badge_stats
 import beer_match
 import maintenance_mode
@@ -697,11 +698,14 @@ def get_festival_data(key: str | None) -> tuple[list, dict]:
     return _festival_cache[resolved]
 
 
-async def resolve_group_festival_key(user_id: int) -> str | None:
-    """The festivals.json key bound to the caller's active group
-    (group_membership -> group_festivals), or None if they have no active
-    group or their group never bound one - caller then falls back to the
-    global default via get_festival_data(None)."""
+async def resolve_festival_key(user_id: int) -> str | None:
+    """The effective festivals.json key for this user: their own personal
+    override (user_festivals) if they set one, else the festival bound to
+    their active group (group_membership -> group_festivals), else None -
+    caller then falls back to the global default via get_festival_data(None)."""
+    personal = await user_festivals.get_user_festival(user_id)
+    if personal:
+        return personal
     group = await group_membership.get_active_group(user_id)
     if not group:
         return None
@@ -1198,7 +1202,7 @@ def nofound_keyboard(untappd_url: str, msg_id: int, lng: str) -> InlineKeyboardM
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lng = lang(update)
     checkins = await get_user_checkins(update.effective_user.id)
-    festival_key = await resolve_group_festival_key(update.effective_user.id)
+    festival_key = await resolve_festival_key(update.effective_user.id)
     beers, _ = get_festival_data(festival_key)
     await update.message.reply_text(
         t(lng, "start", beer_count=len(beers), checkin_count=len(checkins)),
@@ -1312,7 +1316,7 @@ async def find_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         )
 
-    festival_key = await resolve_group_festival_key(user_id)
+    festival_key = await resolve_festival_key(user_id)
     beers, _ = get_festival_data(festival_key)
     matches = sorted(
         (b for b in beers if field_match(b.get("brewery", ""))),
@@ -1784,7 +1788,7 @@ async def _process_photo_messages(anchor_message, messages: list, context: Conte
     captions = [(m.caption or "").strip() for m in messages if (m.caption or "").strip()]
     original_caption = " | ".join(captions)
     caption_hint = original_caption.lower().strip()
-    festival_key = await resolve_group_festival_key(anchor_message.from_user.id)
+    festival_key = await resolve_festival_key(anchor_message.from_user.id)
     beers, _ = get_festival_data(festival_key)
 
     progress_text = t(lng, "recognizing")
@@ -2030,7 +2034,7 @@ async def _send_detected_results(
     await progress_msg.edit_text(t(lng, "found_beers", count=total))
     user_id = anchor_message.from_user.id
     chat_id = anchor_message.chat_id
-    festival_key = await resolve_group_festival_key(user_id)
+    festival_key = await resolve_festival_key(user_id)
     beers, _ = get_festival_data(festival_key)
     personal_keyboard = chat_id == user_id
     first_result_message_used = False
@@ -2473,7 +2477,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await cleanup_pending_search_messages(context, pending, chat_id)
             clear_pending(context, user_id, chat_id)
             return
-        festival_key = await resolve_group_festival_key(user_id)
+        festival_key = await resolve_festival_key(user_id)
         beers, _ = get_festival_data(festival_key)
         match = next((b for b in beers if b["id"] == beer_id), None)
         if match:
@@ -2531,7 +2535,7 @@ async def _apply_ocr_text_correction(update: Update, context: ContextTypes.DEFAU
         return
 
     msg_id = pending.get("msg_id", 0)
-    festival_key = await resolve_group_festival_key(user_id)
+    festival_key = await resolve_festival_key(user_id)
     beers, _ = get_festival_data(festival_key)
     match = find_beers_in_db(beers, corrected_beer, corrected_brewery)
     if not match and corrected_brewery:
@@ -2731,7 +2735,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lng = pending.get("lng", lang(update))
     query_lower = query_text.lower().strip()
     brewery_hint = pending.get("brewery_name", "")
-    festival_key = await resolve_group_festival_key(user_id)
+    festival_key = await resolve_festival_key(user_id)
     beers, _ = get_festival_data(festival_key)
 
     def make_buttons(results):
@@ -2992,29 +2996,44 @@ async def join_group_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def set_festival_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Binds THIS group chat to a specific festivals.json entry (see
-    group_festivals.py) - group chats only, same private-chat guard as
-    /join_group. Lets different groups run different festivals' beer lists
-    at the same time, instead of every group sharing bot.py's single
-    default (ALL_BEERS/reload_beer_db/the Mini App's owner-only switcher).
-    Run with no argument (or an unknown one) to list every valid key - the
-    whole point is nobody has to open festivals.json by hand to find one.
-    Re-running this in the same chat with a different key switches it (one
-    bound festival at a time, no separate "unbind")."""
+    """Binds a specific festivals.json entry - to THIS group chat when run
+    in a group (see group_festivals.py), or to the CALLER PERSONALLY when
+    run in a private chat (see user_festivals.py, which resolve_festival_key
+    checks first). Lets different groups - or individual users with no
+    group of their own - see different festivals' beer lists at the same
+    time, instead of everyone sharing bot.py's single default
+    (ALL_BEERS/reload_beer_db/the Mini App's owner-only switcher). Run with
+    no argument (or an unknown one) to list every valid key - the whole
+    point is nobody has to open festivals.json by hand to find one.
+    Re-running this with a different key switches it (one binding at a
+    time); in a private chat, "clear"/"off"/"reset" removes the personal
+    override instead (a group binding has no such "unbind" - re-running
+    with a different key is the only way to change it there)."""
     lng = lang(update)
-    if update.effective_chat.type == "private":
-        await update.message.reply_text(t(lng, "set_festival_private_hint"))
+    is_private = update.effective_chat.type == "private"
+    user_id = update.effective_user.id
+    raw_key = context.args[0] if context.args else None
+
+    if is_private and raw_key in ("clear", "off", "reset"):
+        await user_festivals.clear_user_festival(user_id)
+        await update.message.reply_text(t(lng, "set_festival_cleared"))
         return
+
     registry = load_festivals_registry()
-    key = context.args[0] if context.args else None
-    match = next((f for f in registry if f.get("key") == key), None)
+    match = next((f for f in registry if f.get("key") == raw_key), None)
     if not match:
         options = "\n".join(f"{f['key']} — {f.get('label', f['key'])}" for f in registry if f.get("key"))
-        await update.message.reply_text(t(lng, "set_festival_usage", options=options))
+        usage_key = "set_festival_usage_private" if is_private else "set_festival_usage"
+        await update.message.reply_text(t(lng, usage_key, options=options))
         return
-    await group_festivals.set_group_festival(update.effective_chat.id, key)
-    get_festival_data(key)  # warm the cache now, not on the group's first search
-    await update.message.reply_text(t(lng, "set_festival_success", label=match.get("label", key)))
+
+    get_festival_data(raw_key)  # warm the cache now, not on first search
+    if is_private:
+        await user_festivals.set_user_festival(user_id, raw_key)
+        await update.message.reply_text(t(lng, "set_festival_success_private", label=match.get("label", raw_key)))
+    else:
+        await group_festivals.set_group_festival(update.effective_chat.id, raw_key)
+        await update.message.reply_text(t(lng, "set_festival_success", label=match.get("label", raw_key)))
 
 
 async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -3431,6 +3450,7 @@ def private_commands_for(lng: str, *, include_auto_toast: bool = False):
         BotCommand("clear", t(lng, "cmd_clear")),
         BotCommand("cancel", t(lng, "cmd_cancel")),
         BotCommand("checkin", t(lng, "cmd_checkin")),
+        BotCommand("set_festival", t(lng, "cmd_set_festival")),
         BotCommand("connect_untappd", t(lng, "cmd_connect_untappd")),
         BotCommand("wishlist_sheet", t(lng, "cmd_wishlist_sheet")),
         BotCommand("import_history", t(lng, "cmd_import_history")),
