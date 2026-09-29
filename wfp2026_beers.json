@@ -13,8 +13,9 @@
     "name": "See You On the Flipside - Hāpi Sessions Vol. 21: Pinta",
     "brewery": "Garage Project",
     "style": "IPA - American",
-    "location": "Area 1",
-    "url": "https://untappd.com/beer/6726011"
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6726011",
+    "standBrewery": "PINTA"
   },
   {
     "id": "6134009",
@@ -117,8 +118,9 @@
     "name": "Beskidy Pils",
     "brewery": "PINTA Beskidy",
     "style": "Pilsner - Other",
-    "location": "Area 1",
-    "url": "https://untappd.com/beer/3537724"
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/3537724",
+    "standBrewery": "PINTA"
   },
   {
     "id": "70951",
