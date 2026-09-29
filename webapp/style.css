@@ -1032,6 +1032,33 @@ body { --pill-border: color-mix(in srgb, var(--hint) 45%, transparent); }
   display: flex; align-items: center; justify-content: center;
   color: var(--hint); opacity: 0.6;
 }
+/* An empty perimeter side would otherwise collapse to zero height/width,
+   which breaks dragging into it two ways: there's nothing to visually
+   see or aim for, AND app.js's findDropTarget picks whichever side's
+   getBoundingClientRect() is CLOSEST to the pointer - a degenerate
+   zero-size rect sitting right on the grid's edge only "wins" that
+   comparison for pointer positions exactly on that line, while a
+   populated left/right column's real height claims a much wider range.
+   Confirmed live: once one side empties out, dragging back into it
+   becomes nearly impossible, so breweries drift onto whichever sides
+   still have content and never rebalance. A minimum footprint (real
+   height/width, not just a border) keeps every side an equally
+   reachable target regardless of how many items are already on it. */
+body.map-edit-mode .perimeter-top:empty,
+body.map-edit-mode .perimeter-bottom:empty,
+body.map-edit-mode .perimeter-left:empty,
+body.map-edit-mode .perimeter-right:empty {
+  min-height: 34px; min-width: 34px;
+  border: 1px dashed var(--pill-border); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+body.map-edit-mode .perimeter-top:empty::before,
+body.map-edit-mode .perimeter-bottom:empty::before,
+body.map-edit-mode .perimeter-left:empty::before,
+body.map-edit-mode .perimeter-right:empty::before {
+  content: "Перетягни сюди"; font-size: 10px; color: var(--hint); opacity: 0.6;
+  text-align: center; line-height: 1.2;
+}
 #festival-map-detail .map-zone-header { margin: 14px 0 4px; }
 
 #festival-map-search-input { margin-bottom: 8px; }
