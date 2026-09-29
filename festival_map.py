@@ -1,16 +1,22 @@
 """Shared, server-backed layout of a festival's brewery zones.
 
 Unlike checkin_queue.py, there is no per-viewer state here - the physical
-venue map is the same for everyone, so every connected user reads and
-writes the exact same `zones` dict.
+venue map is the same for every visitor of the SAME festival. But since
+different Telegram groups can now be bound to different festivals at the
+same time (see group_festivals.py), the saved layout is bucketed per
+festival key - otherwise two groups looking at two different festivals
+would stomp on each other's map: get_layout prunes any brewery not in the
+caller's own `known_breweries`, so a WFP request would delete MBCC's
+breweries from a single shared file and vice versa.
 
 Zone names/count aren't fixed here - MBCC happens to have 4 ("Area 1"..
 "Area 4"), but a different festival's data could define any number under
 any names. The caller (webapp_server.py) is the one that knows how to spot
-a "main, editable zone" name for whichever festival is currently loaded
-(see its own `_festival_editable_zone_names`) and passes that list into
-`get_layout`/`move_brewery` on every call - this module just persists
-whatever zones it's told about, generically.
+a "main, editable zone" name for whichever festival dataset a given request
+resolved to (see its own `_festival_editable_zone_names`) and passes that
+list, plus the resolved festival key, into `get_layout`/`move_brewery` on
+every call - this module just persists whatever zones it's told about for
+whichever key, generically.
 
 Each zone renders as a rectangle perimeter (a short top row, tall left/right
 columns, a short bottom row, matching the venue's real layout) rather than a
@@ -32,6 +38,12 @@ import os
 
 SIDES = ("top", "left", "right", "bottom")
 
+# Bucket used for callers with no specific festival key (group_key is None
+# and there's no tracked default key either) - keeps a single shared layout
+# for that edge case rather than erroring, same as before per-key bucketing
+# existed.
+_DEFAULT_BUCKET = "__default__"
+
 _path: str | None = None
 _lock = asyncio.Lock()
 
@@ -41,19 +53,69 @@ def init(data_dir: str) -> None:
     _path = os.path.join(data_dir, "festival_map.json")
 
 
+def _bucket_key(festival_key: str | None) -> str:
+    return festival_key or _DEFAULT_BUCKET
+
+
 def _empty_zones(zones: list[str]) -> dict[str, dict[str, list[str]]]:
     return {z: {s: [] for s in SIDES} for z in zones}
 
 
-def _load(zones: list[str]) -> dict[str, dict[str, list[str]]]:
-    loaded = _empty_zones(zones)
+def _load_all() -> dict:
+    """Every festival's saved zones, keyed by festival key (or
+    _DEFAULT_BUCKET - see _bucket_key). Assumes migrate_legacy_default has
+    already run at startup; if the file is somehow still in the old
+    single-map shape ({"zones": {...}}, from before per-festival scoping
+    existed) when this is called, treats it as empty rather than guessing
+    which key it belongs to - migrate_legacy_default is the only place
+    that knows the right answer (the app's current default key)."""
     if not _path or not os.path.exists(_path):
-        return loaded
+        return {}
     try:
         with open(_path, encoding="utf-8") as f:
-            saved = json.load(f).get("zones", {})
+            raw = json.load(f)
     except (json.JSONDecodeError, OSError):
-        return loaded
+        return {}
+    if not isinstance(raw, dict) or ("zones" in raw and isinstance(raw["zones"], dict)):
+        return {}
+    return raw
+
+
+def _save_all(data: dict) -> None:
+    tmp_path = _path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, _path)
+
+
+async def migrate_legacy_default(default_key: str | None) -> None:
+    """One-time migration: if festival_map.json is still in the old
+    single-map shape (from before per-festival-key bucketing existed),
+    rewrite it into the new bucketed shape under `default_key`'s bucket -
+    the old file always represented whichever festival was the app's one
+    and only dataset at the time, which for a caller right after this
+    change ships is exactly `default_key`. Call once at startup, before
+    any request-driven get_layout/move_brewery call could otherwise race
+    this same rewrite by resolving a DIFFERENT, unrelated key first (which
+    would wrongly file the old MBCC-era layout under that other key). A
+    no-op if the file doesn't exist yet or is already in the new shape."""
+    if not _path or not os.path.exists(_path):
+        return
+    async with _lock:
+        try:
+            with open(_path, encoding="utf-8") as f:
+                raw = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return
+        if not isinstance(raw, dict) or "zones" not in raw or not isinstance(raw["zones"], dict):
+            return  # already migrated, or not the old shape - nothing to do
+        _save_all({_bucket_key(default_key): raw})
+
+
+def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dict[str, list[str]]]:
+    loaded = _empty_zones(zones)
+    bucket_data = all_data.get(bucket)
+    saved = bucket_data.get("zones", {}) if isinstance(bucket_data, dict) else {}
     for z in zones:
         saved_zone = saved.get(z)
         if not isinstance(saved_zone, dict):
@@ -63,13 +125,6 @@ def _load(zones: list[str]) -> dict[str, dict[str, list[str]]]:
             if isinstance(items, list):
                 loaded[z][s] = [b for b in items if isinstance(b, str)]
     return loaded
-
-
-def _save(zones: dict[str, dict[str, list[str]]]) -> None:
-    tmp_path = _path + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8") as f:
-        json.dump({"zones": zones}, f, ensure_ascii=False, indent=2)
-    os.replace(tmp_path, _path)
 
 
 def _seed_sides(breweries: list[str]) -> dict[str, list[str]]:
@@ -88,26 +143,25 @@ def _seed_sides(breweries: list[str]) -> dict[str, list[str]]:
 
 
 async def get_layout(
-    known_breweries: list[str], brewery_zone_hint: dict[str, str], zones: list[str]
+    festival_key: str | None, known_breweries: list[str], brewery_zone_hint: dict[str, str], zones: list[str]
 ) -> dict[str, dict[str, list[str]]]:
-    """Returns the current zone layout (for the given `zones` - whatever
-    the caller currently considers the festival's main, editable zones),
-    seeding in any brewery from `known_breweries` that isn't placed on any
-    side of any zone yet, and dropping any placed brewery that ISN'T in
-    `known_breweries` - proven live necessary: the underlying festival beer
-    data file is swappable (webapp_server.py's FESTIVAL_BEERS_FILE), and
-    without this, switching from one festival's data to a completely
-    different one left the OLD festival's breweries stuck on the map
-    forever (this module has no concept of "which dataset" a saved
-    position came from, and get_layout previously only ever ADDED, never
-    removed), making the two datasets' breweries visibly pile up together
-    in the same zones. A brewery whose name happens to be identical across
-    both datasets keeps its existing position rather than being reset -
-    harmless, and avoids needlessly reshuffling a coincidental overlap."""
+    """Returns the current zone layout for `festival_key` (for the given
+    `zones` - whatever the caller currently considers that festival's main,
+    editable zones), seeding in any brewery from `known_breweries` that
+    isn't placed on any side of any zone yet, and dropping any placed
+    brewery that ISN'T in `known_breweries` - proven live necessary: the
+    underlying festival beer data file is swappable, and without this,
+    switching from one festival's data to a completely different one left
+    the OLD festival's breweries stuck on the map forever. A brewery whose
+    name happens to be identical across both datasets keeps its existing
+    position rather than being reset - harmless, and avoids needlessly
+    reshuffling a coincidental overlap."""
     if not zones:
         return {}
+    bucket = _bucket_key(festival_key)
     async with _lock:
-        loaded = _load(zones)
+        all_data = _load_all()
+        loaded = _load_bucket(all_data, bucket, zones)
         known = set(known_breweries)
         pruned = False
         for zone in loaded.values():
@@ -132,18 +186,23 @@ async def get_layout(
                 for side in SIDES:
                     loaded[zone][side].extend(seeded[side])
         if new_by_zone or pruned:
-            _save(loaded)
+            all_data[bucket] = {"zones": loaded}
+            _save_all(all_data)
         return loaded
 
 
-async def move_brewery(brewery: str, zone: str, side: str, index: int, zones: list[str]) -> bool:
+async def move_brewery(
+    festival_key: str | None, brewery: str, zone: str, side: str, index: int, zones: list[str]
+) -> bool:
     """Moves `brewery` (from wherever it currently sits, if anywhere) into
-    `zone`/`side` at `index`. Returns False only if `zone`/`side` is invalid
-    for the given `zones` list."""
+    `zone`/`side` at `index`, within `festival_key`'s own bucket. Returns
+    False only if `zone`/`side` is invalid for the given `zones` list."""
     if zone not in zones or side not in SIDES:
         return False
+    bucket = _bucket_key(festival_key)
     async with _lock:
-        loaded = _load(zones)
+        all_data = _load_all()
+        loaded = _load_bucket(all_data, bucket, zones)
         for z in loaded.values():
             for s in SIDES:
                 if brewery in z[s]:
@@ -151,5 +210,6 @@ async def move_brewery(brewery: str, zone: str, side: str, index: int, zones: li
         target = loaded[zone][side]
         index = max(0, min(index, len(target)))
         target.insert(index, brewery)
-        _save(loaded)
+        all_data[bucket] = {"zones": loaded}
+        _save_all(all_data)
         return True

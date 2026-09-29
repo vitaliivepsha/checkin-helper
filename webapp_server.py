@@ -38,6 +38,7 @@ import festival_mode
 import maintenance_mode
 import festival_watch
 import foursquare
+import group_festivals
 import group_membership
 import had_it_index
 import untappd_direct
@@ -338,6 +339,15 @@ _reload_beer_db_fn = None
 # in sync by handle_festival_switch on every successful switch.
 _active_festival_key: str | None = None
 
+# bot.py's get_festival_data function reference, passed in by
+# start_webapp_server - same cross-module-callback reasoning as
+# _reload_beer_db_fn (webapp_server.py can't import bot.py back). Resolves
+# a festivals.json key (or None) to that festival's (beers, sessions_raw),
+# with an in-process cache - see bot.py's own docstring. None in
+# dev_server.py's dev_mode, where _festival_data_for falls back to the
+# single dataset dev_server.py loaded directly.
+_get_festival_data_fn = None
+
 DEPLOY_WEBHOOK_SECRET = os.environ.get("DEPLOY_WEBHOOK_SECRET", "")
 
 # bot.py's load_db() dedupes ALL_BEERS by beer id, keeping only the *first*
@@ -397,9 +407,15 @@ def _assign_session_colors(raw_keys: list) -> dict:
     return mapping
 
 
-def _sessions_for(raw_id) -> list[str]:
-    found = _beer_sessions.get(str(raw_id), [])
-    return [s for s in _session_order if s in found]
+def _sessions_for(raw_id, beer_sessions: dict | None = None, session_order: list | None = None) -> list[str]:
+    """Defaults to the module-global default dataset's derived data when
+    called with no override - `beer_sessions`/`session_order` are passed
+    explicitly by handlers that resolved a specific group's bound festival
+    (see _group_festival_key/_festival_data_for/_derive_session_data)."""
+    beer_sessions = _beer_sessions if beer_sessions is None else beer_sessions
+    session_order = _session_order if session_order is None else session_order
+    found = beer_sessions.get(str(raw_id), [])
+    return [s for s in session_order if s in found]
 
 # All per-user caches below are keyed by Telegram user id - a shared global
 # here would leak one friend's wishlist/had-it/venues into another's view.
@@ -498,6 +514,28 @@ async def _active_group(user_id: int) -> dict | None:
     group_membership.py. Scopes the shared queue (checkin_queue.py) so two
     different festivals' crowds never see each other's beers."""
     return await group_membership.get_active_group(user_id)
+
+
+async def _group_festival_key(user_id: int) -> str | None:
+    """The festivals.json key the caller's active group has bound via
+    /set_festival (see group_festivals.py), or None if they have no active
+    group or their group never bound one - caller then falls back to the
+    global default via _festival_data_for(None)."""
+    group = await _active_group(user_id)
+    if not group:
+        return None
+    return await group_festivals.get_group_festival(group["chatId"])
+
+
+def _festival_data_for(key: str | None) -> tuple[list, dict]:
+    """(beers, sessions_raw) for `key`, via bot.py's own cache (see
+    _get_festival_data_fn) - falls back to the single dataset already
+    loaded into _festival_beers/module globals when running under
+    dev_server.py's dev_mode, where there's no bot.py process to call
+    into."""
+    if _get_festival_data_fn is None:
+        return _festival_beers, {}
+    return _get_festival_data_fn(key)
 
 
 async def _get_had_it(user_id: int, beer_id, token: str) -> dict | None:
@@ -643,14 +681,20 @@ def _int_beer_id(b: dict) -> int | None:
         return None
 
 
-def _search_festival_beers(query: str, limit: int = 10) -> list[dict]:
-    if not _festival_beers:
+def _search_festival_beers(
+    query: str, beers: list | None = None, beer_sessions: dict | None = None,
+    session_order: list | None = None, limit: int = 10,
+) -> list[dict]:
+    """Defaults to the module-global default dataset when called with no
+    override - see _sessions_for's own note."""
+    beers = _festival_beers if beers is None else beers
+    if not beers:
         return []
-    keys = [f"{b.get('brewery', '')} {b.get('name', '')}" for b in _festival_beers]
+    keys = [f"{b.get('brewery', '')} {b.get('name', '')}" for b in beers]
     hits = _fuzzy_match(query, keys, limit)
     results = []
     for _, _score, idx in hits:
-        b = _festival_beers[idx]
+        b = beers[idx]
         try:
             beer_id = int(b.get("id"))
         except (TypeError, ValueError):
@@ -662,7 +706,7 @@ def _search_festival_beers(query: str, limit: int = 10) -> list[dict]:
             "style": b.get("style"),
             "abv": None, "ibu": None, "rating": None, "ratingCount": None,
             "labelUrl": None,
-            "sessions": _sessions_for(b.get("id")),
+            "sessions": _sessions_for(b.get("id"), beer_sessions, session_order),
             "source": "festival",
         })
     return results
@@ -671,30 +715,33 @@ def _search_festival_beers(query: str, limit: int = 10) -> list[dict]:
 _ZONE_NAME_RE = re.compile(r"^Area (\d+)$")
 
 
-def _festival_editable_zone_names() -> list[str]:
-    """Every distinct "Area N" location present in the currently-loaded
-    festival's beer data, sorted numerically (not alphabetically - "Area
-    10" must sort after "Area 2", not before it). However many of these
-    exist (MBCC has 4; a different festival might have just one, or a
-    dozen) are the main, user-editable zones on the festival map - see
-    festival_map.py's own docstring for why it doesn't hardcode this
-    itself."""
+def _festival_editable_zone_names(beers: list | None = None) -> list[str]:
+    """Every distinct "Area N" location present in the given festival's beer
+    data (defaults to the module-global default dataset when called with no
+    override - see _sessions_for's own note), sorted numerically (not
+    alphabetically - "Area 10" must sort after "Area 2", not before it).
+    However many of these exist (MBCC has 4; a different festival might
+    have just one, or a dozen) are the main, user-editable zones on the
+    festival map - see festival_map.py's own docstring for why it doesn't
+    hardcode this itself."""
+    beers = _festival_beers if beers is None else beers
     names = {
         (b.get("location") or "").strip()
-        for b in _festival_beers
+        for b in beers
         if _ZONE_NAME_RE.match((b.get("location") or "").strip())
     }
     return sorted(names, key=lambda n: int(_ZONE_NAME_RE.match(n).group(1)))
 
 
-def _festival_brewery_zone_map() -> dict[str, str]:
+def _festival_brewery_zone_map(beers: list | None = None) -> dict[str, str]:
     """{brewery: "Area N"} for every festival brewery whose location is one
     of the editable zones - location is already forward-filled to brewery
     level by bot.py's load_db(), so every beer of a brewery agrees, and the
     first one seen is enough."""
-    zone_names = set(_festival_editable_zone_names())
+    beers = _festival_beers if beers is None else beers
+    zone_names = set(_festival_editable_zone_names(beers))
     zones: dict[str, str] = {}
-    for b in _festival_beers:
+    for b in beers:
         brewery = (b.get("brewery") or "").strip()
         location = (b.get("location") or "").strip()
         if brewery and location in zone_names and brewery not in zones:
@@ -702,15 +749,16 @@ def _festival_brewery_zone_map() -> dict[str, str]:
     return zones
 
 
-def _festival_bonus_categories() -> dict[str, list[str]]:
+def _festival_bonus_categories(beers: list | None = None) -> dict[str, list[str]]:
     """{category_name: [breweries]} for every festival location that ISN'T
     one of the "Area N" editable zones - shown read-only, at the end of the
     map (MBCC's "Lagerland" is just one example of this, not a special
     case - a different festival's own bonus category is picked up the same
     way, by name, with no code change needed)."""
-    editable = set(_festival_editable_zone_names())
+    beers = _festival_beers if beers is None else beers
+    editable = set(_festival_editable_zone_names(beers))
     by_category: dict[str, set[str]] = {}
-    for b in _festival_beers:
+    for b in beers:
         brewery = (b.get("brewery") or "").strip()
         location = (b.get("location") or "").strip()
         if brewery and location and location not in editable:
@@ -937,7 +985,10 @@ async def handle_search(request: web.Request) -> web.Response:
                 ordered.append(h)
 
     if festival_priority:
-        _extend(_search_festival_beers(query))
+        group_key = await _group_festival_key(user_id)
+        beers, sessions_raw = _festival_data_for(group_key)
+        beer_sessions, _, session_order, _ = _derive_session_data(beers, sessions_raw)
+        _extend(_search_festival_beers(query, beers, beer_sessions, session_order))
     if wishlist_priority:
         _extend(await _search_wishlist(query, user_id))
 
@@ -1202,9 +1253,9 @@ async def handle_submit(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "checkin": checkin})
 
 
-def _all_festival_beer_ids() -> set:
+def _all_festival_beer_ids(session_beer_ids: dict | None = None) -> set:
     all_ids: set = set()
-    for ids in _session_beer_ids.values():
+    for ids in (_session_beer_ids if session_beer_ids is None else session_beer_ids).values():
         all_ids |= ids
     return all_ids
 
@@ -1225,7 +1276,11 @@ async def handle_festival_stats(request: web.Request) -> web.Response:
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
 
-    all_ids = _all_festival_beer_ids()
+    group_key = await _group_festival_key(user_id)
+    beers, sessions_raw = _festival_data_for(group_key)
+    _, session_beer_ids, session_order, session_colors = _derive_session_data(beers, sessions_raw)
+
+    all_ids = _all_festival_beer_ids(session_beer_ids)
 
     tried_ids: set = set()
     for bid in all_ids:
@@ -1234,9 +1289,9 @@ async def handle_festival_stats(request: web.Request) -> web.Response:
             tried_ids.add(bid)
 
     sessions = [
-        {"session": s, "color": _session_colors.get(s, "yellow"), "total": len(ids), "checked": len(ids & tried_ids)}
-        for s in _session_order
-        for ids in [_session_beer_ids.get(s, set())]
+        {"session": s, "color": session_colors.get(s, "yellow"), "total": len(ids), "checked": len(ids & tried_ids)}
+        for s in session_order
+        for ids in [session_beer_ids.get(s, set())]
     ]
     return web.json_response({
         "total": len(all_ids),
@@ -1282,7 +1337,11 @@ async def handle_festival_brewery(request: web.Request) -> web.Response:
     if not brewery:
         return _json_error("invalid_brewery")
 
-    candidates = [b for b in _festival_beers if (b.get("brewery") or "").strip() == brewery]
+    group_key = await _group_festival_key(user_id)
+    festival_beers, sessions_raw = _festival_data_for(group_key)
+    beer_sessions, _, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
+
+    candidates = [b for b in festival_beers if (b.get("brewery") or "").strip() == brewery]
 
     beers = []
     for b in candidates:
@@ -1294,7 +1353,7 @@ async def handle_festival_brewery(request: web.Request) -> web.Response:
             "name": b.get("name"),
             "brewery": b.get("brewery"),
             "style": b.get("style"),
-            "sessions": _sessions_for(b.get("id")),
+            "sessions": _sessions_for(b.get("id"), beer_sessions, session_order),
         })
 
     for beer in beers:
@@ -1326,13 +1385,17 @@ async def handle_festival_session(request: web.Request) -> web.Response:
     except json.JSONDecodeError:
         return _json_error("invalid_json")
 
+    group_key = await _group_festival_key(user_id)
+    festival_beers, sessions_raw = _festival_data_for(group_key)
+    beer_sessions, session_beer_ids, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
+
     session = (body.get("session") or "").strip()
-    if session not in _session_order:
+    if session not in session_order:
         return _json_error("invalid_session")
     query = (body.get("query") or "").strip()
 
-    session_ids = _session_beer_ids.get(session, set())
-    candidates = [b for b in _festival_beers if _int_beer_id(b) in session_ids]
+    session_ids = session_beer_ids.get(session, set())
+    candidates = [b for b in festival_beers if _int_beer_id(b) in session_ids]
 
     if query:
         keys = [f"{b.get('brewery', '')} {b.get('name', '')}" for b in candidates]
@@ -1349,7 +1412,7 @@ async def handle_festival_session(request: web.Request) -> web.Response:
             "name": b.get("name"),
             "brewery": b.get("brewery"),
             "style": b.get("style"),
-            "sessions": _sessions_for(b.get("id")),
+            "sessions": _sessions_for(b.get("id"), beer_sessions, session_order),
         })
 
     for beer in beers:
@@ -1855,15 +1918,21 @@ async def handle_festival_map_get(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
         return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
 
-    zone_names = _festival_editable_zone_names()
-    zone_hint = _festival_brewery_zone_map()
+    group_key = await _group_festival_key(user_id)
+    beers, _ = _festival_data_for(group_key)
+    map_key = group_key or _active_festival_key
+
+    zone_names = _festival_editable_zone_names(beers)
+    zone_hint = _festival_brewery_zone_map(beers)
     known_breweries = list(zone_hint.keys())
-    zones = await festival_map.get_layout(known_breweries, zone_hint, zone_names)
+    zones = await festival_map.get_layout(map_key, known_breweries, zone_hint, zone_names)
     return web.json_response({
         "zones": zones,
         "zoneOrder": zone_names,
-        "bonusCategories": _festival_bonus_categories(),
+        "bonusCategories": _festival_bonus_categories(beers),
     })
 
 
@@ -1871,22 +1940,28 @@ async def handle_festival_map_move(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
         return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
 
     try:
         body = await request.json()
     except json.JSONDecodeError:
         return _json_error("invalid_json")
 
+    group_key = await _group_festival_key(user_id)
+    beers, _ = _festival_data_for(group_key)
+    map_key = group_key or _active_festival_key
+
     brewery = body.get("brewery")
     zone = body.get("zone")
     side = body.get("side")
     index = body.get("index")
-    if not isinstance(brewery, str) or brewery not in _festival_brewery_zone_map():
+    if not isinstance(brewery, str) or brewery not in _festival_brewery_zone_map(beers):
         return _json_error("invalid_brewery")
     if not isinstance(index, int) or index < 0:
         return _json_error("invalid_index")
 
-    moved = await festival_map.move_brewery(brewery, zone, side, index, _festival_editable_zone_names())
+    moved = await festival_map.move_brewery(map_key, brewery, zone, side, index, _festival_editable_zone_names(beers))
     if not moved:
         return _json_error("invalid_zone")
     return web.json_response({"ok": True})
@@ -2401,27 +2476,29 @@ def _build_app() -> web.Application:
     return app
 
 
-def _set_festival_data(festival_beers: list | None, sessions_raw: dict | None) -> None:
-    """(Re)derives every festival-dataset global from a fresh (ALL_BEERS,
-    SESSIONS_RAW) pair - the same assignment block start_webapp_server ran
-    inline before this was factored out, now also reused by
-    handle_festival_switch so an owner-triggered festival change takes
-    effect immediately, with no restart (mirrors badge_stats.
-    reload_special_badges's live-reload pattern)."""
-    global _festival_beers, _beer_sessions, _session_beer_ids, _session_order, _session_colors
-    _festival_beers = festival_beers or []
-    _beer_sessions = {}
-    _session_beer_ids = {}
+def _derive_session_data(festival_beers: list | None, sessions_raw: dict | None):
+    """Pure version of the derivation _set_festival_data used to do inline
+    via module globals - returns (beer_sessions, session_beer_ids,
+    session_order, session_colors) for the given (beers, sessions_raw) pair
+    instead of assigning globals, so it's safe to call per-request with a
+    DIFFERENT dataset on every call (one group's bound festival can differ
+    from another's - see _group_festival_key/_festival_data_for). Sharing
+    this via module globals the way _set_festival_data still does for the
+    single default dataset would race: one group's request could overwrite
+    the globals mid-read of another group's concurrent request."""
+    festival_beers = festival_beers or []
+    beer_sessions: dict[str, list] = {}
+    session_beer_ids: dict[str, set] = {}
     if sessions_raw:
-        _session_order = list(sessions_raw.keys())
-        _session_colors = _assign_session_colors(_session_order)
+        session_order = list(sessions_raw.keys())
+        session_colors = _assign_session_colors(session_order)
         for session, beers in sessions_raw.items():
-            ids = _session_beer_ids.setdefault(session, set())
+            ids = session_beer_ids.setdefault(session, set())
             for beer in beers:
                 raw_id = str(beer.get("id"))
-                _beer_sessions.setdefault(raw_id, [])
-                if session not in _beer_sessions[raw_id]:
-                    _beer_sessions[raw_id].append(session)
+                beer_sessions.setdefault(raw_id, [])
+                if session not in beer_sessions[raw_id]:
+                    beer_sessions[raw_id].append(session)
                 bid = _int_beer_id(beer)
                 if bid is not None:
                     ids.add(bid)
@@ -2430,19 +2507,38 @@ def _set_festival_data(festival_beers: list | None, sessions_raw: dict | None) -
         # returns an empty sessions_raw for a flat beer list) - every beer
         # gets the same single synthetic session (identified by its assigned
         # color, since there's no real name to preserve), rather than
-        # _session_beer_ids staying empty and the whole festival-progress
+        # session_beer_ids staying empty and the whole festival-progress
         # feature silently showing 0/0 for everything.
         session = _assign_session_colors([""])[""]
-        _session_order = [session]
-        _session_colors = {session: session}
+        session_order = [session]
+        session_colors = {session: session}
         ids = set()
-        for beer in _festival_beers:
+        for beer in festival_beers:
             raw_id = str(beer.get("id"))
-            _beer_sessions[raw_id] = [session]
+            beer_sessions[raw_id] = [session]
             bid = _int_beer_id(beer)
             if bid is not None:
                 ids.add(bid)
-        _session_beer_ids[session] = ids
+        session_beer_ids[session] = ids
+    return beer_sessions, session_beer_ids, session_order, session_colors
+
+
+def _set_festival_data(festival_beers: list | None, sessions_raw: dict | None) -> None:
+    """(Re)derives every festival-dataset global from a fresh (ALL_BEERS,
+    SESSIONS_RAW) pair - the same assignment block start_webapp_server ran
+    inline before this was factored out, now also reused by
+    handle_festival_switch so an owner-triggered festival change takes
+    effect immediately, with no restart (mirrors badge_stats.
+    reload_special_badges's live-reload pattern). Only for the single
+    process-wide DEFAULT dataset (boot time, and handle_festival_switch's
+    default-changing path) - a request scoped to a specific group's bound
+    festival calls _derive_session_data directly instead, see
+    _group_festival_key/_festival_data_for."""
+    global _festival_beers, _beer_sessions, _session_beer_ids, _session_order, _session_colors
+    _festival_beers = festival_beers or []
+    _beer_sessions, _session_beer_ids, _session_order, _session_colors = _derive_session_data(
+        _festival_beers, sessions_raw
+    )
 
 
 async def start_webapp_server(
@@ -2453,6 +2549,7 @@ async def start_webapp_server(
     dev_mode: bool = False,
     reload_beer_db=None,
     active_festival_key: str | None = None,
+    get_festival_data=None,
 ) -> None:
     """Bind the aiohttp app on the port Fly's http_service expects (8080).
 
@@ -2478,18 +2575,21 @@ async def start_webapp_server(
     ALL_BEERS/SESSIONS_RAW globals (webapp_server.py can't import bot.py
     directly - bot.py already imports this module, so that would be
     circular), then feeds the result back into `_set_festival_data`."""
-    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key
+    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key, _get_festival_data_fn
     _ptb_bot = ptb_app.bot
     _ptb_app = ptb_app
     _data_dir = os.path.abspath(data_dir or ".")
     _reload_beer_db_fn = reload_beer_db
     _active_festival_key = active_festival_key
+    _get_festival_data_fn = get_festival_data
     _set_festival_data(festival_beers, sessions_raw)
     if data_dir:
         user_tokens.init(data_dir)
         checkin_queue.init(data_dir)
         group_membership.init(data_dir)
+        group_festivals.init(data_dir)
         festival_map.init(data_dir)
+        await festival_map.migrate_legacy_default(active_festival_key)
         had_it_index.init(data_dir)
         venue_index.init(data_dir)
         auto_toast.init(data_dir)
@@ -2533,6 +2633,22 @@ def _load_festivals_registry() -> list[dict]:
         return []
 
 
+def _festival_image_url(entry: dict) -> str | None:
+    """Static URL of a festival's tile image for the Mini App's switcher, or
+    None when it has none (the tile then falls back to a plain lettered
+    square - see app.js's renderFestivalSwitchList). The registry's "image"
+    is a bare file name inside webapp/festivals/, which the existing
+    /static/checkin/ mount already serves; anything with a path separator is
+    ignored rather than trusted, so a registry edit can't reach outside that
+    folder."""
+    name = (entry.get("image") or "").strip()
+    if not name or "/" in name or "\\" in name or name.startswith("."):
+        return None
+    if not os.path.exists(os.path.join(WEBAPP_DIR, "festivals", name)):
+        return None
+    return f"/static/checkin/festivals/{name}"
+
+
 async def handle_festival_list(request: web.Request) -> web.Response:
     """Owner-only: the Mini App's festival-switcher screen reads this to
     show every festivals.json entry plus which one is currently loaded.
@@ -2546,16 +2662,21 @@ async def handle_festival_list(request: web.Request) -> web.Response:
     tg_user = init_data.get("user") or {}
     if not _is_auto_toast_owner(tg_user.get("id")):
         return web.json_response({"available": False, "festivals": [], "activeKey": None})
-    festivals = [{"key": f["key"], "label": f.get("label", f["key"])} for f in _load_festivals_registry() if f.get("key")]
+    festivals = [
+        {"key": f["key"], "label": f.get("label", f["key"]), "imageUrl": _festival_image_url(f)}
+        for f in _load_festivals_registry() if f.get("key")
+    ]
     return web.json_response({"available": True, "festivals": festivals, "activeKey": _active_festival_key})
 
 
 async def handle_festival_switch(request: web.Request) -> web.Response:
-    """Owner-only: switches the ENTIRE app's active festival beer list -
-    not a per-user setting, every connected user sees the new list on
-    their next request. Live-reloads via bot.py's reload_beer_db (passed
-    in as `_reload_beer_db_fn` - see start_webapp_server's own docstring)
-    plus _set_festival_data, no process restart needed (mirrors badge_
+    """Owner-only: switches the DEFAULT active festival beer list - used by
+    anyone with no active group, or whose group never bound its own
+    festival via /set_festival (see group_festivals.py). A group that HAS
+    bound one keeps seeing its own festival regardless of this switch.
+    Live-reloads via bot.py's reload_beer_db (passed in as
+    `_reload_beer_db_fn` - see start_webapp_server's own docstring) plus
+    _set_festival_data, no process restart needed (mirrors badge_
     stats.reload_special_badges's pattern) - unavailable entirely in
     dev_server.py's dev_mode, where `_reload_beer_db_fn` stays None since
     there's no real bot.py module loaded to reload from."""

@@ -35,6 +35,7 @@ import auto_toast
 import downtime_watch
 import festival_watch
 import comment_watch
+import group_festivals
 import group_membership
 import badge_stats
 import beer_match
@@ -667,12 +668,45 @@ def reload_beer_db(key: str) -> tuple[list, dict] | None:
     FESTIVAL_BEERS = ALL_BEERS
     FESTIVAL_BEERS_FILE = match["file"]
     ACTIVE_FESTIVAL_KEY = key
+    _festival_cache[key] = (ALL_BEERS, SESSIONS_RAW)
     return ALL_BEERS, SESSIONS_RAW
 
 
 _active_festival_file, ACTIVE_FESTIVAL_KEY = resolve_active_festival()
 ALL_BEERS, SESSIONS_RAW = load_db(_active_festival_file)
 FESTIVAL_BEERS = ALL_BEERS
+
+# Per-group festival datasets (see group_festivals.py) - a group that binds
+# its own festival via /set_festival gets served from here instead of the
+# ALL_BEERS/SESSIONS_RAW default above. Loaded and cached on first use per
+# key for the life of the process, same "load once, /restart to refresh"
+# contract load_db() has always had for the default.
+_festival_cache: dict[str, tuple[list, dict]] = {ACTIVE_FESTIVAL_KEY: (ALL_BEERS, SESSIONS_RAW)} if ACTIVE_FESTIVAL_KEY else {}
+
+
+def get_festival_data(key: str | None) -> tuple[list, dict]:
+    """(beers, sessions_raw) for `key` - loads+caches on first use. None or
+    a key not present in festivals.json falls back to the global default
+    (ACTIVE_FESTIVAL_KEY's data, i.e. today's ALL_BEERS/SESSIONS_RAW)."""
+    registry = load_festivals_registry()
+    valid_keys = {f["key"] for f in registry}
+    resolved = key if key in valid_keys else ACTIVE_FESTIVAL_KEY
+    if resolved not in _festival_cache:
+        match = next((f for f in registry if f.get("key") == resolved), None)
+        _festival_cache[resolved] = load_db(match["file"] if match else FESTIVAL_BEERS_FILE)
+    return _festival_cache[resolved]
+
+
+async def resolve_group_festival_key(user_id: int) -> str | None:
+    """The festivals.json key bound to the caller's active group
+    (group_membership -> group_festivals), or None if they have no active
+    group or their group never bound one - caller then falls back to the
+    global default via get_festival_data(None)."""
+    group = await group_membership.get_active_group(user_id)
+    if not group:
+        return None
+    return await group_festivals.get_group_festival(group["chatId"])
+
 
 SESSION_EMOJI = {
     "yellow": "🟡",
@@ -839,11 +873,12 @@ def _simple_norm_for_hint(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).strip()
 
 
-def build_festival_breweries_hint() -> str:
+def build_festival_breweries_hint(beers: list | None = None) -> str:
     """Give Claude a small whitelist of brewery names seen in the festival DB."""
+    beers = ALL_BEERS if beers is None else beers
     breweries = sorted({
         b.get("brewery", "").strip()
-        for b in ALL_BEERS
+        for b in beers
         if b.get("brewery", "").strip()
     })
     if not breweries:
@@ -856,8 +891,9 @@ def build_festival_breweries_hint() -> str:
     )
 
 
-def build_known_beers_for_brewery_hint(brewery_hint: str, limit: int = 45) -> str:
+def build_known_beers_for_brewery_hint(brewery_hint: str, beers: list | None = None, limit: int = 45) -> str:
     """When the user adds a caption like 'ology', pass likely beer names to OCR."""
+    beers = ALL_BEERS if beers is None else beers
     hint_norm = _simple_norm_for_hint(brewery_hint)
     if not hint_norm:
         return ""
@@ -869,7 +905,7 @@ def build_known_beers_for_brewery_hint(brewery_hint: str, limit: int = 45) -> st
 
     matches = []
     seen_ids = set()
-    for beer in ALL_BEERS:
+    for beer in beers:
         brewery = beer.get("brewery", "")
         brewery_norm = _simple_norm_for_hint(brewery)
         is_match = (
@@ -1162,8 +1198,10 @@ def nofound_keyboard(untappd_url: str, msg_id: int, lng: str) -> InlineKeyboardM
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lng = lang(update)
     checkins = await get_user_checkins(update.effective_user.id)
+    festival_key = await resolve_group_festival_key(update.effective_user.id)
+    beers, _ = get_festival_data(festival_key)
     await update.message.reply_text(
-        t(lng, "start", beer_count=len(ALL_BEERS), checkin_count=len(checkins)),
+        t(lng, "start", beer_count=len(beers), checkin_count=len(checkins)),
         parse_mode="Markdown"
     )
 
@@ -1274,8 +1312,10 @@ async def find_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         )
 
+    festival_key = await resolve_group_festival_key(user_id)
+    beers, _ = get_festival_data(festival_key)
     matches = sorted(
-        (b for b in ALL_BEERS if field_match(b.get("brewery", ""))),
+        (b for b in beers if field_match(b.get("brewery", ""))),
         key=brewery_then_beer_alpha_key,
     )
 
@@ -1395,11 +1435,11 @@ MULTI-CARD CHECK:
 """
 
 
-def _build_vision_text(caption_hint: str = "", original_caption: str = "") -> str:
-    vision_text = VISION_PROMPT + MULTI_CARD_PROMPT + build_festival_breweries_hint()
+def _build_vision_text(beers: list, caption_hint: str = "", original_caption: str = "") -> str:
+    vision_text = VISION_PROMPT + MULTI_CARD_PROMPT + build_festival_breweries_hint(beers)
     if caption_hint:
         vision_text += f"\n\nHINT: The brewery for these beers may be: '{original_caption or caption_hint}'"
-        vision_text += build_known_beers_for_brewery_hint(caption_hint)
+        vision_text += build_known_beers_for_brewery_hint(caption_hint, beers)
     return vision_text
 
 
@@ -1668,8 +1708,8 @@ async def _call_claude_vision_with_retry(photo_b64: str, vision_text: str) -> st
     raise last_exc or RuntimeError("Vision recognition failed")
 
 
-async def _recognize_one_photo(photo_b64: str, caption_hint: str, original_caption: str = "") -> list[dict]:
-    vision_text = _build_vision_text(caption_hint, original_caption)
+async def _recognize_one_photo(beers: list, photo_b64: str, caption_hint: str, original_caption: str = "") -> list[dict]:
+    vision_text = _build_vision_text(beers, caption_hint, original_caption)
     raw = await _call_claude_vision_with_retry(photo_b64, vision_text)
     logger.info(f"Claude raw ({len(raw)}): {repr(raw[:300])}")
     detected = _parse_claude_json(raw)
@@ -1744,6 +1784,8 @@ async def _process_photo_messages(anchor_message, messages: list, context: Conte
     captions = [(m.caption or "").strip() for m in messages if (m.caption or "").strip()]
     original_caption = " | ".join(captions)
     caption_hint = original_caption.lower().strip()
+    festival_key = await resolve_group_festival_key(anchor_message.from_user.id)
+    beers, _ = get_festival_data(festival_key)
 
     progress_text = t(lng, "recognizing")
     if len(messages) > 1:
@@ -1759,7 +1801,7 @@ async def _process_photo_messages(anchor_message, messages: list, context: Conte
                 await progress_msg.edit_text(f"{t(lng, 'recognizing')} ({idx}/{len(messages)})")
 
             photo_b64 = await _download_photo_b64(context, message)
-            detected = await _recognize_one_photo(photo_b64, caption_hint, original_caption)
+            detected = await _recognize_one_photo(beers, photo_b64, caption_hint, original_caption)
             detected = _fill_missing_brewery_for_one_photo(detected, caption_hint, original_caption)
             all_detected.extend(detected)
 
@@ -1988,6 +2030,8 @@ async def _send_detected_results(
     await progress_msg.edit_text(t(lng, "found_beers", count=total))
     user_id = anchor_message.from_user.id
     chat_id = anchor_message.chat_id
+    festival_key = await resolve_group_festival_key(user_id)
+    beers, _ = get_festival_data(festival_key)
     personal_keyboard = chat_id == user_id
     first_result_message_used = False
     sent_count = 0
@@ -2007,13 +2051,13 @@ async def _send_detected_results(
                 failed_count += 1
                 continue
 
-            match = find_beers_in_db(ALL_BEERS, beer_name, brewery_name)
+            match = find_beers_in_db(beers, beer_name, brewery_name)
             if not match and caption_hint:
-                match = find_beers_in_db(ALL_BEERS, beer_name, caption_hint)
+                match = find_beers_in_db(beers, beer_name, caption_hint)
             if not match:
                 expanded = beer_name.replace("BCS", "Bourbon County Stout").replace("BCBS", "Bourbon County Brand Stout")
                 if expanded != beer_name:
-                    match = find_beers_in_db(ALL_BEERS, expanded, brewery_name)
+                    match = find_beers_in_db(beers, expanded, brewery_name)
 
             if match:
                 untappd_url = (
@@ -2429,7 +2473,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await cleanup_pending_search_messages(context, pending, chat_id)
             clear_pending(context, user_id, chat_id)
             return
-        match = next((b for b in ALL_BEERS if b["id"] == beer_id), None)
+        festival_key = await resolve_group_festival_key(user_id)
+        beers, _ = get_festival_data(festival_key)
+        match = next((b for b in beers if b["id"] == beer_id), None)
         if match:
             await _apply_search_result(context, pending, match, user_id)
             await cleanup_pending_search_messages(context, pending, chat_id)
@@ -2485,9 +2531,11 @@ async def _apply_ocr_text_correction(update: Update, context: ContextTypes.DEFAU
         return
 
     msg_id = pending.get("msg_id", 0)
-    match = find_beers_in_db(ALL_BEERS, corrected_beer, corrected_brewery)
+    festival_key = await resolve_group_festival_key(user_id)
+    beers, _ = get_festival_data(festival_key)
+    match = find_beers_in_db(beers, corrected_beer, corrected_brewery)
     if not match and corrected_brewery:
-        match = find_beers_in_db(ALL_BEERS, corrected_beer, "")
+        match = find_beers_in_db(beers, corrected_beer, "")
 
     if match:
         pending = dict(pending)
@@ -2683,6 +2731,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lng = pending.get("lng", lang(update))
     query_lower = query_text.lower().strip()
     brewery_hint = pending.get("brewery_name", "")
+    festival_key = await resolve_group_festival_key(user_id)
+    beers, _ = get_festival_data(festival_key)
 
     def make_buttons(results):
         buttons = []
@@ -2708,7 +2758,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return []
 
         matches = []
-        for beer in ALL_BEERS:
+        for beer in beers:
             brewery = beer.get("brewery", "")
             brewery_lower = brewery.lower().strip()
             if not brewery_lower:
@@ -2750,31 +2800,31 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if original_queries and brewery_matches:
         for original_query in original_queries:
-            results = find_beer_candidates(ALL_BEERS, original_query, query_text, limit=5)
+            results = find_beer_candidates(beers, original_query, query_text, limit=5)
             if results:
                 break
 
     # Prefer the safe matcher from search.py. It normalizes names and avoids
     # bad token_set_ratio matches like "my honning" -> "Lightning".
     if not results:
-        results = find_beer_candidates(ALL_BEERS, query_text, brewery_hint, limit=5)
+        results = find_beer_candidates(beers, query_text, brewery_hint, limit=5)
 
     # If the OCR brewery was wrong, retry globally by beer name only.
     if not results and brewery_hint:
-        results = find_beer_candidates(ALL_BEERS, query_text, "", limit=5)
+        results = find_beer_candidates(beers, query_text, "", limit=5)
 
     expanded_query_text = expand_search_abbreviations(query_text)
     if not results and expanded_query_text != query_text:
-        results = find_beer_candidates(ALL_BEERS, expanded_query_text, brewery_hint, limit=5)
+        results = find_beer_candidates(beers, expanded_query_text, brewery_hint, limit=5)
         if not results and brewery_hint:
-            results = find_beer_candidates(ALL_BEERS, expanded_query_text, "", limit=5)
+            results = find_beer_candidates(beers, expanded_query_text, "", limit=5)
 
     # If typed text was not recognized as a brewery at first, still try it as a
     # brewery hint after beer-name search fails. This keeps obscure/partial
     # brewery names useful without hijacking normal beer-name corrections.
     if not results and original_queries:
         for original_query in original_queries:
-            results = find_beer_candidates(ALL_BEERS, original_query, query_text, limit=5)
+            results = find_beer_candidates(beers, original_query, query_text, limit=5)
             if results:
                 break
 
@@ -2794,7 +2844,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Keep a simple substring fallback for very short/special queries.
     if not results and (len(query_lower) < 6 or re.search(r'[#-]', query_lower)):
         substring_matches = [
-            b for b in ALL_BEERS
+            b for b in beers
             if query_lower in b.get("name", "").lower()
         ]
         results = substring_matches[:5]
@@ -2939,6 +2989,32 @@ async def join_group_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     await group_membership.set_active_group(update.effective_user.id, chat.id, chat.title or "")
     await update.message.reply_text(t(lng, "join_group_success", title=chat.title or ""))
+
+
+async def set_festival_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Binds THIS group chat to a specific festivals.json entry (see
+    group_festivals.py) - group chats only, same private-chat guard as
+    /join_group. Lets different groups run different festivals' beer lists
+    at the same time, instead of every group sharing bot.py's single
+    default (ALL_BEERS/reload_beer_db/the Mini App's owner-only switcher).
+    Run with no argument (or an unknown one) to list every valid key - the
+    whole point is nobody has to open festivals.json by hand to find one.
+    Re-running this in the same chat with a different key switches it (one
+    bound festival at a time, no separate "unbind")."""
+    lng = lang(update)
+    if update.effective_chat.type == "private":
+        await update.message.reply_text(t(lng, "set_festival_private_hint"))
+        return
+    registry = load_festivals_registry()
+    key = context.args[0] if context.args else None
+    match = next((f for f in registry if f.get("key") == key), None)
+    if not match:
+        options = "\n".join(f"{f['key']} — {f.get('label', f['key'])}" for f in registry if f.get("key"))
+        await update.message.reply_text(t(lng, "set_festival_usage", options=options))
+        return
+    await group_festivals.set_group_festival(update.effective_chat.id, key)
+    get_festival_data(key)  # warm the cache now, not on the group's first search
+    await update.message.reply_text(t(lng, "set_festival_success", label=match.get("label", key)))
 
 
 async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -3383,6 +3459,7 @@ def status_commands_for(lng: str):
         BotCommand("status", t(lng, "cmd_status")),
         BotCommand("limited", t(lng, "cmd_limited")),
         BotCommand("join_group", t(lng, "cmd_join_group")),
+        BotCommand("set_festival", t(lng, "cmd_set_festival")),
     ]
 
 
@@ -3441,6 +3518,7 @@ async def post_init(app):
             start_webapp_server(
                 app, ALL_BEERS, DATA_DIR, SESSIONS_RAW,
                 reload_beer_db=reload_beer_db, active_festival_key=ACTIVE_FESTIVAL_KEY,
+                get_festival_data=get_festival_data,
             )
         )
         # Menu Button reverted back to the plain commands list
@@ -3563,6 +3641,7 @@ def main():
     app.add_handler(CommandHandler("checkin", checkin_webapp_cmd))
     app.add_handler(CommandHandler("dev_app", dev_app_cmd))
     app.add_handler(CommandHandler("join_group", join_group_cmd))
+    app.add_handler(CommandHandler("set_festival", set_festival_cmd))
     app.add_handler(CommandHandler("connect_untappd", connect_untappd_cmd))
     app.add_handler(CommandHandler("wishlist_sheet", wishlist_sheet_cmd))
     app.add_handler(CommandHandler("import_history", import_history_cmd))

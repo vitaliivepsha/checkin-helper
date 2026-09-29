@@ -2189,6 +2189,14 @@
     $("festival-switch-status").textContent = "";
   }
 
+  // Up to two "words" of the label, first letter each ("MBCC 2026" -> "M2",
+  // "Тест (1928 пив)" -> "Т1") - the placeholder when a festival has no
+  // picture yet.
+  function festivalInitials(label) {
+    const parts = String(label || "?").replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/);
+    return parts.slice(0, 2).map((w) => w.charAt(0)).join("").toUpperCase() || "?";
+  }
+
   function renderFestivalSwitchList() {
     const el = $("festival-switch-list");
     if (!state.festivals.length) {
@@ -2197,10 +2205,17 @@
     }
     el.innerHTML = state.festivals.map((f) => {
       const active = f.key === state.activeFestivalKey;
-      return `<div class="festival-switch-row${active ? " festival-switch-row-active" : ""}" data-festival-key="${escapeHtml(f.key)}">
-        <div class="festival-switch-row-radio"><svg class="icon"><use href="#icon-check"/></svg></div>
-        <div class="festival-switch-row-title">${escapeHtml(f.label)}</div>
-      </div>`;
+      // A festival with no picture in webapp/festivals/ (see
+      // webapp_server.py's _festival_image_url) falls back to a plain square
+      // with its initials, so the grid stays even.
+      const art = f.imageUrl
+        ? `<img src="${escapeHtml(f.imageUrl)}" alt="" loading="lazy">`
+        : `<span class="festival-tile-initials">${escapeHtml(festivalInitials(f.label))}</span>`;
+      return `<button type="button" class="festival-tile${active ? " festival-tile-active" : ""}"
+                      data-festival-key="${escapeHtml(f.key)}"${active ? ' aria-current="true"' : ""}>
+        <span class="festival-tile-art">${art}<span class="festival-tile-check"><svg class="icon"><use href="#icon-check"/></svg></span></span>
+        <span class="festival-tile-label">${escapeHtml(f.label)}</span>
+      </button>`;
     }).join("");
     $("festival-switch-list").querySelectorAll("[data-festival-key]").forEach((row) => {
       row.addEventListener("click", () => {
@@ -2218,7 +2233,7 @@
           renderFestivalSwitchList();
           $("festival-switch-status").textContent = `Готово: ${data.beerCount} пив.`;
         };
-        const msg = `Перемкнути активний фестиваль на "${label}" для УСІХ користувачів?`;
+        const msg = `Перемкнути типовий фестиваль на "${label}"? (тільки для тих, хто не в групі зі своїм)`;
         if (tg && tg.showConfirm) {
           tg.showConfirm(msg, (confirmed) => { if (confirmed) doSwitch(); });
         } else if (confirm(msg)) {

@@ -41,6 +41,7 @@ class _DummyApp:
 async def main() -> None:
     await start_webapp_server(
         _DummyApp(), bot.ALL_BEERS, bot.DATA_DIR, bot.SESSIONS_RAW, dev_mode=True,
+        get_festival_data=bot.get_festival_data, active_festival_key=bot.ACTIVE_FESTIVAL_KEY,
     )
     port = os.environ.get("PORT", 8080)
     print(f"dev_server: listening on :{port} (dev_mode=True - no bot polling, no background loops)")

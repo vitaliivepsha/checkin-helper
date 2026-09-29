@@ -1,15 +1,23 @@
 {
-  "_source": "Registry of selectable festival beer lists for the Mini App's owner-only festival switcher (see bot.py's load_festivals_registry, reload_beer_db, and webapp_server.py's handle_festival_list/handle_festival_switch). Add a new festival by adding an entry here - key is a stable id (used in DATA_DIR/active_festival.json), label is what the switcher UI shows, file is the beer-list JSON path (same {session: [beer, ...]} shape as mbcc_beers.json) relative to the project root.",
+  "_source": "Registry of selectable festival beer lists for the Mini App's owner-only festival switcher (see bot.py's load_festivals_registry, reload_beer_db, and webapp_server.py's handle_festival_list/handle_festival_switch). Add a new festival by adding an entry here - key is a stable id (used in DATA_DIR/active_festival.json), label is what the switcher UI shows, image is an optional tile picture (a file name inside webapp/festivals/, square, shown in the Mini App's switcher), file is the beer-list JSON path (same {session: [beer, ...]} shape as mbcc_beers.json) relative to the project root.",
   "festivals": [
     {
       "key": "mbcc2026",
       "label": "MBCC 2026",
+      "image": "mbcc2026.webp",
       "file": "mbcc_beers.json"
     },
     {
       "key": "test_1928",
       "label": "Тест (1928 пив)",
+      "image": "test_1928.jpg",
       "file": "mbcc_beers_sessions_test.json"
+    },
+    {
+      "key": "wfp2026",
+      "label": "WFP 2026",
+      "image": "wfp2026.webp",
+      "file": "wfp2026_beers.json"
     }
   ]
 }

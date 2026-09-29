@@ -135,6 +135,11 @@ EXTRA_STRINGS = {
         "join_group_private_hint": "Run /join_group inside your festival's group chat, not here.",
         "join_group_success": "✅ Your shared queue is now scoped to \"{title}\" — everyone else here who runs /join_group shares it with you.",
 
+        "cmd_set_festival": "🍻 Bind this group's festival",
+        "set_festival_private_hint": "Run /set_festival inside a group chat, not here.",
+        "set_festival_usage": "Usage: /set_festival <key>\n\nAvailable festivals:\n{options}",
+        "set_festival_success": "✅ This group is now bound to \"{label}\" — everyone here sees that festival's beer list.",
+
         "cmd_checkin": "🍺 Festival check-in",
         "btn_open_checkin_webapp": "🍺 Open Festival Check-in",
         "checkin_webapp_intro": "Search a beer and check it in to Untappd 👇",
@@ -306,6 +311,11 @@ EXTRA_STRINGS = {
         "cmd_join_group": "🎪 Приєднатись до черги цієї групи",
         "join_group_private_hint": "Запусти /join_group у Telegram-групі свого фестивалю, а не тут.",
         "join_group_success": "✅ Твоя спільна черга тепер прив'язана до \"{title}\" — усі, хто теж запустить тут /join_group, ділитимуться нею з тобою.",
+
+        "cmd_set_festival": "🍻 Прив'язати фестиваль до групи",
+        "set_festival_private_hint": "Запусти /set_festival у груповому чаті, а не тут.",
+        "set_festival_usage": "Використання: /set_festival <key>\n\nДоступні фестивалі:\n{options}",
+        "set_festival_success": "✅ Цю групу прив'язано до \"{label}\" — усі тут бачитимуть список пив цього фестивалю.",
 
         "cmd_checkin": "🍺 Фестивальний чекін",
         "btn_open_checkin_webapp": "🍺 Зачекінити пиво",

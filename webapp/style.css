@@ -565,35 +565,48 @@ body.festival-mode-active .festival-banner { display: flex; }
 .festival-switch-warning .icon { flex-shrink: 0; margin-top: 1px; width: 18px; height: 18px; }
 .festival-switch-warning strong { font-weight: 800; }
 
-#festival-switch-list { display: flex; flex-direction: column; gap: 8px; }
-.festival-switch-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 13px 16px; border-radius: 16px; background: var(--secondary-bg);
-  border: 1.5px solid transparent; cursor: pointer; box-shadow: var(--shadow-sm);
-  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+/* Festival switcher as a 3-per-row tile grid: square picture (or a
+   lettered placeholder when webapp/festivals/ has none for that key),
+   label under it, the active one ringed with a check in its corner. */
+#festival-switch-list {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
 }
-.festival-switch-row:active { transform: scale(var(--tap-scale)); }
-.festival-switch-row:not(.festival-switch-row-active):hover { background: var(--surface-2); }
-.festival-switch-row-active {
-  border-color: var(--button); background: var(--accent-soft);
+.festival-tile {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  padding: 0; border: none; background: transparent; color: var(--text);
+  cursor: pointer; text-align: center;
+  transition: transform 0.12s ease;
 }
-.festival-switch-row-title { font-weight: 600; font-size: 15px; min-width: 0; }
-.festival-switch-row-active .festival-switch-row-title { color: var(--accent-ink); font-weight: 700; }
-.festival-switch-row-radio {
-  width: 22px; height: 22px; border-radius: 999px; flex-shrink: 0; box-sizing: border-box;
-  border: 2px solid var(--toggle-off); background: transparent;
+.festival-tile:active { transform: scale(var(--tap-scale)); }
+.festival-tile-art {
+  position: relative; display: block; width: 100%; aspect-ratio: 1 / 1;
+  border-radius: 18px; overflow: hidden; background: var(--secondary-bg);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.festival-tile-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.festival-tile-initials {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 22px; font-weight: 700;
+  color: var(--hint); letter-spacing: 0.02em;
+}
+.festival-tile-check {
+  position: absolute; right: 6px; bottom: 6px;
+  width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  background: var(--button); color: var(--button-text);
+  opacity: 0; transform: scale(0.6);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.festival-switch-row-radio .icon {
-  width: 12px; height: 12px; stroke-width: 3.5; color: var(--button-text);
-  opacity: 0; transform: scale(0.6); transition: opacity 0.15s ease, transform 0.15s ease;
+.festival-tile-check .icon { width: 13px; height: 13px; stroke-width: 3.5; }
+.festival-tile-active .festival-tile-art { box-shadow: inset 0 0 0 2.5px var(--button); }
+.festival-tile-active .festival-tile-check { opacity: 1; transform: scale(1); }
+.festival-tile-label {
+  font-size: 13px; font-weight: 600; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.festival-switch-row-active .festival-switch-row-radio {
-  border-color: var(--button); background: var(--button);
-}
-.festival-switch-row-active .festival-switch-row-radio .icon { opacity: 1; transform: scale(1); }
+.festival-tile-active .festival-tile-label { color: var(--accent-ink); font-weight: 700; }
 .festival-switch-empty {
+  grid-column: 1 / -1;
   text-align: center; color: var(--hint); font-size: 14px;
   padding: 28px 16px; background: var(--secondary-bg); border-radius: 16px;
 }
