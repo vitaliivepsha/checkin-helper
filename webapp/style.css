@@ -667,7 +667,7 @@ input[type="range"] { width: 100%; accent-color: var(--button); }
    (no currently-active ones) collapses to nothing via :empty, same
    "don't reserve dead space" convention as .screen-subtitle above. */
 #special-badges-list:empty { display: none; }
-#special-badges-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+#special-badges-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 12px; }
 .special-badge-card {
   background: var(--secondary-bg); border: 1.5px solid var(--button);
   border-radius: 14px; overflow: hidden;
