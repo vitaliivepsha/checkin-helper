@@ -265,6 +265,19 @@
     "festival-map": "festival-map-bar-btn",
   };
 
+  // Rule for every screen dispatched below that fetches a list/grid: clear
+  // that list's own container (and set a "Завантажую…" status, if it has
+  // one) BEFORE the fetch starts, never only after it resolves - a fetch
+  // function that clears at the END (or not at all) leaves whatever was
+  // last rendered there (a previous visit's data, a different festival's,
+  // a stale search) visible for the whole round-trip, which reads as a
+  // flash of WRONG content rather than a loading state (confirmed live,
+  // on the festival map screen, before this was written). For a screen
+  // that's also on a poll interval (queue, festival-map), do the clear in
+  // THIS function's own dispatch - guarded by "the poll handle is still
+  // null", i.e. a genuinely fresh open - not inside the polled fetch
+  // function itself, which would otherwise flash the list empty on every
+  // routine poll tick while the viewer is just sitting on the screen.
   function showScreen(name) {
     if (document.getElementById("screen-badges")?.classList.contains("active") && name !== "badges") {
       badgesListScrollY = window.scrollY;
@@ -285,6 +298,11 @@
     // floating over whatever screen comes next.
     closeAllRowMenus();
     if (name === "queue") {
+      // Only on a genuinely fresh open (`!queuePollHandle`, since leaving
+      // this screen always clears the handle - see the `else` below) -
+      // NOT on every 5s poll tick, which would otherwise flash the whole
+      // list empty every 5 seconds while just sitting on the screen.
+      if (!queuePollHandle) $("queue-list").innerHTML = "";
       fetchQueue();
       if (!queuePollHandle) queuePollHandle = setInterval(fetchQueue, 5000);
     } else if (queuePollHandle) {
@@ -349,6 +367,13 @@
       fetchCommandFlags();
     }
     if (name === "festival-map") {
+      // Only on a genuinely fresh open (see the queue screen's identical
+      // note just above) - otherwise whatever was left in #festival-map-
+      // zones from the LAST time this screen was open (a different
+      // festival's layout, or just stale positions) stays visible for
+      // the whole fetch round-trip - confirmed live as a visible flash
+      // of wrong content on tapping into this screen.
+      if (!mapPollHandle) $("festival-map-zones").innerHTML = "";
       fetchFestivalMap();
       // Same 5s cadence as the queue - the precedent for "live shared state."
       if (!mapPollHandle) mapPollHandle = setInterval(fetchFestivalMap, 5000);
@@ -652,6 +677,15 @@
   // Wishlist in search results - hence this uses 📝 everywhere instead.
 
   async function fetchWishlist() {
+    // Cleared BEFORE the await, not after - otherwise whatever was in
+    // #wishlist-list from a PREVIOUS visit (or a different account's
+    // stale rows, in dev/preview testing) stays visible for the whole
+    // round-trip and only gets replaced once the fetch resolves, which
+    // reads as a flash of wrong data rather than a loading state. Same
+    // "clear first, fetch after" rule applies to every list-rendering
+    // fetch* function - see showScreen's own note for the polled ones.
+    $("wishlist-list").innerHTML = "";
+    $("wishlist-status").textContent = "Завантажую…";
     const { ok, data } = await apiPost("/api/checkin/wishlist/list", {});
     state.wishlist = ok ? (data.items || []) : [];
     renderWishlistList();
@@ -1327,6 +1361,10 @@
   async function fetchSessionBeers() {
     if (!state.currentSession) return;
     const query = $("session-search-input").value.trim();
+    // Cleared BEFORE the await (see fetchWishlist's own note) - otherwise
+    // the PREVIOUS session's (or a stale search's) rows stay visible for
+    // the whole round-trip instead of a loading state.
+    $("session-beers-list").innerHTML = "";
     $("session-beers-status").textContent = "Завантажую…";
     const { ok, data } = await apiPost("/api/checkin/festival/session", {
       session: state.currentSession, query,
@@ -1338,7 +1376,6 @@
     const beers = data.beers || [];
     $("session-beers-status").textContent = beers.length ? "" : "Нічого не знайдено.";
     const listEl = $("session-beers-list");
-    listEl.innerHTML = "";
     beers.forEach((b) => {
       const row = document.createElement("div");
       row.className = "result-row" + (b.hadIt ? " had-it" : "");
@@ -1385,6 +1422,9 @@
 
   async function fetchBreweryBeers() {
     if (!currentBreweryBeers) return;
+    // Cleared BEFORE the await (see fetchWishlist's own note) - otherwise
+    // the PREVIOUS brewery's rows stay visible for the whole round-trip.
+    $("brewery-beers-list").innerHTML = "";
     $("brewery-beers-status").textContent = "Завантажую…";
     const { ok, data } = await apiPost("/api/checkin/festival/brewery", { brewery: currentBreweryBeers });
     if (!ok) {
