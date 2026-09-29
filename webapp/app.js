@@ -2276,11 +2276,12 @@
     }
     // "Автоматично" is always first - represents "no personal override",
     // falling back to the user's group binding (if any) or the shared
-    // default. Its own art is a compass icon instead of a picture/initials.
+    // default. Having no festival of its own, its art is the app's own mark
+    // (the same <symbol> the search screen's idle hero uses).
     const autoActive = !state.myPersonalKey;
     const autoTile = `<button type="button" class="festival-tile${autoActive ? " festival-tile-active" : ""}"
                     data-festival-key=""${autoActive ? ' aria-current="true"' : ""}>
-      <span class="festival-tile-art"><span class="festival-tile-auto-icon"><svg class="icon"><use href="#icon-compass"/></svg></span><span class="festival-tile-check"><svg class="icon"><use href="#icon-check"/></svg></span></span>
+      <span class="festival-tile-art"><svg class="festival-tile-auto-mark" viewBox="0 0 512 512"><use href="#app-mark"/></svg><span class="festival-tile-check"><svg class="icon"><use href="#icon-check"/></svg></span></span>
       <span class="festival-tile-label">Автоматично</span>
     </button>`;
     const festivalTiles = state.myFestivals.map((f) => {

@@ -43,6 +43,35 @@
   <symbol id="icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
   <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
   <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <!-- The app's own mark (the purple glass + check pin). Defined once here
+       and <use>d by the search screen's idle hero AND the "Автоматично"
+       tile on "Мій фестиваль" - it carries its own fills, so it is NOT one
+       of the currentColor .icon shapes above. -->
+  <symbol id="app-mark" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="112" fill="#7c5cfc"/>
+    <path d="M 140 450 H 372 V 440 C 340 420 300 415 272 415 V 330 H 240 V 415 C 212 415 172 420 140 440 Z" fill="#ffffff"/>
+    <circle cx="256" cy="375" r="28" fill="#ffffff"/>
+    <path d="M 120 160 C 120 320 186 345 256 345 C 326 345 392 320 392 160 Z" fill="#ffffff"/>
+    <path d="M 140 210 C 148 305 200 325 256 325 C 312 325 364 305 372 210 Z" fill="#462b9c"/>
+    <path d="M 154 220 C 164 275 186 305 216 315" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" opacity="0.7"/>
+    <path d="M 358 220 C 354 245 342 270 320 295" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.3"/>
+    <circle cx="210" cy="285" r="9" fill="#ffffff" opacity="0.6"/>
+    <circle cx="260" cy="255" r="14" fill="#ffffff" opacity="0.5"/>
+    <circle cx="295" cy="295" r="7" fill="#ffffff" opacity="0.6"/>
+    <circle cx="230" cy="230" r="8" fill="#ffffff" opacity="0.7"/>
+    <circle cx="256" cy="130" r="55" fill="#ffffff"/>
+    <circle cx="195" cy="145" r="45" fill="#ffffff"/>
+    <circle cx="317" cy="145" r="45" fill="#ffffff"/>
+    <circle cx="145" cy="170" r="35" fill="#ffffff"/>
+    <circle cx="367" cy="170" r="35" fill="#ffffff"/>
+    <path d="M 160 170 Q 170 225 190 215 Q 210 190 220 170 Z" fill="#ffffff"/>
+    <path d="M 352 170 Q 342 225 322 215 Q 302 190 292 170 Z" fill="#ffffff"/>
+    <path d="M 350 435 C 350 435 285 355 285 310 A 65 65 0 1 1 415 310 C 415 355 350 435 350 435 Z" fill="#ffffff" stroke="#6143cc" stroke-width="10" stroke-linejoin="round"/>
+    <circle cx="350" cy="310" r="40" fill="#7c5cfc"/>
+    <path d="M 335 313 L 346 324 L 368 299" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-user-check" viewBox="0 0 24 24"><circle cx="10" cy="7.5" r="4"/><path d="M3 21v-1a6 6 0 0 1 6-6h2.5"/><path d="m15 18 2.2 2.2L22 15.5"/></symbol>
+  <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.2 9h17.6M3.2 15h17.6"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18Z"/></symbol>
   <symbol id="icon-beer" viewBox="0 0 24 24"><path d="M5 7h10v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM15 10h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M8 11v6M12 11v6M5 7a2.5 2.5 0 0 1 2.2-3.7 3 3 0 0 1 5.6 0A2.5 2.5 0 0 1 15 7"/></symbol>
   <symbol id="icon-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
   <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
@@ -104,27 +133,7 @@
        else already themes off - see style.css. -->
   <div class="home-hero" id="home-hero">
     <svg class="home-hero-icon home-hero-icon-default" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-      <rect width="512" height="512" rx="112" fill="#7c5cfc"/>
-      <path d="M 140 450 H 372 V 440 C 340 420 300 415 272 415 V 330 H 240 V 415 C 212 415 172 420 140 440 Z" fill="#ffffff"/>
-      <circle cx="256" cy="375" r="28" fill="#ffffff"/>
-      <path d="M 120 160 C 120 320 186 345 256 345 C 326 345 392 320 392 160 Z" fill="#ffffff"/>
-      <path d="M 140 210 C 148 305 200 325 256 325 C 312 325 364 305 372 210 Z" fill="#462b9c"/>
-      <path d="M 154 220 C 164 275 186 305 216 315" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" opacity="0.7"/>
-      <path d="M 358 220 C 354 245 342 270 320 295" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.3"/>
-      <circle cx="210" cy="285" r="9" fill="#ffffff" opacity="0.6"/>
-      <circle cx="260" cy="255" r="14" fill="#ffffff" opacity="0.5"/>
-      <circle cx="295" cy="295" r="7" fill="#ffffff" opacity="0.6"/>
-      <circle cx="230" cy="230" r="8" fill="#ffffff" opacity="0.7"/>
-      <circle cx="256" cy="130" r="55" fill="#ffffff"/>
-      <circle cx="195" cy="145" r="45" fill="#ffffff"/>
-      <circle cx="317" cy="145" r="45" fill="#ffffff"/>
-      <circle cx="145" cy="170" r="35" fill="#ffffff"/>
-      <circle cx="367" cy="170" r="35" fill="#ffffff"/>
-      <path d="M 160 170 Q 170 225 190 215 Q 210 190 220 170 Z" fill="#ffffff"/>
-      <path d="M 352 170 Q 342 225 322 215 Q 302 190 292 170 Z" fill="#ffffff"/>
-      <path d="M 350 435 C 350 435 285 355 285 310 A 65 65 0 1 1 415 310 C 415 355 350 435 350 435 Z" fill="#ffffff" stroke="#6143cc" stroke-width="10" stroke-linejoin="round"/>
-      <circle cx="350" cy="310" r="40" fill="#7c5cfc"/>
-      <path d="M 335 313 L 346 324 L 368 299" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+      <use href="#app-mark"/>
     </svg>
     <svg class="home-hero-icon home-hero-icon-festival" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
       <rect width="512" height="512" rx="112" fill="#f39c12"/>
@@ -428,7 +437,7 @@
   <div class="settings-row settings-row-clickable" id="settings-row-myfestival">
     <div class="settings-row-label">
       <div class="settings-row-title">
-        <svg class="icon"><use href="#icon-compass"/></svg>
+        <svg class="icon"><use href="#icon-user-check"/></svg>
         Мій фестиваль
       </div>
       <div class="settings-row-hint">Твій особистий вибір — не залежить від групи</div>
@@ -438,7 +447,7 @@
   <div class="settings-row settings-row-clickable" id="settings-row-festivalswitch">
     <div class="settings-row-label">
       <div class="settings-row-title">
-        <svg class="icon"><use href="#icon-tent"/></svg>
+        <svg class="icon"><use href="#icon-globe"/></svg>
         Активний фестиваль
       </div>
       <div class="settings-row-hint">Який список пив бачать усі користувачі</div>
@@ -459,7 +468,7 @@
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon"><use href="#icon-refresh"/></svg>
-        Забути тестові чекіни в черзі
+        Забути чекіни в черзі
       </div>
       <div class="settings-row-hint">Пива, зачекінені через чергу до фестивалю, більше не рахуватимуться як "вже випите на фестивалі" - у чергу вони не повернуться</div>
     </div>

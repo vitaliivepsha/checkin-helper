@@ -530,6 +530,7 @@ body.festival-mode-active .festival-banner { display: flex; }
 #screen-settings #settings-row-festivalwatch .settings-row-title .icon { background: #d4467a; }
 #screen-settings #settings-row-autotoast .settings-row-title .icon { background: #7c5cfc; }
 #screen-settings #settings-row-festivalmap .settings-row-title .icon { background: #25a86b; }
+#screen-settings #settings-row-myfestival .settings-row-title .icon { background: #5b5bd6; }
 #screen-settings #settings-row-festivalswitch .settings-row-title .icon { background: #c2410c; }
 #screen-settings #settings-row-queue-reset .settings-row-title .icon {
   background: color-mix(in srgb, #e5484d 16%, transparent); color: #e5484d;
@@ -629,11 +630,14 @@ body.festival-mode-active .festival-banner { display: flex; }
 #my-festival-list {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
 }
-.festival-tile-auto-icon {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  color: var(--hint);
+/* "Автоматично" has no festival picture of its own, so it wears the app's
+   own mark (#app-mark in index.html). Scaled slightly past the edges: the
+   mark's own rounded corners are rounder than the tile's, and this hides
+   the sliver of tile background they would otherwise leave in each corner. */
+.festival-tile-auto-mark {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transform: scale(1.06);
 }
-.festival-tile-auto-icon .icon { width: 26px; height: 26px; }
 #my-festival-status { text-align: center; margin-top: 12px; }
 
 .event-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
