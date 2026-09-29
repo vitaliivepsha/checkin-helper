@@ -3275,18 +3275,23 @@ def status_commands_for(lng: str):
 
 
 async def post_init(app):
-    # Follow-up to /restart (see restart_cmd) - this fresh NSSM-relaunched
-    # process has no memory of that command, only the file it left behind
-    # under DATA_DIR, so this is the only place that can turn
+    # Follow-up to /restart (see restart_cmd) - this fresh NSSM/systemd-
+    # relaunched process has no memory of that command, only the file it
+    # left behind under DATA_DIR, so this is the only place that can turn
     # "Перезапускаю…" into a confirmed "✅ Перезапущено" instead of leaving
-    # it looking hung.
+    # it looking hung. Also doubles for webapp_server.py's GitHub-webhook
+    # auto-deploy handler (handle_deploy_webhook), which writes the same
+    # file with reason="deploy" after a `git pull` + stop_running() -
+    # same file, same restart mechanism, just a different confirmation text
+    # so the owner can tell a deploy happened apart from a manual /restart.
     restart_notify_path = data_path("restart_notify.json")
     if os.path.exists(restart_notify_path):
         try:
             with open(restart_notify_path, encoding="utf-8") as f:
                 info = json.load(f)
             os.remove(restart_notify_path)
-            await app.bot.send_message(chat_id=info["chatId"], text=t(info.get("lang") or "en", "restart_done"))
+            key = "auto_deploy_done" if info.get("reason") == "deploy" else "restart_done"
+            await app.bot.send_message(chat_id=info["chatId"], text=t(info.get("lang") or "en", key))
         except Exception:
             logger.warning("Could not send restart-done notification", exc_info=True)
 

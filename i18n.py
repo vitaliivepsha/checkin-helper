@@ -200,6 +200,7 @@ EXTRA_STRINGS = {
         "cmd_restart": "🔄 Restart bot",
         "restart_confirm": "Restarting…",
         "restart_done": "✅ Restarted and back online.",
+        "auto_deploy_done": "🚀 Auto-deployed new code from GitHub and restarted.",
 
         "cmd_maintenance": "🛠 Maintenance mode",
         "maintenance_status_on": "🛠 Maintenance mode is ON. {message}",
@@ -366,6 +367,7 @@ EXTRA_STRINGS = {
         "cmd_restart": "🔄 Перезапустити бота",
         "restart_confirm": "Перезапускаю…",
         "restart_done": "✅ Перезапущено, знову на зв'язку.",
+        "auto_deploy_done": "🚀 Автоматично підтягнув новий код з GitHub і перезапустився.",
 
         "cmd_maintenance": "🛠 Технічні роботи",
         "maintenance_status_on": "🛠 Режим техробіт УВІМКНЕНО. {message}",

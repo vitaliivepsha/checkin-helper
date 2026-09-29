@@ -320,6 +320,14 @@ _ptb_bot = None
 # it at 64 bytes and a username could easily push that over.
 _ptb_app = None
 
+# Set once in start_webapp_server (same value as bot.py's DATA_DIR) - used
+# by handle_deploy_webhook to run `git pull` in the right directory and to
+# write restart_notify.json via the exact same path bot.py's own data_path()
+# would produce.
+_data_dir: str | None = None
+
+DEPLOY_WEBHOOK_SECRET = os.environ.get("DEPLOY_WEBHOOK_SECRET", "")
+
 # bot.py's load_db() dedupes ALL_BEERS by beer id, keeping only the *first*
 # session it saw a beer under - a beer poured across multiple sessions (e.g.
 # 4 festival days) silently loses the rest. Rebuilt from SESSIONS_RAW (the
@@ -1635,6 +1643,69 @@ async def handle_lens_lookup(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "results": results})
 
 
+async def handle_deploy_webhook(request: web.Request) -> web.Response:
+    """GitHub push webhook -> `git pull` + restart, so a code change reaches
+    the always-on VM without a manual SSH session every time (unlike
+    special_badges.json's own hourly pull loop, this is push-triggered and
+    covers the WHOLE repo - .py files, webapp/* static assets, everything).
+
+    Verifies GitHub's HMAC-SHA256 body signature (X-Hub-Signature-256)
+    against DEPLOY_WEBHOOK_SECRET before doing anything - this endpoint runs
+    `git pull` in a real directory and can restart the whole process, so an
+    unauthenticated version of it would be a remote-code-deploy hole. Only
+    reacts to a push actually landing on refs/heads/master; every other
+    ref (a branch, a tag) is acknowledged with 200 (so GitHub doesn't retry
+    it as a delivery failure) but does nothing.
+
+    Restart reuses bot.py's own restart_notify.json + stop_running()
+    mechanism (see post_init) - same clean handoff to systemd's
+    `Restart=always` that /restart already relies on, just with reason:
+    "deploy" so the owner's notification text says a deploy happened
+    instead of a manual restart."""
+    if not DEPLOY_WEBHOOK_SECRET:
+        return _json_error("webhook_not_configured", 501)
+
+    raw_body = await request.read()
+    signature = request.headers.get("X-Hub-Signature-256", "")
+    expected = "sha256=" + hmac.new(DEPLOY_WEBHOOK_SECRET.encode(), raw_body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature, expected):
+        return _json_error("bad_signature", 401)
+
+    try:
+        payload = json.loads(raw_body)
+    except (json.JSONDecodeError, ValueError):
+        return _json_error("invalid_json")
+    if payload.get("ref") != "refs/heads/master":
+        return web.json_response({"ok": True, "deployed": False, "reason": "not master"})
+
+    proc = await asyncio.create_subprocess_exec(
+        "git", "pull", "--ff-only", cwd=_data_dir,
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+    output = stdout.decode(errors="replace") + stderr.decode(errors="replace")
+    if proc.returncode != 0:
+        logger.error("deploy webhook: git pull failed: %s", output)
+        return web.json_response({"ok": False, "error": "git_pull_failed", "output": output}, status=500)
+
+    if "Already up to date" in output:
+        return web.json_response({"ok": True, "deployed": False, "reason": "no changes"})
+
+    logger.info("deploy webhook: pulled new code, restarting: %s", output.strip())
+    try:
+        with open(os.path.join(_data_dir, "restart_notify.json"), "w", encoding="utf-8") as f:
+            json.dump({"chatId": int(AUTO_TOAST_OWNER_ID), "lang": "uk", "reason": "deploy"}, f)
+    except OSError:
+        logger.warning("deploy webhook: could not write restart_notify.json", exc_info=True)
+    response = web.json_response({"ok": True, "deployed": True})
+    if _ptb_app is not None:
+        # Respond first, then stop - GitHub's webhook delivery has its own
+        # timeout and shouldn't be left hanging on the process tearing
+        # itself down.
+        asyncio.get_running_loop().call_later(1, _ptb_app.stop_running)
+    return response
+
+
 async def handle_queue_list(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
@@ -2312,6 +2383,7 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/special_badges/dismiss", handle_special_badges_dismiss)
     app.router.add_post("/api/checkin/style_info", handle_style_info)
     app.router.add_post("/api/lens/lookup", handle_lens_lookup)
+    app.router.add_post("/api/deploy/webhook", handle_deploy_webhook)
     return app
 
 
@@ -2335,9 +2407,10 @@ async def start_webapp_server(
     dict) - used to recover every session a beer appears in, since
     ALL_BEERS itself only keeps the first.
     """
-    global _festival_beers, _beer_sessions, _session_beer_ids, _session_order, _session_colors, _ptb_bot, _ptb_app
+    global _festival_beers, _beer_sessions, _session_beer_ids, _session_order, _session_colors, _ptb_bot, _ptb_app, _data_dir
     _ptb_bot = ptb_app.bot
     _ptb_app = ptb_app
+    _data_dir = os.path.abspath(data_dir or ".")
     _festival_beers = festival_beers or []
     _beer_sessions = {}
     _session_beer_ids = {}
