@@ -918,7 +918,8 @@
     if (!specialBadgesRaw.length) { el.innerHTML = ""; return; }
     el.innerHTML = specialBadgesRaw.map((b) => {
       const expanded = specialBadgesExpanded.has(b.badge);
-      const daysText = b.daysRemaining <= 0
+      const urgent = b.daysRemaining <= 0;
+      const daysText = urgent
         ? "останній день!"
         : `ще ${b.daysRemaining} ${pluralUk(b.daysRemaining, "день", "дні", "днів")}`;
       const iconHtml = b.icon
@@ -926,18 +927,19 @@
         : `<svg class="icon special-badge-icon-fallback"><use href="#icon-sparkle"/></svg>`;
       let detailsHtml = "";
       if (expanded) {
-        const criteria = b.kind === "style"
-          ? `Стилі: ${b.styles.map(escapeHtml).join(", ")}`
-          : `Країни: ${(b.countries || []).map(escapeHtml).join(", ")}`;
+        const criteriaLabel = b.kind === "style" ? "Стилі" : "Країни";
+        const criteriaValue = b.kind === "style"
+          ? b.styles.map(escapeHtml).join(", ")
+          : (b.countries || []).map(escapeHtml).join(", ");
         const chainNote = b.venueChain
-          ? `<div class="special-badge-chain">Лише в мережі "${escapeHtml(b.venueChain)}"</div>`
+          ? `<div class="special-badge-chain"><svg class="icon"><use href="#icon-pin"/></svg>Лише в мережі "${escapeHtml(b.venueChain)}"</div>`
           : "";
         const examples = b.matchingKnownBeers.length
-          ? `<div class="special-badge-examples">Наприклад: ${b.matchingKnownBeers.slice(0, 3).map((m) => escapeHtml(m.name)).join(", ")}</div>`
+          ? `<div class="special-badge-examples"><svg class="icon"><use href="#icon-sparkle"/></svg>Наприклад: ${b.matchingKnownBeers.slice(0, 3).map((m) => escapeHtml(m.name)).join(", ")}</div>`
           : "";
         detailsHtml = `
           <div class="special-badge-details">
-            <div class="special-badge-criteria">${criteria}</div>
+            <div class="special-badge-criteria"><span class="special-badge-criteria-label">${criteriaLabel}:</span> ${criteriaValue}</div>
             ${chainNote}
             ${examples}
             <div class="special-badge-footer">
@@ -952,7 +954,7 @@
             ${iconHtml}
             <div class="special-badge-header-text">
               <div class="special-badge-title">${escapeHtml(b.badge)}</div>
-              <div class="special-badge-days">${daysText}</div>
+              <div class="special-badge-days${urgent ? " urgent" : ""}">${daysText}</div>
             </div>
             <svg class="icon special-badge-chevron ${expanded ? "expanded" : ""}"><use href="#icon-chevron-right"/></svg>
           </div>
@@ -2188,13 +2190,16 @@
   }
 
   function renderFestivalSwitchList() {
-    $("festival-switch-list").innerHTML = state.festivals.map((f) => {
+    const el = $("festival-switch-list");
+    if (!state.festivals.length) {
+      el.innerHTML = `<div class="festival-switch-empty">Немає доступних фестивалів.</div>`;
+      return;
+    }
+    el.innerHTML = state.festivals.map((f) => {
       const active = f.key === state.activeFestivalKey;
-      return `<div class="settings-row settings-row-clickable" data-festival-key="${escapeHtml(f.key)}">
-        <div class="settings-row-label">
-          <div class="settings-row-title">${escapeHtml(f.label)}</div>
-        </div>
-        ${active ? '<svg class="icon"><use href="#icon-check"/></svg>' : ""}
+      return `<div class="festival-switch-row${active ? " festival-switch-row-active" : ""}" data-festival-key="${escapeHtml(f.key)}">
+        <div class="festival-switch-row-radio"><svg class="icon"><use href="#icon-check"/></svg></div>
+        <div class="festival-switch-row-title">${escapeHtml(f.label)}</div>
       </div>`;
     }).join("");
     $("festival-switch-list").querySelectorAll("[data-festival-key]").forEach((row) => {

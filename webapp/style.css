@@ -530,6 +530,7 @@ body.festival-mode-active .festival-banner { display: flex; }
 #screen-settings #settings-row-festivalwatch .settings-row-title .icon { background: #d4467a; }
 #screen-settings #settings-row-autotoast .settings-row-title .icon { background: #7c5cfc; }
 #screen-settings #settings-row-festivalmap .settings-row-title .icon { background: #25a86b; }
+#screen-settings #settings-row-festivalswitch .settings-row-title .icon { background: #c2410c; }
 #screen-settings #settings-row-queue-reset .settings-row-title .icon {
   background: color-mix(in srgb, #e5484d 16%, transparent); color: #e5484d;
 }
@@ -545,6 +546,58 @@ body.festival-mode-active .festival-banner { display: flex; }
 .settings-row-clickable { cursor: pointer; transition: transform 0.1s ease; }
 .settings-row-clickable:active { transform: scale(0.99); }
 .settings-row-arrow { color: var(--hint); flex-shrink: 0; }
+
+/* Owner-only "switch the active festival for everyone" screen - a plain
+   settings-row copy-paste didn't fit since this is a SELECTION list (one
+   active choice out of several), not a set of independent rows, so it gets
+   its own radio-style look: a filled/checked circle on the active entry,
+   an empty ring (still visible, signalling "this is selectable") on the
+   rest. The warning banner above it reuses the same red as the destructive
+   queue-reset row elsewhere in settings - this isn't destructive, but it's
+   the one screen that edits shared state for every user at once, and that
+   deserves the same "read me before tapping" visual weight. */
+.festival-switch-warning {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-top: 10px; margin-bottom: 14px; padding: 12px 14px;
+  border-radius: 14px; background: color-mix(in srgb, #e5484d 12%, transparent);
+  color: #e5484d; font-size: 13px; font-weight: 600; line-height: 1.4;
+}
+.festival-switch-warning .icon { flex-shrink: 0; margin-top: 1px; width: 18px; height: 18px; }
+.festival-switch-warning strong { font-weight: 800; }
+
+#festival-switch-list { display: flex; flex-direction: column; gap: 8px; }
+.festival-switch-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; border-radius: 16px; background: var(--secondary-bg);
+  border: 1.5px solid transparent; cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.festival-switch-row:active { transform: scale(var(--tap-scale)); }
+.festival-switch-row:not(.festival-switch-row-active):hover { background: var(--surface-2); }
+.festival-switch-row-active {
+  border-color: var(--button); background: var(--accent-soft);
+}
+.festival-switch-row-title { font-weight: 600; font-size: 15px; min-width: 0; }
+.festival-switch-row-active .festival-switch-row-title { color: var(--accent-ink); font-weight: 700; }
+.festival-switch-row-radio {
+  width: 22px; height: 22px; border-radius: 999px; flex-shrink: 0; box-sizing: border-box;
+  border: 2px solid var(--toggle-off); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.festival-switch-row-radio .icon {
+  width: 12px; height: 12px; stroke-width: 3.5; color: var(--button-text);
+  opacity: 0; transform: scale(0.6); transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.festival-switch-row-active .festival-switch-row-radio {
+  border-color: var(--button); background: var(--button);
+}
+.festival-switch-row-active .festival-switch-row-radio .icon { opacity: 1; transform: scale(1); }
+.festival-switch-empty {
+  text-align: center; color: var(--hint); font-size: 14px;
+  padding: 28px 16px; background: var(--secondary-bg); border-radius: 16px;
+}
+#festival-switch-status { text-align: center; margin-top: 12px; }
 
 .event-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .event-row-text { font-size: 14px; }
@@ -667,56 +720,70 @@ input[type="range"] { width: 100%; accent-color: var(--button); }
    (no currently-active ones) collapses to nothing via :empty, same
    "don't reserve dead space" convention as .screen-subtitle above. */
 #special-badges-list:empty { display: none; }
-#special-badges-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 12px; }
+#special-badges-list { display: flex; flex-direction: column; gap: 10px; margin: 10px 0 12px; }
 .special-badge-card {
   background: var(--secondary-bg); border: 1.5px solid var(--button);
-  border-radius: 14px; overflow: hidden;
+  border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm);
 }
 /* Collapsed by default (see specialBadgesExpanded in app.js) - a full
    style list can run to 30+ names (Sour Beer Day), which swamped the
    screen before this existed. The header row alone is always visible and
    IS the tap target to expand/collapse. */
 .special-badge-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; cursor: pointer;
 }
 .special-badge-header:active { background: var(--surface-2); }
 .special-badge-icon {
-  width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
+  width: 42px; height: 42px; border-radius: 10px; object-fit: cover; flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
 .special-badge-icon-fallback {
-  width: 36px; height: 36px; padding: 8px; box-sizing: border-box;
-  border-radius: 8px; background: var(--surface-2); color: var(--button); flex-shrink: 0;
+  width: 42px; height: 42px; padding: 9px; box-sizing: border-box;
+  border-radius: 10px; background: var(--accent-soft); color: var(--button); flex-shrink: 0;
 }
-.special-badge-header-text { flex: 1; min-width: 0; }
+.special-badge-header-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .special-badge-title {
-  font-weight: 700; font-size: 14px;
+  font-weight: 700; font-size: 15px; line-height: 1.2;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.special-badge-days { font-size: 12px; color: var(--button); font-weight: 600; }
+.special-badge-days {
+  display: inline-flex; align-self: flex-start; align-items: center;
+  font-size: 11px; font-weight: 700; color: var(--button); background: var(--accent-soft);
+  padding: 2px 9px; border-radius: 999px; letter-spacing: 0.01em;
+}
+.special-badge-days.urgent { color: #e5484d; background: color-mix(in srgb, #e5484d 14%, transparent); }
 .special-badge-chevron {
   width: 18px; height: 18px; color: var(--hint); flex-shrink: 0;
-  transform: rotate(90deg); transition: transform 0.15s ease;
+  transform: rotate(90deg); transition: transform 0.2s cubic-bezier(.4,0,.2,1);
 }
 .special-badge-chevron.expanded { transform: rotate(-90deg); }
-.special-badge-details { padding: 0 14px 12px; }
-.special-badge-criteria { font-size: 13px; color: var(--text); }
+.special-badge-details {
+  padding: 12px 14px 14px; margin: 0 14px; border-top: 1px solid var(--line);
+}
+.special-badge-criteria { font-size: 13px; color: var(--text); line-height: 1.5; }
+.special-badge-criteria-label { font-weight: 700; }
 .special-badge-chain, .special-badge-examples {
-  font-size: 12px; color: var(--hint); margin-top: 2px;
+  display: flex; align-items: flex-start; gap: 6px;
+  font-size: 12px; color: var(--hint); margin-top: 6px; line-height: 1.4;
+}
+.special-badge-chain .icon, .special-badge-examples .icon {
+  width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px;
 }
 .special-badge-footer {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: 8px; font-size: 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 12px; font-size: 12px;
 }
 .special-badge-link {
-  display: inline-flex; align-items: center; gap: 3px;
-  color: var(--hint); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--hint); text-decoration: none; font-weight: 600;
 }
 .special-badge-link .icon { width: 12px; height: 12px; }
 .special-badge-dismiss-btn {
-  border: none; background: var(--surface-2); color: var(--text);
-  border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600;
-  cursor: pointer;
+  border: none; background: var(--button); color: var(--button-text);
+  border-radius: 999px; padding: 8px 16px; font-size: 12px; font-weight: 700;
+  cursor: pointer; flex-shrink: 0; box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease;
 }
 .special-badge-dismiss-btn:active { transform: scale(var(--tap-scale)); }
 

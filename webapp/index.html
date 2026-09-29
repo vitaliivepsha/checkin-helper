@@ -47,6 +47,7 @@
   <symbol id="icon-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
   <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
   <symbol id="icon-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="icon-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0ZM12 9v4M12 17h.01"/></symbol>
 </svg>
 
 <!-- Global maintenance splash (app.js checks /api/checkin/maintenance/get
@@ -459,7 +460,10 @@
 <div id="screen-festival-switch" class="screen">
   <button class="back-btn" data-back="settings">Назад</button>
   <h2>Активний фестиваль</h2>
-  <div class="screen-subtitle">Змінює список пив для УСІХ користувачів одразу, не лише для тебе</div>
+  <div class="festival-switch-warning">
+    <svg class="icon"><use href="#icon-alert-triangle"/></svg>
+    <span>Змінює список пив для <strong>УСІХ користувачів</strong> одразу, не лише для тебе</span>
+  </div>
   <div id="festival-switch-list"></div>
   <div id="festival-switch-status" class="hint"></div>
 </div>
