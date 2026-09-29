@@ -689,13 +689,25 @@ async def _annotate_queue_status(beers: list[dict], user_id: int, group_id: int 
 
 
 def _fuzzy_match(query: str, keys: list[str], limit: int, score_cutoff: int = 60):
-    """rapidfuzz process.extract with case-insensitive matching."""
+    """rapidfuzz process.extract with case-insensitive matching, with one
+    correction on top: a key that literally CONTAINS `query` as a
+    substring is always ranked ahead of one that doesn't, regardless of
+    fuzzy score - proven live necessary: WRatio blends several
+    sub-scorers and can score a short query against a completely
+    unrelated key (e.g. "garag" against "PINTA Bawarka", scoring 60) at
+    or above a key that's an obvious literal substring match ("Garage
+    Project ... ", also 60) - a tie an unrelated result has no business
+    winning. Substring hits keep their own fuzzy-score order among
+    themselves (a tighter substring match still outranks a looser one),
+    non-substring hits keep their normal fuzzy order after all of them."""
     if not keys:
         return []
-    return process.extract(
+    hits = process.extract(
         query, keys, scorer=fuzz.WRatio, limit=limit,
         score_cutoff=score_cutoff, processor=lambda s: s.lower(),
     )
+    query_lower = query.lower()
+    return sorted(hits, key=lambda h: (query_lower not in h[0].lower(), -h[1]))
 
 
 def _int_beer_id(b: dict) -> int | None:
@@ -2501,6 +2513,7 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/festival/my/set", handle_my_festival_set)
     app.router.add_post("/api/checkin/command_flags/get", handle_command_flags_get)
     app.router.add_post("/api/checkin/command_flags/set", handle_command_flags_set)
+    app.router.add_post("/api/checkin/command_flags/reorder", handle_command_flags_reorder)
     return app
 
 
@@ -2812,9 +2825,10 @@ async def handle_command_flags_get(request: web.Request) -> web.Response:
         return web.json_response({"available": False, "commands": [], "photoRecognition": True})
     registry = _get_toggleable_commands_fn()
     flags = await feature_flags.get_all([cmd for cmd, _, _ in registry])
+    by_command = {cmd: (label, desc) for cmd, label, desc in registry}
     commands = [
-        {"command": cmd, "label": label, "description": desc, "enabled": flags["commands"].get(cmd, True)}
-        for cmd, label, desc in registry
+        {"command": cmd, "label": by_command[cmd][0], "description": by_command[cmd][1], "enabled": flags["commands"].get(cmd, True)}
+        for cmd in flags["order"]
     ]
     return web.json_response({
         "available": True,
@@ -2861,6 +2875,38 @@ async def handle_command_flags_set(request: web.Request) -> web.Response:
     if _refresh_command_menus_fn is not None:
         await _refresh_command_menus_fn(_ptb_app)
     return web.json_response({"ok": True, "command": command, "enabled": enabled})
+
+
+async def handle_command_flags_reorder(request: web.Request) -> web.Response:
+    """Owner-only: persists a custom display order for the "Керування
+    функціями" screen's command list (drag-to-reorder), applied to both
+    that screen's own row order AND the real Telegram command menu (see
+    feature_flags.py's set_order, bot.py's _apply_order) - refreshed
+    immediately via `_refresh_command_menus_fn`, same as
+    handle_command_flags_set. `order` doesn't need to list every
+    toggleable command - get_all() appends any missing one at the end
+    next time it's read, so a client can send just what it has without
+    needing to know the full registry."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    if not _is_auto_toast_owner(tg_user.get("id")):
+        return _json_error("forbidden", 403)
+    if _get_toggleable_commands_fn is None:
+        return _json_error("not_available_in_dev_mode", 501)
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, ValueError):
+        return _json_error("invalid_json")
+    order = body.get("order")
+    valid_commands = {cmd for cmd, _, _ in _get_toggleable_commands_fn()}
+    if not isinstance(order, list) or not order or not all(isinstance(c, str) and c in valid_commands for c in order):
+        return _json_error("invalid_order")
+    await feature_flags.set_order(order)
+    if _refresh_command_menus_fn is not None:
+        await _refresh_command_menus_fn(_ptb_app)
+    return web.json_response({"ok": True, "order": order})
 
 
 # How old a get_untappd_api_usage reading has to be before _quota_allows

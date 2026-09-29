@@ -19,6 +19,11 @@ status_commands_for) - a belt-and-suspenders pairing with the handler-side
 check, same "not shown AND not just cosmetic" pattern as every owner-only
 gate elsewhere in this project.
 
+Also stores a custom display ORDER for the same command list (drag-to-
+reorder in the Mini App screen - see set_order, and get_all's own "order"
+field), applied to both that screen's own row order and the real
+Telegram command menu (see bot.py's _apply_order).
+
 Same shape as maintenance_mode.py/festival_mode.py: module-level `_path`,
 `asyncio.Lock`, `init(data_dir)`, atomic tmp-file + os.replace() writes,
 reads also async+locked for the same consistency-under-concurrent-write
@@ -29,11 +34,13 @@ import asyncio
 import json
 import os
 
-# Not a real command name (Telegram commands can't contain double
-# underscores meaningfully like this) - reserved key for the one
-# non-command feature this module also gates, the direct-photo-to-chat
-# beer recognition flow (see bot.py's handle_photo/_process_photo_messages).
+# Not real command names (Telegram commands can't contain double
+# underscores meaningfully like this) - reserved keys for the one
+# non-command feature this module also gates (the direct-photo-to-chat
+# beer recognition flow - see bot.py's handle_photo/_process_photo_messages)
+# and the Mini App's drag-to-reorder command list (see get_order/set_order).
 PHOTO_RECOGNITION_KEY = "__photo_recognition__"
+ORDER_KEY = "__order__"
 
 _path: str | None = None
 _lock = asyncio.Lock()
@@ -75,13 +82,35 @@ async def set_enabled(key: str, enabled: bool) -> None:
         _save(data)
 
 
-async def get_all(known_commands: list[str]) -> dict:
-    """{"commands": {cmd: bool, ...}, "photoRecognition": bool} for every
-    command in `known_commands` - the Mini App settings screen's one-call
-    snapshot of current state, so it doesn't need is_enabled() once per row."""
+async def set_order(order: list[str]) -> None:
     async with _lock:
         data = _load()
+        data[ORDER_KEY] = order
+        _save(data)
+
+
+async def get_all(known_commands: list[str]) -> dict:
+    """{"commands": {cmd: bool, ...}, "photoRecognition": bool, "order":
+    [cmd, ...]} for every command in `known_commands` - the Mini App
+    settings screen's one-call snapshot of current state, so it doesn't
+    need is_enabled() once per row. `order` always lists every command in
+    `known_commands` exactly once: a saved order (from the Mini App's
+    drag-to-reorder) has any command that's no longer registered dropped,
+    and any newly-registered command not yet in it appended at the end -
+    reconciled here rather than stored stale, so a command added to
+    bot.py's own TOGGLEABLE_COMMANDS list later doesn't silently vanish
+    from a saved custom order, or crash sorting against it."""
+    async with _lock:
+        data = _load()
+        known_set = set(known_commands)
+        saved_order = data.get(ORDER_KEY)
+        if isinstance(saved_order, list):
+            order = [c for c in saved_order if c in known_set]
+            order += [c for c in known_commands if c not in order]
+        else:
+            order = list(known_commands)
         return {
             "commands": {cmd: bool(data.get(cmd, True)) for cmd in known_commands},
             "photoRecognition": bool(data.get(PHOTO_RECOGNITION_KEY, True)),
+            "order": order,
         }

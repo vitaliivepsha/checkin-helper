@@ -640,6 +640,30 @@ body.festival-mode-active .festival-banner { display: flex; }
 }
 #my-festival-status { text-align: center; margin-top: 12px; }
 
+/* "Керування функціями" - each toggleable command's grip handle starts a
+   drag (see app.js's onCommandRowPointerDown), NOT the row itself, so a
+   tap on the toggle switch is never mistaken for a drag-start. Uses the
+   exact same floating-element + placeholder + FLIP-animation technique
+   as the festival map's brewery-pill drag (see .map-pill-floating/
+   .brewery-pill-placeholder) just for a single vertical list instead of
+   zones/sides. */
+.command-flag-grip {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; margin-left: -6px; color: var(--hint);
+  cursor: grab; touch-action: none;
+}
+.command-flag-grip .icon { width: 20px; height: 20px; }
+.command-flag-row-floating {
+  position: fixed; z-index: 999; pointer-events: none;
+  box-shadow: var(--shadow-md);
+}
+.command-flag-row-placeholder {
+  border-radius: 18px; border: 1px dashed rgba(128, 128, 128, 0.35);
+  background: color-mix(in srgb, var(--button) 8%, transparent);
+  margin-bottom: 8px;
+}
+#command-flags-status { text-align: center; margin-top: 12px; }
+
 .event-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .event-row-text { font-size: 14px; }
 .event-row-time { font-size: 12px; color: var(--hint); }

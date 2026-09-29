@@ -3547,12 +3547,36 @@ def _filter_by_enabled(commands: list, enabled: set[str] | None) -> list:
     return [c for c in commands if c.command not in TOGGLEABLE_COMMAND_NAMES or c.command in enabled]
 
 
-async def _enabled_command_names() -> set[str]:
+def _apply_order(commands: list, order: list[str] | None) -> list:
+    """Reorders just the toggleable subset of `commands` to match `order`
+    (from the Mini App's drag-to-reorder "Керування функціями" screen -
+    see feature_flags.py's set_order/get_all), leaving every command that
+    was never toggleable (this bot's own vestigial go/back/status/limited
+    menu entries, or the owner-only auto_toast/scan/restart/maintenance/
+    dev_app block appended separately by private_commands_for) exactly
+    where it already was - only the toggleable ones' relative order among
+    THEMSELVES changes, stitched back into their original slots."""
+    if not order:
+        return commands
+    order_index = {cmd: i for i, cmd in enumerate(order)}
+    toggleable = sorted(
+        (c for c in commands if c.command in TOGGLEABLE_COMMAND_NAMES),
+        key=lambda c: order_index.get(c.command, len(order)),
+    )
+    toggleable_iter = iter(toggleable)
+    return [next(toggleable_iter) if c.command in TOGGLEABLE_COMMAND_NAMES else c for c in commands]
+
+
+async def _command_menu_state() -> tuple[set[str], list[str]]:
     flags = await feature_flags.get_all(list(TOGGLEABLE_COMMAND_NAMES))
-    return {cmd for cmd, on in flags["commands"].items() if on}
+    enabled = {cmd for cmd, on in flags["commands"].items() if on}
+    return enabled, flags["order"]
 
 
-def private_commands_for(lng: str, *, include_auto_toast: bool = False, enabled: set[str] | None = None):
+def private_commands_for(
+    lng: str, *, include_auto_toast: bool = False,
+    enabled: set[str] | None = None, order: list[str] | None = None,
+):
     commands = [
         BotCommand("stats", t(lng, "cmd_stats")),
         BotCommand("todo", t(lng, "cmd_todo")),
@@ -3568,13 +3592,14 @@ def private_commands_for(lng: str, *, include_auto_toast: bool = False, enabled:
         BotCommand("comment_watch", t(lng, "cmd_comment_watch")),
     ]
     commands = _filter_by_enabled(commands, enabled)
+    commands = _apply_order(commands, order)
     # Auto-toast and /scan are personal test features (see
     # AUTO_TOAST_OWNER_ID) - only listed in the owner's own command menu
     # (BotCommandScopeChat in post_init), not the default menu every
-    # private chat gets. Never run through _filter_by_enabled - the
-    # owner's own feature-flag toggles only ever apply to OTHER users,
-    # never to themselves (same as _require_command_enabled's _is_owner
-    # check on the handler side).
+    # private chat gets. Never run through _filter_by_enabled/_apply_order
+    # - the owner's own feature-flag toggles only ever apply to OTHER
+    # users, never to themselves (same as _require_command_enabled's
+    # _is_owner check on the handler side).
     if include_auto_toast:
         commands.append(BotCommand("auto_toast", t(lng, "cmd_auto_toast")))
         commands.append(BotCommand("scan", t(lng, "cmd_scan")))
@@ -3584,7 +3609,7 @@ def private_commands_for(lng: str, *, include_auto_toast: bool = False, enabled:
     return commands
 
 
-def status_commands_for(lng: str, *, enabled: set[str] | None = None):
+def status_commands_for(lng: str, *, enabled: set[str] | None = None, order: list[str] | None = None):
     commands = [
         BotCommand("go", t(lng, "cmd_go")),
         BotCommand("back", t(lng, "cmd_back")),
@@ -3593,15 +3618,17 @@ def status_commands_for(lng: str, *, enabled: set[str] | None = None):
         BotCommand("join_group", t(lng, "cmd_join_group")),
         BotCommand("set_festival", t(lng, "cmd_set_festival")),
     ]
-    return _filter_by_enabled(commands, enabled)
+    commands = _filter_by_enabled(commands, enabled)
+    return _apply_order(commands, order)
 
 
 async def refresh_command_menus(app) -> None:
     """Re-applies the Telegram command menu for every scope/language,
-    reflecting the CURRENT feature_flags state (see _enabled_command_names).
+    reflecting the CURRENT feature_flags state (see _command_menu_state).
     Called once at startup (post_init) and again by webapp_server.py's
-    handle_command_flags_set whenever the owner toggles a flag from the
-    Mini App - see start_webapp_server's `refresh_command_menus` callback
+    handle_command_flags_set/handle_command_flags_reorder whenever the
+    owner toggles a flag or drags a row from the Mini App - see
+    start_webapp_server's `refresh_command_menus` callback
     param (same cross-module-callback pattern as get_festival_data, since
     webapp_server.py can't import bot.py back). Without this second call
     site, a toggle only actually took effect (on the handler side,
@@ -3610,16 +3637,16 @@ async def refresh_command_menus(app) -> None:
     confirmed live confusing: the owner toggled a command off, still saw
     it in another account's "/" autocomplete, and read that as the whole
     feature not working, when only the cosmetic menu was lagging."""
-    enabled_commands = await _enabled_command_names()
+    enabled_commands, order = await _command_menu_state()
     for lng in ("en", "uk", "ru"):
         await app.bot.set_my_commands(
-            private_commands_for(lng, enabled=enabled_commands),
+            private_commands_for(lng, enabled=enabled_commands, order=order),
             scope=BotCommandScopeAllPrivateChats(),
             language_code=None if lng == "en" else lng,
         )
         try:
             await app.bot.set_my_commands(
-                private_commands_for(lng, include_auto_toast=True),
+                private_commands_for(lng, include_auto_toast=True, order=order),
                 scope=BotCommandScopeChat(chat_id=int(AUTO_TOAST_OWNER_ID)),
                 language_code=None if lng == "en" else lng,
             )
@@ -3630,7 +3657,7 @@ async def refresh_command_menus(app) -> None:
             # default menu (without auto_toast) until they do.
             logger.warning("Could not set owner-scoped commands for chat_id=%s", AUTO_TOAST_OWNER_ID, exc_info=True)
         await app.bot.set_my_commands(
-            status_commands_for(lng, enabled=enabled_commands),
+            status_commands_for(lng, enabled=enabled_commands, order=order),
             scope=BotCommandScopeAllGroupChats(),
             language_code=None if lng == "en" else lng,
         )

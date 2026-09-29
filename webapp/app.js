@@ -2341,8 +2341,15 @@
     $("command-flags-status").textContent = "";
   }
 
-  function commandFlagRowHtml(id, title, hint, checked) {
-    return `<div class="settings-row" id="${id}-row">
+  function commandFlagRowHtml(id, title, hint, checked, command) {
+    // The photo-recognition row (command=null) has no grip - it's not a
+    // real command, so there's nothing to reorder it relative to; it
+    // always stays pinned above the draggable command list.
+    const grip = command
+      ? `<span class="command-flag-grip"><svg class="icon icon-filled"><use href="#icon-grip"/></svg></span>`
+      : "";
+    return `<div class="settings-row command-flag-row" id="${id}-row"${command ? ` data-command="${escapeHtml(command)}"` : ""}>
+      ${grip}
       <div class="settings-row-label">
         <div class="settings-row-title">${escapeHtml(title)}</div>
         <div class="settings-row-hint">${escapeHtml(hint)}</div>
@@ -2359,10 +2366,10 @@
     const photoRow = commandFlagRowHtml(
       "command-flag-photo", "Фото в чат",
       "Розпізнавання пива з фото, надісланого напряму в чат (без команди)",
-      state.photoRecognitionEnabled,
+      state.photoRecognitionEnabled, null,
     );
     const commandRows = state.commandFlags.map((c) =>
-      commandFlagRowHtml(`command-flag-${c.command}`, `/${c.command} — ${c.label}`, c.description, c.enabled)
+      commandFlagRowHtml(`command-flag-${c.command}`, `/${c.command} — ${c.label}`, c.description, c.enabled, c.command)
     ).join("");
     el.innerHTML = photoRow + commandRows;
 
@@ -2372,6 +2379,9 @@
       const { ok } = await apiPost("/api/checkin/command_flags/set", { photoRecognition: enabled });
       if (ok) state.photoRecognitionEnabled = enabled;
     });
+    el.querySelectorAll(".command-flag-grip").forEach((grip) => {
+      grip.addEventListener("pointerdown", onCommandRowPointerDown);
+    });
     state.commandFlags.forEach((c) => {
       $(`command-flag-${c.command}-toggle`).addEventListener("change", async (e) => {
         const enabled = e.target.checked;
@@ -2380,6 +2390,136 @@
         if (ok) c.enabled = enabled;
       });
     });
+  }
+
+  // Pointer-Events-based drag for reordering the command list, same
+  // technique as the festival map's brewery-pill drag (see onMapPillPointerDown's
+  // own comment for why: native HTML5 drag-and-drop never fires on touch
+  // in Telegram's mobile WebView) but simplified for a single vertical
+  // list - no zones/sides, just "which slot is the pointer over now."
+  // Started from the row's grip handle specifically (not the whole row),
+  // so a tap on the toggle switch itself never gets mistaken for a
+  // drag-start.
+  let commandDrag = null; // { command, row, placeholder, lastIndex }
+  let commandDragActive = false;
+
+  function cancelCommandDrag() {
+    if (commandDrag) {
+      commandDrag.row.remove();
+      commandDrag.placeholder.remove();
+    }
+    document.removeEventListener("pointermove", onCommandRowPointerMove);
+    document.removeEventListener("pointerup", onCommandRowPointerUp);
+    document.removeEventListener("pointercancel", onCommandRowPointerUp);
+    commandDrag = null;
+    commandDragActive = false;
+  }
+
+  function flipReorderCommandList(mutate) {
+    const rows = document.querySelectorAll("#command-flags-list .command-flag-row");
+    const firstRects = new Map();
+    rows.forEach((el) => firstRects.set(el, el.getBoundingClientRect()));
+    mutate();
+    firstRects.forEach((first, el) => {
+      if (!el.isConnected) return;
+      const last = el.getBoundingClientRect();
+      const dy = first.top - last.top;
+      if (Math.abs(dy) < 0.5) return;
+      el.style.transition = "none";
+      el.style.transform = `translateY(${dy}px)`;
+      el.getBoundingClientRect(); // force layout so the transform above is committed before transitioning away from it
+      requestAnimationFrame(() => {
+        el.style.transition = "transform 0.18s ease";
+        el.style.transform = "";
+      });
+    });
+  }
+
+  function placeCommandPlaceholderAt(index) {
+    const list = $("command-flags-list");
+    const { placeholder } = commandDrag;
+    // The photo row has no data-command and is never part of the
+    // reorderable set - excluded here the same way it's excluded from
+    // state.commandFlags, so index 0 always means "first COMMAND slot",
+    // never displacing the pinned photo row above it.
+    const siblings = [...list.querySelectorAll(".command-flag-row[data-command]")].filter((el) => el !== placeholder);
+    const refNode = siblings[index] || null;
+    if (refNode) list.insertBefore(placeholder, refNode);
+    else list.appendChild(placeholder);
+  }
+
+  function onCommandRowPointerDown(e) {
+    if (commandDrag) cancelCommandDrag();
+    e.preventDefault();
+    const row = e.currentTarget.closest(".command-flag-row");
+    const rect = row.getBoundingClientRect();
+    const list = row.parentElement;
+    const originalIndex = [...list.querySelectorAll(".command-flag-row[data-command]")].indexOf(row);
+
+    const placeholder = document.createElement("div");
+    placeholder.className = "command-flag-row-placeholder";
+    placeholder.style.height = `${rect.height}px`;
+    list.insertBefore(placeholder, row);
+
+    try { row.setPointerCapture(e.pointerId); } catch { /* ignore, see onMapPillPointerDown's own note */ }
+    commandDragActive = true;
+    row.classList.add("command-flag-row-floating");
+    row.style.width = `${rect.width}px`;
+    row.style.left = `${rect.left}px`;
+    row.style.top = `${rect.top}px`;
+    document.body.appendChild(row);
+
+    commandDrag = {
+      command: row.dataset.command,
+      row, placeholder,
+      offsetY: e.clientY - rect.top,
+      lastIndex: originalIndex,
+    };
+    document.addEventListener("pointermove", onCommandRowPointerMove);
+    document.addEventListener("pointerup", onCommandRowPointerUp);
+    document.addEventListener("pointercancel", onCommandRowPointerUp);
+  }
+
+  function onCommandRowPointerMove(e) {
+    if (!commandDrag) return;
+    const { row, offsetY, placeholder } = commandDrag;
+    row.style.top = `${e.clientY - offsetY}px`;
+
+    const siblings = [...$("command-flags-list").querySelectorAll(".command-flag-row[data-command]")]
+      .filter((el) => el !== placeholder);
+    let index = siblings.length;
+    for (let i = 0; i < siblings.length; i++) {
+      const r = siblings[i].getBoundingClientRect();
+      if (e.clientY < r.top + r.height / 2) { index = i; break; }
+    }
+    if (index !== commandDrag.lastIndex) {
+      flipReorderCommandList(() => placeCommandPlaceholderAt(index));
+      commandDrag.lastIndex = index;
+    }
+  }
+
+  async function onCommandRowPointerUp() {
+    if (!commandDrag) return;
+    const { row, placeholder } = commandDrag;
+    const list = $("command-flags-list");
+    flipReorderCommandList(() => {
+      list.insertBefore(row, placeholder);
+      placeholder.remove();
+    });
+    row.classList.remove("command-flag-row-floating");
+    row.style.width = "";
+    row.style.left = "";
+    row.style.top = "";
+    document.removeEventListener("pointermove", onCommandRowPointerMove);
+    document.removeEventListener("pointerup", onCommandRowPointerUp);
+    document.removeEventListener("pointercancel", onCommandRowPointerUp);
+    commandDragActive = false;
+    commandDrag = null;
+
+    const newOrder = [...list.querySelectorAll(".command-flag-row[data-command]")].map((el) => el.dataset.command);
+    state.commandFlags.sort((a, b) => newOrder.indexOf(a.command) - newOrder.indexOf(b.command));
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+    await apiPost("/api/checkin/command_flags/reorder", { order: newOrder });
   }
 
   async function fetchFestivalMap() {
