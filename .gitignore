@@ -29,6 +29,7 @@ active_festival.json
 # Logs
 bot_log.txt
 bot_log_old_broken.txt
+dev_server_log.txt
 *.log
 
 # Orphaned data files - no code path reads these anymore, not even via an
@@ -39,7 +40,6 @@ beers_result.json
 mbcc_2022.json
 mbcc_2024.json
 mbcc_2025.json
-mbcc_beers_sessions_test.json
 
 # Python
 __pycache__/

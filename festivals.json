@@ -5,6 +5,11 @@
       "key": "mbcc2026",
       "label": "MBCC 2026",
       "file": "mbcc_beers.json"
+    },
+    {
+      "key": "test_1928",
+      "label": "Тест (1928 пив)",
+      "file": "mbcc_beers_sessions_test.json"
     }
   ]
 }
