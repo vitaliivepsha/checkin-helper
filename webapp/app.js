@@ -2571,8 +2571,21 @@
     }
     $("festival-map-status").textContent = "";
     MAP_ZONES = data.zoneOrder || [];
-    state.festivalMap = { zones: data.zones || {}, bonusCategories: data.bonusCategories || {} };
+    state.festivalMap = {
+      zones: data.zones || {}, bonusCategories: data.bonusCategories || {},
+      zoneLabels: data.zoneLabels || {},
+    };
     renderFestivalMap();
+  }
+
+  // A zone's real identity is always its raw key ("Area 1" - used for
+  // drag/drop, festival_map.py's persistence, and _ZONE_NAME_RE matching
+  // server-side) - this is ONLY what's shown to the viewer, per-festival
+  // (see festivals.json's optional "zoneLabels", e.g. WFP calls its zones
+  // floors, not "Area 1"). Falls back to the raw key when the current
+  // festival has no custom labels.
+  function zoneDisplayLabel(zone) {
+    return (state.festivalMap.zoneLabels && state.festivalMap.zoneLabels[zone]) || zone;
   }
 
   // The .map-zone card structure (header, dot-preview, perimeter-grid) used
@@ -2584,7 +2597,7 @@
     card.dataset.zone = zone;
     card.innerHTML = `
       <div class="map-zone-header">
-        <span class="map-zone-label">${escapeHtml(zone)}</span>
+        <span class="map-zone-label">${escapeHtml(zoneDisplayLabel(zone))}</span>
         <span class="map-zone-count"></span>
       </div>
       <div class="map-zone-pills preview" data-zone="${escapeHtml(zone)}"></div>
@@ -2672,7 +2685,10 @@
   const MAP_SIDES = ["top", "left", "right", "bottom"];
 
   function zoneTotal(zoneSides) {
-    return MAP_SIDES.reduce((sum, side) => sum + (zoneSides[side] || []).length, 0);
+    // .filter(Boolean) drops empty-slot `null` entries (see
+    // festival_map.py's own docstring) - they're placeholders, not real
+    // breweries, and shouldn't inflate the zone's own beer count.
+    return MAP_SIDES.reduce((sum, side) => sum + (zoneSides[side] || []).filter(Boolean).length, 0);
   }
 
   // Overview cards are too small to show 20-28 readable pills, so outside
@@ -2703,14 +2719,44 @@
   // flat list re-split by position parity on every render meant dragging
   // one brewery a few slots could silently flip unrelated breweries into
   // the other column), so rendering is a direct 1:1 pass, no splitting.
+  //
+  // Left/right specifically render as a shared virtual row grid, in edit
+  // mode only: the shorter side pads out (with .perimeter-row-slot
+  // placeholders, not real data) to match however many rows the OTHER
+  // side has, so a lone brewery on one side can still be dropped into any
+  // one of, say, 5 positions instead of only "before/after" the one thing
+  // already there (a `None` a side's OWN list might already hold - see
+  // festival_map.py - renders as this same kind of slot, at its own
+  // index, independent of this cross-side padding). The read-only detail
+  // view has no dragging to support, so it skips all of this and just
+  // shows whatever's really there, tightly packed.
   function renderPerimeterPills(rootEl, zoneSides, draggable) {
     const sections = perimeterSections(rootEl);
-    MAP_SIDES.forEach((side) => {
+    ["top", "bottom"].forEach((side) => {
       const container = sections[side];
       container.innerHTML = "";
       (zoneSides[side] || []).forEach((brewery) => {
-        container.appendChild(makeBreweryPill(brewery, draggable));
+        if (brewery) container.appendChild(makeBreweryPill(brewery, draggable));
       });
+    });
+    const leftList = zoneSides.left || [];
+    const rightList = zoneSides.right || [];
+    const rowCount = draggable ? Math.max(leftList.length, rightList.length, 1) : 0;
+    ["left", "right"].forEach((side) => {
+      const container = sections[side];
+      container.innerHTML = "";
+      const list = side === "left" ? leftList : rightList;
+      const count = draggable ? rowCount : list.length;
+      for (let i = 0; i < count; i++) {
+        const brewery = list[i];
+        if (brewery) {
+          container.appendChild(makeBreweryPill(brewery, draggable));
+        } else if (draggable) {
+          const slot = document.createElement("div");
+          slot.className = "perimeter-row-slot";
+          container.appendChild(slot);
+        }
+      }
     });
   }
 
@@ -2767,7 +2813,7 @@
 
   function renderFestivalMapDetail() {
     const zoneSides = state.festivalMap.zones[festivalMapDetailZone] || {};
-    $("festival-map-detail-label").textContent = festivalMapDetailZone;
+    $("festival-map-detail-label").textContent = zoneDisplayLabel(festivalMapDetailZone);
     $("festival-map-detail-count").textContent = zoneTotal(zoneSides);
     renderPerimeterPills($("festival-map-detail-pills"), zoneSides, false);
     applyActiveSearchHighlight();
@@ -2850,7 +2896,7 @@
     MAP_ZONES.forEach((zone) => {
       const sides = state.festivalMap.zones[zone] || {};
       MAP_SIDES.forEach((side) => {
-        (sides[side] || []).forEach((brewery) => list.push({ brewery, zone }));
+        (sides[side] || []).forEach((brewery) => { if (brewery) list.push({ brewery, zone }); });
       });
     });
     Object.entries(state.festivalMap.bonusCategories).forEach(([category, breweries]) => {
@@ -2892,7 +2938,7 @@
     matches.forEach((match) => {
       const item = document.createElement("div");
       item.className = "venue-item";
-      item.textContent = `${match.brewery} — ${match.zone || match.category}`;
+      item.textContent = `${match.brewery} — ${(match.zone ? zoneDisplayLabel(match.zone) : match.category)}`;
       item.addEventListener("click", () => selectFestivalMapSearchResult(match));
       resultsEl.appendChild(item);
     });
@@ -2930,6 +2976,7 @@
   // is what makes the other pills visibly shift out of the way as you move,
   // Telegram-chat-reorder style, animated with a FLIP transform pass.
   let mapDrag = null; // { brewery, pill, placeholder, lastZone, lastSide, lastContainer, lastIndex }
+  let mapDragTimeoutHandle = null;
 
   // Defensive cleanup for a drag session that never got a matching
   // pointerup/pointercancel (seen in practice - a stray extra pointerdown
@@ -2945,6 +2992,8 @@
     document.removeEventListener("pointermove", onMapPillPointerMove);
     document.removeEventListener("pointerup", onMapPillPointerUp);
     document.removeEventListener("pointercancel", onMapPillPointerUp);
+    clearTimeout(mapDragTimeoutHandle);
+    mapDragTimeoutHandle = null;
     mapDrag = null;
     mapDragActive = false;
   }
@@ -3036,6 +3085,19 @@
     document.addEventListener("pointermove", onMapPillPointerMove);
     document.addEventListener("pointerup", onMapPillPointerUp);
     document.addEventListener("pointercancel", onMapPillPointerUp);
+    // Safety net for the exact "WebView swallows it" case the comment
+    // above already works around on the NEXT pointerdown - but until that
+    // happens, mapDragActive stays stuck true forever, which blocks
+    // fetchFestivalMap's own poll-driven refresh (`if (mapDragActive)
+    // return;`) from ever running again. Confirmed live: an interrupted
+    // drag left a stray .brewery-pill-placeholder sitting in the pill's
+    // old spot AND the real pill floating, detached, invisible in
+    // document.body - permanently, since nothing ever polled fresh data
+    // to overwrite it, until the next manual drag attempt happened to
+    // self-heal it. This timeout guarantees that happens within seconds
+    // instead of depending on the viewer trying to drag something else.
+    clearTimeout(mapDragTimeoutHandle);
+    mapDragTimeoutHandle = setTimeout(cancelMapDrag, 8000);
   }
 
   // Finds which zone the pointer is over, then which of that zone's 4
@@ -3114,18 +3176,39 @@
     cancelMapDrag();
 
     // Optimistic local move so nothing snaps back while the request is in
-    // flight, then let the next poll reconcile with the server. Only the
-    // one side list being dropped into is ever spliced - every other side,
-    // in every zone, is left completely untouched.
+    // flight, then let the next poll reconcile with the server. Mirrors
+    // festival_map.py's own move_brewery: dropping onto an already-empty
+    // slot (or past the current end) CLAIMS that exact position - nothing
+    // shifts, and wherever the brewery used to be becomes an empty slot
+    // (`null`) rather than being spliced away, so no OTHER row's
+    // alignment changes just because this one moved. Dropping onto a
+    // REAL, occupied position still reorders normally (shifts, and fully
+    // removes the old spot) - same as this always did before slots
+    // existed. Keeping this decision in sync with the backend means the
+    // optimistic render already matches what the next poll will confirm,
+    // instead of visibly "jumping" once the server's real state arrives.
+    const targetSides = state.festivalMap.zones[lastZone];
+    const target = targetSides[lastSide] || (targetSides[lastSide] = []);
+    const claimSlot = lastIndex >= target.length || !target[lastIndex];
+
     MAP_ZONES.forEach((zone) => {
       const zoneSides = state.festivalMap.zones[zone];
       if (!zoneSides) return;
       MAP_SIDES.forEach((side) => {
-        zoneSides[side] = (zoneSides[side] || []).filter((b) => b !== brewery);
+        const list = zoneSides[side];
+        if (!list) return;
+        const idx = list.indexOf(brewery);
+        if (idx === -1) return;
+        if (claimSlot) list[idx] = null;
+        else list.splice(idx, 1);
       });
     });
-    const targetSides = state.festivalMap.zones[lastZone];
-    targetSides[lastSide].splice(lastIndex, 0, brewery);
+    if (claimSlot) {
+      while (target.length <= lastIndex) target.push(null);
+      target[lastIndex] = brewery;
+    } else {
+      target.splice(lastIndex, 0, brewery);
+    }
     renderFestivalMap();
 
     await apiPost("/api/checkin/festival_map/move", { brewery, zone: lastZone, side: lastSide, index: lastIndex });

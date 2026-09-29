@@ -1032,30 +1032,40 @@ body { --pill-border: color-mix(in srgb, var(--hint) 45%, transparent); }
   display: flex; align-items: center; justify-content: center;
   color: var(--hint); opacity: 0.6;
 }
-/* An empty perimeter side would otherwise collapse to zero height/width,
-   which breaks dragging into it two ways: there's nothing to visually
-   see or aim for, AND app.js's findDropTarget picks whichever side's
-   getBoundingClientRect() is CLOSEST to the pointer - a degenerate
-   zero-size rect sitting right on the grid's edge only "wins" that
-   comparison for pointer positions exactly on that line, while a
-   populated left/right column's real height claims a much wider range.
-   Confirmed live: once one side empties out, dragging back into it
-   becomes nearly impossible, so breweries drift onto whichever sides
-   still have content and never rebalance. A minimum footprint (real
-   height/width, not just a border) keeps every side an equally
-   reachable target regardless of how many items are already on it. */
+/* Left/right render as a shared virtual row grid in edit mode (see
+   app.js's renderPerimeterPills) - the shorter side pads out with these
+   to match however many rows the OTHER side has, so a lone brewery on
+   one side can still be dropped into any one of, say, 5 positions
+   instead of only "before/after" the one thing already there (confirmed
+   live: a column barely taller than its one pill made it geometrically
+   near-impossible to choose "above" it at all - app.js's findDropTarget
+   picks whichever side's rect is CLOSEST to the pointer, and a real
+   pill-sized row now exists at every position regardless of content, so
+   every row is an equally reachable target). Not draggable itself - only
+   real .brewery-pill elements are - just something to see and aim for;
+   dropping onto one CLAIMS that exact slot (festival_map.py's own
+   move_brewery decides this the same way, based on what's actually at
+   the target index). */
+body.map-edit-mode .perimeter-row-slot {
+  min-height: 27px;
+  border: 1px dashed var(--pill-border); border-radius: 999px;
+}
+/* Top/bottom don't share that row-grid (they're single continuous rows,
+   not two columns needing cross-alignment), so they can still genuinely
+   render with zero children - same collapse-to-nothing problem the row
+   grid above exists to avoid, same fix: a real minimum footprint plus a
+   "Перетягни сюди" hint whenever completely empty. */
+body.map-edit-mode .perimeter-top,
+body.map-edit-mode .perimeter-bottom {
+  min-height: 40px;
+}
 body.map-edit-mode .perimeter-top:empty,
-body.map-edit-mode .perimeter-bottom:empty,
-body.map-edit-mode .perimeter-left:empty,
-body.map-edit-mode .perimeter-right:empty {
-  min-height: 34px; min-width: 34px;
+body.map-edit-mode .perimeter-bottom:empty {
   border: 1px dashed var(--pill-border); border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
 }
 body.map-edit-mode .perimeter-top:empty::before,
-body.map-edit-mode .perimeter-bottom:empty::before,
-body.map-edit-mode .perimeter-left:empty::before,
-body.map-edit-mode .perimeter-right:empty::before {
+body.map-edit-mode .perimeter-bottom:empty::before {
   content: "Перетягни сюди"; font-size: 10px; color: var(--hint); opacity: 0.6;
   text-align: center; line-height: 1.2;
 }

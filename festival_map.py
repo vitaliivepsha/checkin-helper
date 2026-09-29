@@ -28,8 +28,21 @@ because a single insertion anywhere in that list shifts the parity of every
 item after it, dragging one brewery a few slots would silently flip a bunch
 of unrelated breweries into the other column too. Storing each side
 separately means a move only ever touches the one side's list it's dropped
-into - moving a brewery is always "remove it from whichever side currently
-has it, insert it at the target index in the target side's list."
+into.
+
+A side's list can hold `None` entries - a real, addressable empty slot at
+that position, not just "shorter than the other side" (the Mini App renders
+left/right as a shared virtual row grid, so a lone brewery on one side can
+still be dropped into any one of, say, 5 positions the OTHER side has - see
+app.js's renderPerimeterPills). move_brewery decides per-call whether a
+move CLAIMS an exact slot (the target position is empty, or past the
+current end - place it there, leave a None behind at its old spot, don't
+shift anything else) or REORDERS normally (the target position holds a
+real brewery - shift everyone from there on, same as always, and fully
+remove the old spot rather than leaving a gap) - based on what's actually
+at the target index when the move is made. Trailing Nones (nothing real
+left after them) are trimmed on every read/write, since they don't align
+with anything anymore once nothing follows them.
 """
 
 import asyncio
@@ -112,7 +125,7 @@ async def migrate_legacy_default(default_key: str | None) -> None:
         _save_all({_bucket_key(default_key): raw})
 
 
-def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dict[str, list[str]]]:
+def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dict[str, list[str | None]]]:
     loaded = _empty_zones(zones)
     bucket_data = all_data.get(bucket)
     saved = bucket_data.get("zones", {}) if isinstance(bucket_data, dict) else {}
@@ -123,8 +136,24 @@ def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dic
         for s in SIDES:
             items = saved_zone.get(s)
             if isinstance(items, list):
-                loaded[z][s] = [b for b in items if isinstance(b, str)]
+                loaded[z][s] = [b for b in items if isinstance(b, str) or b is None]
     return loaded
+
+
+def _trim_trailing_none(loaded: dict[str, dict[str, list[str | None]]]) -> bool:
+    """A None past the last real entry in a side's list doesn't align with
+    anything anymore (nothing further along to leave room for) - trims it
+    so an empty tail doesn't linger/grow forever as items get moved
+    around. Returns True if anything was actually trimmed (the caller's
+    cue to persist the change)."""
+    trimmed = False
+    for zone in loaded.values():
+        for side in SIDES:
+            lst = zone[side]
+            while lst and lst[-1] is None:
+                lst.pop()
+                trimmed = True
+    return trimmed
 
 
 def _seed_sides(breweries: list[str]) -> dict[str, list[str]]:
@@ -144,7 +173,7 @@ def _seed_sides(breweries: list[str]) -> dict[str, list[str]]:
 
 async def get_layout(
     festival_key: str | None, known_breweries: list[str], brewery_zone_hint: dict[str, str], zones: list[str]
-) -> dict[str, dict[str, list[str]]]:
+) -> dict[str, dict[str, list[str | None]]]:
     """Returns the current zone layout for `festival_key` (for the given
     `zones` - whatever the caller currently considers that festival's main,
     editable zones), seeding in any brewery from `known_breweries` that
@@ -155,7 +184,9 @@ async def get_layout(
     the OLD festival's breweries stuck on the map forever. A brewery whose
     name happens to be identical across both datasets keeps its existing
     position rather than being reset - harmless, and avoids needlessly
-    reshuffling a coincidental overlap."""
+    reshuffling a coincidental overlap. `None` entries (empty, addressable
+    slots - see this module's own docstring) are never pruned as "unknown
+    breweries" and never seeded into."""
     if not zones:
         return {}
     bucket = _bucket_key(festival_key)
@@ -166,11 +197,11 @@ async def get_layout(
         pruned = False
         for zone in loaded.values():
             for side in SIDES:
-                filtered = [b for b in zone[side] if b in known]
+                filtered = [b for b in zone[side] if b is None or b in known]
                 if len(filtered) != len(zone[side]):
                     pruned = True
                     zone[side] = filtered
-        placed = {b for zone in loaded.values() for side in zone.values() for b in side}
+        placed = {b for zone in loaded.values() for side in zone.values() for b in side if b is not None}
         new_by_zone: dict[str, list[str]] = {}
         for brewery in known_breweries:
             if brewery in placed:
@@ -185,6 +216,8 @@ async def get_layout(
                 seeded = _seed_sides(breweries)
                 for side in SIDES:
                     loaded[zone][side].extend(seeded[side])
+        if _trim_trailing_none(loaded):
+            pruned = True
         if new_by_zone or pruned:
             all_data[bucket] = {"zones": loaded}
             _save_all(all_data)
@@ -196,20 +229,48 @@ async def move_brewery(
 ) -> bool:
     """Moves `brewery` (from wherever it currently sits, if anywhere) into
     `zone`/`side` at `index`, within `festival_key`'s own bucket. Returns
-    False only if `zone`/`side` is invalid for the given `zones` list."""
+    False only if `zone`/`side` is invalid for the given `zones` list.
+
+    Two different behaviors, chosen by what's AT the target position when
+    the move is made (see this module's own docstring):
+    - Target is empty (`None`) or past the current end: CLAIMS that exact
+      slot - `brewery` goes there and nowhere shifts, and wherever it USED
+      to be becomes `None` rather than being spliced away, so no OTHER
+      row's alignment changes just because this one moved.
+    - Target is a real, occupied position: an ordinary reorder - shifts
+      everything from that point on, and its old position is fully
+      removed (collapsed), same as this function always did before slots
+      existed."""
     if zone not in zones or side not in SIDES:
         return False
     bucket = _bucket_key(festival_key)
     async with _lock:
         all_data = _load_all()
         loaded = _load_bucket(all_data, bucket, zones)
+
+        target = loaded[zone][side]
+        index = max(0, index)
+        claim_slot = index >= len(target) or target[index] is None
+
         for z in loaded.values():
             for s in SIDES:
-                if brewery in z[s]:
-                    z[s].remove(brewery)
-        target = loaded[zone][side]
-        index = max(0, min(index, len(target)))
-        target.insert(index, brewery)
+                lst = z[s]
+                for i, b in enumerate(lst):
+                    if b == brewery:
+                        if claim_slot:
+                            lst[i] = None
+                        else:
+                            lst.pop(i)
+                        break  # a brewery only ever occupies one slot at a time
+
+        if claim_slot:
+            while len(target) <= index:
+                target.append(None)
+            target[index] = brewery
+        else:
+            target.insert(min(index, len(target)), brewery)
+
+        _trim_trailing_none(loaded)
         all_data[bucket] = {"zones": loaded}
         _save_all(all_data)
         return True

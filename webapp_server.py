@@ -1968,6 +1968,7 @@ async def handle_festival_map_get(request: web.Request) -> web.Response:
     return web.json_response({
         "zones": zones,
         "zoneOrder": zone_names,
+        "zoneLabels": _zone_labels_for(map_key),
         "bonusCategories": _festival_bonus_categories(beers),
     })
 
@@ -2678,6 +2679,22 @@ def _load_festivals_registry() -> list[dict]:
     except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.warning("Could not load festivals.json: %s", e)
         return []
+
+
+def _zone_labels_for(festival_key: str | None) -> dict[str, str]:
+    """{"Area N": "custom display label", ...} for the given festival - see
+    festivals.json's optional "zoneLabels" field (a festival's physical
+    zones aren't always called "Area N" - WFP's are floors, for instance).
+    The stored zone identity (used for drag/drop, festival_map.py's own
+    persistence, and _ZONE_NAME_RE matching) never changes - this is
+    display-only, so the Mini App can show "1-й поверх" for "Area 1"
+    without touching how zones are detected or persisted at all. Empty
+    when the festival has none, or `festival_key` doesn't match a
+    registry entry - the Mini App then just shows the raw zone name."""
+    if not festival_key:
+        return {}
+    match = next((f for f in _load_festivals_registry() if f.get("key") == festival_key), None)
+    return (match or {}).get("zoneLabels") or {}
 
 
 def _festival_image_url(entry: dict) -> str | None:
