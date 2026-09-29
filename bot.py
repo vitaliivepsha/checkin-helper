@@ -35,6 +35,7 @@ import auto_toast
 import downtime_watch
 import festival_watch
 import comment_watch
+import feature_flags
 import group_festivals
 import group_membership
 import user_festivals
@@ -65,6 +66,58 @@ auto_toast.init(DATA_DIR)  # same reasoning - /auto_toast must work regardless o
 festival_watch.init(DATA_DIR)  # same - /festival_watch's config commands must work regardless of the Mini App
 comment_watch.init(DATA_DIR)  # same - /comment_watch's on/off command must work regardless of the Mini App
 maintenance_mode.init(DATA_DIR)  # same - /maintenance must work regardless of the Mini App
+feature_flags.init(DATA_DIR)  # same - command gating must work regardless of the Mini App
+
+
+def _is_owner(user_id) -> bool:
+    return str(user_id) == AUTO_TOAST_OWNER_ID
+
+
+# (command, label, description) - every command a regular (non-owner) user
+# can otherwise reach, shown as a toggle row on the Mini App's owner-only
+# "Керування функціями" screen (see webapp_server.py's handle_command_
+# flags_get/_set). Commands already owner-only everywhere (dev_app, scan,
+# auto_toast, restart, maintenance) are deliberately NOT listed here - they
+# need no separate toggle, per the owner's own request. Read by
+# webapp_server.py via the get_toggleable_commands callback (same cross-
+# module-callback pattern as get_festival_data - see start_webapp_server's
+# own docstring for why, webapp_server.py can't import bot.py back).
+TOGGLEABLE_COMMANDS: list[tuple[str, str, str]] = [
+    ("start", "Привітання", "Вітальне повідомлення при першому запуску бота"),
+    ("stats", "Статистика", "Скільки пив із фестивалю вже випито"),
+    ("todo", "Список \"Спробувати\"", "Закріплений список пив, які ще не випробувані"),
+    ("find", "Пошук броварні", "Пошук усіх пив певної броварні на фестивалі"),
+    ("clear", "Очистити позначки", "Скидання власних позначок \"вже випив\" по чекінах"),
+    ("cancel", "Скасувати дію", "Скасування поточного пошуку чи виправлення"),
+    ("checkin", "Фестивальний чекін", "Кнопка відкриття Mini App для чекіну пива"),
+    ("join_group", "Приєднатись до групи", "Приєднання до спільної черги групи"),
+    ("set_festival", "Обрати фестиваль", "Вибір фестивалю — особисто або для всієї групи"),
+    ("connect_untappd", "Підключити Untappd", "Підключення власного Untappd-акаунта до бота"),
+    ("wishlist_sheet", "Таблиця вішлісту", "Підключення Google-таблиці власного вішлісту"),
+    ("import_history", "Імпорт історії", "Імпорт історії чекінів з Untappd у локальний кеш"),
+    ("festival_watch", "Стеження за новинками", "Сповіщення про нове пиво біля обраної точки"),
+    ("comment_watch", "Стеження за коментарями", "Сповіщення про нові коментарі під власними чекінами"),
+]
+
+
+def get_toggleable_commands() -> list[tuple[str, str, str]]:
+    return TOGGLEABLE_COMMANDS
+
+
+async def _require_command_enabled(update: Update, command: str) -> bool:
+    """True if the caller may proceed - the owner always can, regardless
+    of any flag (see _is_owner); everyone else only if this command hasn't
+    been toggled off via feature_flags.py. Replies with a generic
+    "currently unavailable" message and returns False otherwise, so a
+    handler just does `if not await _require_command_enabled(update, "x"):
+    return` as its very first line."""
+    if _is_owner(update.effective_user.id):
+        return True
+    if await feature_flags.is_enabled(command):
+        return True
+    await update.message.reply_text(t(lang(update), "feature_disabled"))
+    return False
+
 
 # Public HTTPS base URL this bot is reachable at (the deployed app's own URL)
 # - needed to build the Telegram Mini App link for the festival check-in webapp.
@@ -1200,6 +1253,8 @@ def nofound_keyboard(untappd_url: str, msg_id: int, lng: str) -> InlineKeyboardM
 # ── Command handlers ──────────────────────────────────────────────────────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await _require_command_enabled(update, "start"):
+        return
     lng = lang(update)
     checkins = await get_user_checkins(update.effective_user.id)
     festival_key = await resolve_festival_key(update.effective_user.id)
@@ -1211,6 +1266,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Always send stats to private chat."""
+    if not await _require_command_enabled(update, "stats"):
+        return
     lng = lang(update)
     user_id = update.effective_user.id
     is_group = update.effective_chat.id != user_id
@@ -1237,6 +1294,8 @@ async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def todo_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Always send todo to private chat."""
+    if not await _require_command_enabled(update, "todo"):
+        return
     lng = lang(update)
     user_id = update.effective_user.id
     is_group = update.effective_chat.id != user_id
@@ -1264,6 +1323,8 @@ async def todo_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def find_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send find results only to the user who asked (via private)."""
+    if not await _require_command_enabled(update, "find"):
+        return
     lng = lang(update)
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
@@ -1376,6 +1437,8 @@ async def clear_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     show a confirmation prompt instead of clearing immediately, same
     "irreversible action needs a confirm step" reasoning the webapp's own
     confirm screen is built on (see README)."""
+    if not await _require_command_enabled(update, "clear"):
+        return
     lng = lang(update)
     data = await load_checkins()
     uid = str(update.effective_user.id)
@@ -1397,6 +1460,8 @@ async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     clean up, so we delete the prompt, search-query messages, pick list, and the
     `/cancel` command itself whenever Telegram allows it.
     """
+    if not await _require_command_enabled(update, "cancel"):
+        return
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
 
@@ -1860,6 +1925,14 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if get_pending_scan(context, user_id, chat_id) is not None:
         clear_pending_scan(context, user_id, chat_id)
         await handle_scan_photo(message, context, lng, user_id)
+        return
+
+    # The owner-only /scan flow above is unaffected either way. This gate
+    # is silent (no reply) rather than the usual feature_disabled message -
+    # Telegram delivers each photo of an album as its own separate update,
+    # so a reply here would fire once per photo in a multi-photo album
+    # instead of once for the whole thing.
+    if not _is_owner(user_id) and not await feature_flags.is_enabled(feature_flags.PHOTO_RECOGNITION_KEY):
         return
 
     media_group_id = getattr(message, "media_group_id", None)
@@ -2939,6 +3012,8 @@ async def checkin_webapp_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
     this problem - confirmed working for this exact command earlier this
     session. Stability wins over the bottom-panel convenience until/unless
     that Desktop-specific gap gets independently confirmed fixed."""
+    if not await _require_command_enabled(update, "checkin"):
+        return
     lng = lang(update)
     if update.effective_chat.type != "private":
         await update.message.reply_text(t(lng, "checkin_webapp_group_hint"))
@@ -2986,6 +3061,8 @@ async def join_group_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Scopes the Mini App's shared queue so two different festivals' crowds
     never see each other's beers; re-running this in a different chat
     switches groups (one active group at a time, no separate "leave")."""
+    if not await _require_command_enabled(update, "join_group"):
+        return
     lng = lang(update)
     if update.effective_chat.type == "private":
         await update.message.reply_text(t(lng, "join_group_private_hint"))
@@ -3009,6 +3086,8 @@ async def set_festival_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     time); in a private chat, "clear"/"off"/"reset" removes the personal
     override instead (a group binding has no such "unbind" - re-running
     with a different key is the only way to change it there)."""
+    if not await _require_command_enabled(update, "set_festival"):
+        return
     lng = lang(update)
     is_private = update.effective_chat.type == "private"
     user_id = update.effective_user.id
@@ -3058,6 +3137,8 @@ async def handle_new_chat_members(update: Update, context: ContextTypes.DEFAULT_
 
 async def connect_untappd_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Start pairing the user's own Untappd account (private chats only)."""
+    if not await _require_command_enabled(update, "connect_untappd"):
+        return
     lng = lang(update)
     if update.effective_chat.type != "private":
         await update.message.reply_text(t(lng, "connect_untappd_group_hint"))
@@ -3072,6 +3153,8 @@ async def wishlist_sheet_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """Start pairing a personal Google Sheet as a stand-in for Untappd's own
     unreachable "Lists" feature (private chats only) - see
     wishlist_sheets.py's own module docstring."""
+    if not await _require_command_enabled(update, "wishlist_sheet"):
+        return
     lng = lang(update)
     if update.effective_chat.type != "private":
         await update.message.reply_text(t(lng, "connect_untappd_group_hint"))
@@ -3089,6 +3172,8 @@ async def import_history_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """Seed had_it_index instantly from an official Untappd data export
     (CSV/JSON, Insider-only "Export Your Data" feature) instead of waiting
     for the slow paced background backfill. Private chats only."""
+    if not await _require_command_enabled(update, "import_history"):
+        return
     lng = lang(update)
     if update.effective_chat.type != "private":
         await update.message.reply_text(t(lng, "import_history_group_hint"))
@@ -3345,6 +3430,8 @@ async def festival_watch_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
     account - unlike auto_toast, this only ever reads the shared friend
     feed already being fetched for auto_toast, it never calls anything on
     its own, so there's nothing here that needs the caller's own token."""
+    if not await _require_command_enabled(update, "festival_watch"):
+        return
     lng = lang(update)
     if update.effective_chat.type != "private":
         await update.message.reply_text(t(lng, "festival_watch_group_hint"))
@@ -3415,6 +3502,8 @@ async def comment_watch_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply from the bot" - see comment_watch.py and webapp_server.py's
     _comment_watch_loop. Private chats only. Just on/off - no target list
     or location to configure, unlike auto_toast/festival_watch."""
+    if not await _require_command_enabled(update, "comment_watch"):
+        return
     lng = lang(update)
     if update.effective_chat.type != "private":
         await update.message.reply_text(t(lng, "comment_watch_group_hint"))
@@ -3442,7 +3531,28 @@ async def comment_watch_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(t(lng, "comment_watch_usage"))
 
 
-def private_commands_for(lng: str, *, include_auto_toast: bool = False):
+TOGGLEABLE_COMMAND_NAMES = {cmd for cmd, _, _ in TOGGLEABLE_COMMANDS}
+
+
+def _filter_by_enabled(commands: list, enabled: set[str] | None) -> list:
+    """Drops any BotCommand that's in TOGGLEABLE_COMMANDS but NOT in
+    `enabled` (the owner turned it off - see feature_flags.py); a command
+    that was never toggleable to begin with (e.g. this bot's own vestigial
+    go/back/status/limited menu entries, which have no handler at all)
+    passes through untouched regardless. `enabled=None` skips filtering
+    entirely - used for the owner's OWN command menu, which always shows
+    everything no matter what they've toggled off for everyone else."""
+    if enabled is None:
+        return commands
+    return [c for c in commands if c.command not in TOGGLEABLE_COMMAND_NAMES or c.command in enabled]
+
+
+async def _enabled_command_names() -> set[str]:
+    flags = await feature_flags.get_all(list(TOGGLEABLE_COMMAND_NAMES))
+    return {cmd for cmd, on in flags["commands"].items() if on}
+
+
+def private_commands_for(lng: str, *, include_auto_toast: bool = False, enabled: set[str] | None = None):
     commands = [
         BotCommand("stats", t(lng, "cmd_stats")),
         BotCommand("todo", t(lng, "cmd_todo")),
@@ -3454,26 +3564,28 @@ def private_commands_for(lng: str, *, include_auto_toast: bool = False):
         BotCommand("connect_untappd", t(lng, "cmd_connect_untappd")),
         BotCommand("wishlist_sheet", t(lng, "cmd_wishlist_sheet")),
         BotCommand("import_history", t(lng, "cmd_import_history")),
+        BotCommand("festival_watch", t(lng, "cmd_festival_watch")),
+        BotCommand("comment_watch", t(lng, "cmd_comment_watch")),
     ]
+    commands = _filter_by_enabled(commands, enabled)
     # Auto-toast and /scan are personal test features (see
     # AUTO_TOAST_OWNER_ID) - only listed in the owner's own command menu
     # (BotCommandScopeChat in post_init), not the default menu every
-    # private chat gets.
+    # private chat gets. Never run through _filter_by_enabled - the
+    # owner's own feature-flag toggles only ever apply to OTHER users,
+    # never to themselves (same as _require_command_enabled's _is_owner
+    # check on the handler side).
     if include_auto_toast:
         commands.append(BotCommand("auto_toast", t(lng, "cmd_auto_toast")))
         commands.append(BotCommand("scan", t(lng, "cmd_scan")))
         commands.append(BotCommand("restart", t(lng, "cmd_restart")))
         commands.append(BotCommand("maintenance", t(lng, "cmd_maintenance")))
         commands.append(BotCommand("dev_app", t(lng, "cmd_dev_app")))
-    commands += [
-        BotCommand("festival_watch", t(lng, "cmd_festival_watch")),
-        BotCommand("comment_watch", t(lng, "cmd_comment_watch")),
-    ]
     return commands
 
 
-def status_commands_for(lng: str):
-    return [
+def status_commands_for(lng: str, *, enabled: set[str] | None = None):
+    commands = [
         BotCommand("go", t(lng, "cmd_go")),
         BotCommand("back", t(lng, "cmd_back")),
         BotCommand("status", t(lng, "cmd_status")),
@@ -3481,6 +3593,7 @@ def status_commands_for(lng: str):
         BotCommand("join_group", t(lng, "cmd_join_group")),
         BotCommand("set_festival", t(lng, "cmd_set_festival")),
     ]
+    return _filter_by_enabled(commands, enabled)
 
 
 async def post_init(app):
@@ -3504,9 +3617,15 @@ async def post_init(app):
         except Exception:
             logger.warning("Could not send restart-done notification", exc_info=True)
 
+    # Snapshotted once at startup - a flag the owner flips later via the
+    # Mini App's "Керування функціями" screen takes effect on the handler
+    # side (_require_command_enabled) immediately either way; only this
+    # cosmetic Telegram command-menu suggestion list lags until the next
+    # restart, same as any other owner-scoped menu change in this loop.
+    enabled_commands = await _enabled_command_names()
     for lng in ("en", "uk", "ru"):
         await app.bot.set_my_commands(
-            private_commands_for(lng),
+            private_commands_for(lng, enabled=enabled_commands),
             scope=BotCommandScopeAllPrivateChats(),
             language_code=None if lng == "en" else lng,
         )
@@ -3523,7 +3642,7 @@ async def post_init(app):
             # default menu (without auto_toast) until they do.
             logger.warning("Could not set owner-scoped commands for chat_id=%s", AUTO_TOAST_OWNER_ID, exc_info=True)
         await app.bot.set_my_commands(
-            status_commands_for(lng),
+            status_commands_for(lng, enabled=enabled_commands),
             scope=BotCommandScopeAllGroupChats(),
             language_code=None if lng == "en" else lng,
         )
@@ -3539,6 +3658,7 @@ async def post_init(app):
                 app, ALL_BEERS, DATA_DIR, SESSIONS_RAW,
                 reload_beer_db=reload_beer_db, active_festival_key=ACTIVE_FESTIVAL_KEY,
                 get_festival_data=get_festival_data,
+                get_toggleable_commands=get_toggleable_commands,
             )
         )
         # Menu Button reverted back to the plain commands list

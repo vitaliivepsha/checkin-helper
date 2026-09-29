@@ -119,6 +119,9 @@
     myFestivals: [],      // last /api/checkin/festival/my/get fetch - open to everyone, no availability gate
     myPersonalKey: null,  // this viewer's own override, or null (falls back to their group/the default)
     myEffectiveKey: null, // what they'd actually see right now, after the full resolution chain
+    commandFlagsAvailable: false, // owner-only, see updateCommandFlagsRowVisibility
+    commandFlags: [],     // last /api/checkin/command_flags/get fetch - [{command, label, description, enabled}]
+    photoRecognitionEnabled: true,
     festivalMap: { zones: {}, bonusCategories: {} }, // shared, server-backed - see festival_map.py
   };
   let festivalMapEditMode = false;
@@ -193,6 +196,10 @@
 
   function updateFestivalSwitchRowVisibility() {
     $("settings-row-festivalswitch").classList.toggle("hidden", !state.festivalSwitchAvailable);
+  }
+
+  function updateCommandFlagsRowVisibility() {
+    $("settings-row-commandflags").classList.toggle("hidden", !state.commandFlagsAvailable);
   }
 
   // Search row's "..." overflow menu (wishlist toggle + Untappd link) - a
@@ -337,6 +344,9 @@
     }
     if (name === "my-festival") {
       fetchMyFestivalList();
+    }
+    if (name === "command-flags") {
+      fetchCommandFlags();
     }
     if (name === "festival-map") {
       fetchFestivalMap();
@@ -2185,6 +2195,10 @@
     showScreen("my-festival");
   });
 
+  $("settings-row-commandflags").addEventListener("click", () => {
+    showScreen("command-flags");
+  });
+
   async function fetchFestivalList() {
     $("festival-switch-status").textContent = "Завантажую…";
     $("festival-switch-list").innerHTML = "";
@@ -2309,6 +2323,61 @@
         state.myPersonalKey = data.personalKey;
         renderMyFestivalList();
         $("my-festival-status").textContent = "";
+      });
+    });
+  }
+
+  async function fetchCommandFlags() {
+    $("command-flags-status").textContent = "Завантажую…";
+    $("command-flags-list").innerHTML = "";
+    const { ok, data } = await apiPost("/api/checkin/command_flags/get", {});
+    if (!ok || !data.available) {
+      $("command-flags-status").textContent = "Не вдалося завантажити список команд.";
+      return;
+    }
+    state.commandFlags = data.commands || [];
+    state.photoRecognitionEnabled = !!data.photoRecognition;
+    renderCommandFlags();
+    $("command-flags-status").textContent = "";
+  }
+
+  function commandFlagRowHtml(id, title, hint, checked) {
+    return `<div class="settings-row" id="${id}-row">
+      <div class="settings-row-label">
+        <div class="settings-row-title">${escapeHtml(title)}</div>
+        <div class="settings-row-hint">${escapeHtml(hint)}</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="${id}-toggle"${checked ? " checked" : ""}>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>`;
+  }
+
+  function renderCommandFlags() {
+    const el = $("command-flags-list");
+    const photoRow = commandFlagRowHtml(
+      "command-flag-photo", "Фото в чат",
+      "Розпізнавання пива з фото, надісланого напряму в чат (без команди)",
+      state.photoRecognitionEnabled,
+    );
+    const commandRows = state.commandFlags.map((c) =>
+      commandFlagRowHtml(`command-flag-${c.command}`, `/${c.command} — ${c.label}`, c.description, c.enabled)
+    ).join("");
+    el.innerHTML = photoRow + commandRows;
+
+    $("command-flag-photo-toggle").addEventListener("change", async (e) => {
+      const enabled = e.target.checked;
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+      const { ok } = await apiPost("/api/checkin/command_flags/set", { photoRecognition: enabled });
+      if (ok) state.photoRecognitionEnabled = enabled;
+    });
+    state.commandFlags.forEach((c) => {
+      $(`command-flag-${c.command}-toggle`).addEventListener("change", async (e) => {
+        const enabled = e.target.checked;
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+        const { ok } = await apiPost("/api/checkin/command_flags/set", { command: c.command, enabled });
+        if (ok) c.enabled = enabled;
       });
     });
   }
@@ -2891,15 +2960,18 @@
 
   async function fetchSettingsStatus() {
     $("settings-status").textContent = "Завантажую…";
-    const [autotoast, festivalWatch, commentWatch, festivalMode, festivalList] = await Promise.all([
+    const [autotoast, festivalWatch, commentWatch, festivalMode, festivalList, commandFlags] = await Promise.all([
       apiPost("/api/checkin/autotoast/status", {}),
       apiPost("/api/checkin/festival_watch/get", {}),
       apiPost("/api/checkin/comment_watch/get", {}),
       apiPost("/api/checkin/festival_mode/get", {}),
       apiPost("/api/checkin/festival/list", {}),
+      apiPost("/api/checkin/command_flags/get", {}),
     ]);
     state.autoToastAvailable = !!(autotoast.ok && autotoast.data.available);
     updateAutoToastRowVisibility();
+    state.commandFlagsAvailable = !!(commandFlags.ok && commandFlags.data.available);
+    updateCommandFlagsRowVisibility();
     state.festivalSwitchAvailable = !!(festivalList.ok && festivalList.data.available);
     updateFestivalSwitchRowVisibility();
     $("settings-autotoast-toggle").checked = !!(autotoast.ok && autotoast.data.enabled);

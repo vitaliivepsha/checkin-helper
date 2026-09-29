@@ -38,6 +38,7 @@ import festival_mode
 import maintenance_mode
 import festival_watch
 import foursquare
+import feature_flags
 import group_festivals
 import group_membership
 import user_festivals
@@ -348,6 +349,15 @@ _active_festival_key: str | None = None
 # dev_server.py's dev_mode, where _festival_data_for falls back to the
 # single dataset dev_server.py loaded directly.
 _get_festival_data_fn = None
+
+# bot.py's get_toggleable_commands function reference, passed in by
+# start_webapp_server - same cross-module-callback reasoning as
+# _get_festival_data_fn. Returns bot.py's own TOGGLEABLE_COMMANDS list
+# ((command, label, description) tuples) - webapp_server.py has no
+# business hardcoding a second copy of that registry. None in
+# dev_server.py's dev_mode, where handle_command_flags_get/_set report
+# unavailable (there's no real bot.py command menu to control there).
+_get_toggleable_commands_fn = None
 
 DEPLOY_WEBHOOK_SECRET = os.environ.get("DEPLOY_WEBHOOK_SECRET", "")
 
@@ -2481,6 +2491,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/festival/switch", handle_festival_switch)
     app.router.add_post("/api/checkin/festival/my/get", handle_my_festival_get)
     app.router.add_post("/api/checkin/festival/my/set", handle_my_festival_set)
+    app.router.add_post("/api/checkin/command_flags/get", handle_command_flags_get)
+    app.router.add_post("/api/checkin/command_flags/set", handle_command_flags_set)
     return app
 
 
@@ -2558,6 +2570,7 @@ async def start_webapp_server(
     reload_beer_db=None,
     active_festival_key: str | None = None,
     get_festival_data=None,
+    get_toggleable_commands=None,
 ) -> None:
     """Bind the aiohttp app on the port Fly's http_service expects (8080).
 
@@ -2583,13 +2596,14 @@ async def start_webapp_server(
     ALL_BEERS/SESSIONS_RAW globals (webapp_server.py can't import bot.py
     directly - bot.py already imports this module, so that would be
     circular), then feeds the result back into `_set_festival_data`."""
-    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key, _get_festival_data_fn
+    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key, _get_festival_data_fn, _get_toggleable_commands_fn
     _ptb_bot = ptb_app.bot
     _ptb_app = ptb_app
     _data_dir = os.path.abspath(data_dir or ".")
     _reload_beer_db_fn = reload_beer_db
     _active_festival_key = active_festival_key
     _get_festival_data_fn = get_festival_data
+    _get_toggleable_commands_fn = get_toggleable_commands
     _set_festival_data(festival_beers, sessions_raw)
     if data_dir:
         user_tokens.init(data_dir)
@@ -2597,6 +2611,7 @@ async def start_webapp_server(
         group_membership.init(data_dir)
         group_festivals.init(data_dir)
         user_festivals.init(data_dir)
+        feature_flags.init(data_dir)
         festival_map.init(data_dir)
         await festival_map.migrate_legacy_default(active_festival_key)
         had_it_index.init(data_dir)
@@ -2764,6 +2779,73 @@ async def handle_my_festival_set(request: web.Request) -> web.Response:
         return _json_error("unknown_festival")
     await user_festivals.set_user_festival(user_id, key)
     return web.json_response({"ok": True, "personalKey": key})
+
+
+async def handle_command_flags_get(request: web.Request) -> web.Response:
+    """Owner-only: the Mini App's "Керування функціями" screen reads this
+    to show every command a regular user could otherwise reach (see bot.py's
+    TOGGLEABLE_COMMANDS - owner-only commands like /scan or /restart are
+    deliberately not in that list, they need no separate toggle) plus the
+    direct-photo-to-chat recognition flow, each with its current on/off
+    state (feature_flags.py). Non-owners get a fixed empty/unavailable
+    shape (same convention as handle_autotoast_status) - defense in depth,
+    not the primary access control. Unavailable in dev_server.py's
+    dev_mode too, where `_get_toggleable_commands_fn` stays None since
+    there's no real bot.py command menu to control from there."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    if not _is_auto_toast_owner(tg_user.get("id")):
+        return web.json_response({"available": False, "commands": [], "photoRecognition": True})
+    if _get_toggleable_commands_fn is None:
+        return web.json_response({"available": False, "commands": [], "photoRecognition": True})
+    registry = _get_toggleable_commands_fn()
+    flags = await feature_flags.get_all([cmd for cmd, _, _ in registry])
+    commands = [
+        {"command": cmd, "label": label, "description": desc, "enabled": flags["commands"].get(cmd, True)}
+        for cmd, label, desc in registry
+    ]
+    return web.json_response({
+        "available": True,
+        "commands": commands,
+        "photoRecognition": flags["photoRecognition"],
+    })
+
+
+async def handle_command_flags_set(request: web.Request) -> web.Response:
+    """Owner-only: toggles one command (by name, must be in bot.py's
+    TOGGLEABLE_COMMANDS) or the photo-recognition flow (`photoRecognition`
+    instead of `command`) on/off for everyone except the owner themselves -
+    see feature_flags.py and bot.py's _require_command_enabled/_is_owner.
+    Takes effect on the next message that command's handler processes;
+    the Telegram command-menu SUGGESTION list itself only refreshes on the
+    bot's next restart (see post_init's own note), this only controls
+    whether the command actually still works."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    if not _is_auto_toast_owner(tg_user.get("id")):
+        return _json_error("forbidden", 403)
+    if _get_toggleable_commands_fn is None:
+        return _json_error("not_available_in_dev_mode", 501)
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, ValueError):
+        return _json_error("invalid_json")
+    enabled = body.get("enabled")
+    if not isinstance(enabled, bool):
+        return _json_error("invalid_enabled")
+    if "photoRecognition" in body:
+        await feature_flags.set_enabled(feature_flags.PHOTO_RECOGNITION_KEY, enabled)
+        return web.json_response({"ok": True, "photoRecognition": enabled})
+    command = body.get("command")
+    valid_commands = {cmd for cmd, _, _ in _get_toggleable_commands_fn()}
+    if not isinstance(command, str) or command not in valid_commands:
+        return _json_error("unknown_command")
+    await feature_flags.set_enabled(command, enabled)
+    return web.json_response({"ok": True, "command": command, "enabled": enabled})
 
 
 # How old a get_untappd_api_usage reading has to be before _quota_allows
