@@ -594,6 +594,9 @@ body.festival-mode-active .festival-banner { display: flex; }
   width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: var(--button); color: var(--button-text);
+  /* White ring, not a theme color: it sits on top of the tile's picture,
+     which can be any color in either scheme. */
+  box-shadow: 0 0 0 2px #ffffff;
   opacity: 0; transform: scale(0.6);
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
