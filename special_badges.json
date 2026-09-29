@@ -1,5 +1,5 @@
 {
-  "_source": "Manually curated from https://untappd.com/blog's 'New Badge: X' posts - these are Untappd's own time-limited promotional badges, never in the permanent badges.untappd.com catalog (badge_beer_categories.json/badge_venue_categories.json), so they have to be read and re-catalogued by hand whenever a new one is announced. Checked live 2026-09-26 - only entries confirmed ACTIVE as of that date are listed (activeFrom <= today <= activeUntil); anything already past its activeUntil at cataloguing time was skipped rather than included pre-expired. Re-check the blog periodically (no feed/API for this - it's a real page read each time) and prune entries whose activeUntil has passed, same way this list was built.",
+  "_source": "Manually curated from https://untappd.com/blog's 'New Badge: X' posts - these are Untappd's own time-limited promotional badges, never in the permanent badges.untappd.com catalog (badge_beer_categories.json/badge_venue_categories.json), so they have to be read and re-catalogued by hand whenever a new one is announced. Checked live 2026-09-29 - only entries confirmed ACTIVE as of that date are listed (activeFrom <= today <= activeUntil); anything already past its activeUntil at cataloguing time was skipped rather than included pre-expired. Re-check the blog periodically (no feed/API for this - it's a real page read each time) and prune entries whose activeUntil has passed, same way this list was built.",
   "special_badges": [
     {
       "badge": "Celebrate Oktoberfest (2026)",
@@ -20,51 +20,6 @@
       "activeUntil": "2026-10-04",
       "note": "Same two styles as the global Celebrate Oktoberfest badge above, but ONLY counts at a Flying Saucer location - venueChain is informational only for now, nothing in this codebase currently verifies venue-chain membership automatically.",
       "sourceUrl": "https://untappd.com/blog/new-badge-saucer-oktoberfest-26/1955"
-    },
-    {
-      "badge": "Sour Beer Day (2026)",
-      "kind": "style",
-      "styles": [
-        "Brett Beer",
-        "Farmhouse Ale - Bière de Coupage",
-        "Farmhouse Ale - Bière de Garde",
-        "Farmhouse Ale - Bière de Mars",
-        "Farmhouse Ale - Brett",
-        "Farmhouse Ale - Grisette",
-        "Farmhouse Ale - Kornøl",
-        "Farmhouse Ale - Other",
-        "Farmhouse Ale - Sahti",
-        "Farmhouse Ale - Saison",
-        "Lambic - Faro",
-        "Lambic - Framboise",
-        "Lambic - Fruit",
-        "Lambic - Gueuze",
-        "Lambic - Kriek",
-        "Lambic - Traditional",
-        "Lambic - Other",
-        "IPA - Farmhouse",
-        "IPA - Sour",
-        "Historical Beer - Berliner Braunbier",
-        "Historical Beer - Lichtenhainer",
-        "Non-Alcoholic - Sour",
-        "Sour - Berliner Weisse",
-        "Sour - Fruited Berliner Weisse",
-        "Sour - Flanders Oud Bruin",
-        "Sour - Flanders Red Ale",
-        "Sour - Fruited",
-        "Sour - Traditional Gose",
-        "Sour - Fruited Gose",
-        "Sour - Other Gose",
-        "Sour - Other",
-        "Sour - Smoothie / Pastry",
-        "Wild Ale - American",
-        "Wild Ale - Other"
-      ],
-      "icon": "https://assets.untappd.com/promo/a11d2b6fcd_UTC-SourDay-2026_1080x1440.png",
-      "activeFrom": "2026-09-17",
-      "activeUntil": "2026-09-27",
-      "note": "Untappd's own blog post spelled one style 'Geueze' (typo) - normalized to the real current style name 'Lambic - Gueuze' here. The post's bare 'Gose'/'Fruited Gose' were expanded to the current taxonomy's three separate Gose substyles (Traditional/Fruited/Other) since a bare 'Gose' isn't a real style string on its own - see badge_stats.py's own _STYLE_ALIASES for why a stray non-canonical string is worth avoiding.",
-      "sourceUrl": "https://untappd.com/blog/new-badge-sour-beer-day-2026/1954"
     },
     {
       "badge": "Canadian Beer Day 2026",
