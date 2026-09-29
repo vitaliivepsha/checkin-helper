@@ -138,6 +138,13 @@
     const input = $(inputId);
     const wrap = document.createElement("div");
     wrap.className = "search-field-wrap";
+    // Named so a screen that hides #<inputId> via CSS (e.g. edit mode
+    // hiding the map's own search box) can also target this wrapper
+    // specifically - the wrapper (and its clear button) is a SEPARATE
+    // element from the input itself, so hiding just the input id alone
+    // left the clear button behind, floating over whatever content came
+    // after - confirmed live, on the festival map's edit screen.
+    wrap.id = `${inputId}-wrap`;
     input.parentNode.insertBefore(wrap, input);
     wrap.appendChild(input);
 
@@ -2573,7 +2580,7 @@
     MAP_ZONES = data.zoneOrder || [];
     state.festivalMap = {
       zones: data.zones || {}, bonusCategories: data.bonusCategories || {},
-      zoneLabels: data.zoneLabels || {},
+      zoneLabels: data.zoneLabels || {}, breweryAliases: data.breweryAliases || {},
     };
     renderFestivalMap();
   }
@@ -2902,17 +2909,38 @@
     Object.entries(state.festivalMap.bonusCategories).forEach(([category, breweries]) => {
       breweries.forEach((brewery) => list.push({ brewery, zone: null, category }));
     });
+    // A collab beer's OTHER named brewery (e.g. "Verdant Brewing Co" on a
+    // beer poured at PINTA's stand - see webapp_server.py's
+    // _festival_brewery_aliases) has no stand/pill of its own, so it'd
+    // otherwise never show up here at all. Search still needs to find it
+    // under its own credited name - just resolving to whichever REAL
+    // stand it's actually at (selectFestivalMapSearchResult opens/
+    // highlights `realBrewery`, never a phantom entry for the alias
+    // itself).
+    Object.entries(state.festivalMap.breweryAliases || {}).forEach(([alias, realBrewery]) => {
+      const real = list.find((it) => it.brewery === realBrewery);
+      if (real) list.push({ brewery: alias, zone: real.zone, category: real.category, realBrewery });
+    });
     return list;
   }
 
   function selectFestivalMapSearchResult(match) {
-    $("festival-map-search-input").value = "";
+    const input = $("festival-map-search-input");
+    input.value = "";
+    // A real "input" event (not just setting .value) - addSearchClearButton's
+    // own listener is what actually hides the "x" clear button; skipping
+    // this left it visibly stuck showing after picking a result.
+    input.dispatchEvent(new Event("input", { bubbles: true }));
     $("festival-map-search-results").classList.add("hidden");
     $("festival-map-search-results").innerHTML = "";
+    // A collab beer's OTHER named brewery (match.realBrewery set - see
+    // allMapBreweries' own note) has no stand/pill of its own - open or
+    // highlight whichever REAL stand it's actually poured at instead.
+    const targetBrewery = match.realBrewery || match.brewery;
     if (match.zone) {
-      openFestivalMapDetail(match.zone, match.brewery);
+      openFestivalMapDetail(match.zone, targetBrewery);
     } else {
-      highlightBreweryPill(match.brewery); // a bonus category - already visible on the overview
+      highlightBreweryPill(targetBrewery); // a bonus category - already visible on the overview
     }
   }
 
@@ -2938,7 +2966,10 @@
     matches.forEach((match) => {
       const item = document.createElement("div");
       item.className = "venue-item";
-      item.textContent = `${match.brewery} — ${(match.zone ? zoneDisplayLabel(match.zone) : match.category)}`;
+      const place = match.zone ? zoneDisplayLabel(match.zone) : match.category;
+      item.textContent = match.realBrewery
+        ? `${match.brewery} — ${place} (на стенді ${match.realBrewery})`
+        : `${match.brewery} — ${place}`;
       item.addEventListener("click", () => selectFestivalMapSearchResult(match));
       resultsEl.appendChild(item);
     });

@@ -769,16 +769,31 @@ def _festival_editable_zone_names(beers: list | None = None) -> list[str]:
     return sorted(names, key=lambda n: int(_ZONE_NAME_RE.match(n).group(1)))
 
 
+def _stand_brewery(b: dict) -> str:
+    """Which brewery's STAND (physical presence on the map) a beer counts
+    toward - almost always just its own `brewery`, except a collab beer
+    whose OTHER named brewery has no stand of its own (e.g. WFP's
+    "Beskidy", credited to Verdant Brewing Co on Untappd, but actually
+    poured at PINTA's stand - Verdant isn't physically at the festival at
+    all). `standBrewery` is an optional per-beer override in the source
+    JSON for exactly that case - see also _festival_brewery_aliases,
+    which is how a map search for the CREDITED brewery still finds the
+    right stand."""
+    return (b.get("standBrewery") or b.get("brewery") or "").strip()
+
+
 def _festival_brewery_zone_map(beers: list | None = None) -> dict[str, str]:
     """{brewery: "Area N"} for every festival brewery whose location is one
     of the editable zones - location is already forward-filled to brewery
     level by bot.py's load_db(), so every beer of a brewery agrees, and the
-    first one seen is enough."""
+    first one seen is enough. Keyed by each beer's STAND brewery (see
+    _stand_brewery), not necessarily its own credited `brewery` - a
+    collab beer with no stand of its own never gets counted as one."""
     beers = _festival_beers if beers is None else beers
     zone_names = set(_festival_editable_zone_names(beers))
     zones: dict[str, str] = {}
     for b in beers:
-        brewery = (b.get("brewery") or "").strip()
+        brewery = _stand_brewery(b)
         location = (b.get("location") or "").strip()
         if brewery and location in zone_names and brewery not in zones:
             zones[brewery] = location
@@ -790,16 +805,35 @@ def _festival_bonus_categories(beers: list | None = None) -> dict[str, list[str]
     one of the "Area N" editable zones - shown read-only, at the end of the
     map (MBCC's "Lagerland" is just one example of this, not a special
     case - a different festival's own bonus category is picked up the same
-    way, by name, with no code change needed)."""
+    way, by name, with no code change needed). Same STAND-brewery keying
+    as _festival_brewery_zone_map."""
     beers = _festival_beers if beers is None else beers
     editable = set(_festival_editable_zone_names(beers))
     by_category: dict[str, set[str]] = {}
     for b in beers:
-        brewery = (b.get("brewery") or "").strip()
+        brewery = _stand_brewery(b)
         location = (b.get("location") or "").strip()
         if brewery and location and location not in editable:
             by_category.setdefault(location, set()).add(brewery)
     return {name: sorted(breweries) for name, breweries in sorted(by_category.items())}
+
+
+def _festival_brewery_aliases(beers: list | None = None) -> dict[str, str]:
+    """{credited_brewery: stand_brewery} for every beer whose own `brewery`
+    (how it's credited/searchable, e.g. in the beer list and search
+    results) differs from its STAND brewery (see _stand_brewery) - lets
+    the Mini App's map search still find a collab beer's OTHER named
+    brewery (no stand of its own) and jump straight to/highlight whichever
+    stand it's actually poured at, instead of coming up empty or a
+    phantom "stand" that was never really on the map."""
+    beers = _festival_beers if beers is None else beers
+    aliases: dict[str, str] = {}
+    for b in beers:
+        credited = (b.get("brewery") or "").strip()
+        stand = _stand_brewery(b)
+        if credited and stand and credited != stand:
+            aliases[credited] = stand
+    return aliases
 
 
 async def _fetch_all_wishlist(token: str) -> list[dict]:
@@ -1970,6 +2004,7 @@ async def handle_festival_map_get(request: web.Request) -> web.Response:
         "zoneOrder": zone_names,
         "zoneLabels": _zone_labels_for(map_key),
         "bonusCategories": _festival_bonus_categories(beers),
+        "breweryAliases": _festival_brewery_aliases(beers),
     })
 
 

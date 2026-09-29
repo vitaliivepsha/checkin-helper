@@ -661,6 +661,7 @@ def load_db(filename: str | None = None):
                             "style": beer.get("style", ""),
                             "url": beer.get("url", ""),
                             "location": beer.get("location", ""),
+                            "standBrewery": beer.get("standBrewery"),
                             "session": session,
                         }
         elif isinstance(raw, list):
@@ -674,6 +675,7 @@ def load_db(filename: str | None = None):
                         "style": beer.get("style", ""),
                         "url": beer.get("url", ""),
                         "location": beer.get("location", ""),
+                        "standBrewery": beer.get("standBrewery"),
                         "session": "",
                     }
         # Physical festival location is brewery-level, not beer-level.

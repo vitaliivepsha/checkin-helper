@@ -1017,6 +1017,14 @@ body.map-edit-mode .brewery-pill {
 .perimeter-top, .perimeter-bottom {
   grid-column: 1 / -1;
   display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 6px;
+  /* Grid's default align-items is stretch - harmless until edit mode's
+     min-height (below) made this container taller than a single pill's
+     own natural height, which then stretched the PILL itself to match
+     (not just the empty container), leaving its text sitting at the top
+     of a now-taller box instead of centered. Pills should always render
+     at their own natural height regardless of how tall the row/container
+     needs to be for other reasons (the empty-state minimum footprint). */
+  align-items: start;
 }
 .perimeter-top { grid-area: top; }
 .perimeter-bottom { grid-area: bottom; }
@@ -1073,8 +1081,12 @@ body.map-edit-mode .perimeter-bottom:empty::before {
 
 #festival-map-search-input { margin-bottom: 8px; }
 /* Edit mode has its own horizontally-scrolling layout with no detail view
-   to jump into, so the "find a brewery" search doesn't apply there. */
-body.map-edit-mode #festival-map-search-input,
+   to jump into, so the "find a brewery" search doesn't apply there. Hides
+   the whole #festival-map-search-input-wrap (not just the bare input id)
+   - the clear "x" button lives in that wrapper as the input's OWN
+   sibling, not inside it, so hiding only the input left the button
+   behind, floating over the edit-mode content underneath. */
+body.map-edit-mode #festival-map-search-input-wrap,
 body.map-edit-mode #festival-map-search-results { display: none; }
 /* Solid brand-color fill (not just the plain grey .venue-item look used
    elsewhere) so a search match reads as a distinct, prominent suggestion
