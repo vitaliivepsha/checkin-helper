@@ -359,6 +359,14 @@ _get_festival_data_fn = None
 # unavailable (there's no real bot.py command menu to control there).
 _get_toggleable_commands_fn = None
 
+# bot.py's refresh_command_menus function reference, passed in by
+# start_webapp_server - called (with _ptb_app) at the end of a successful
+# handle_command_flags_set, so a toggle's effect on the Telegram command
+# menu is immediate instead of waiting for the bot's next restart (see
+# refresh_command_menus's own docstring for why this exists - the delay
+# was confirmed live confusing). None in dev_server.py's dev_mode.
+_refresh_command_menus_fn = None
+
 DEPLOY_WEBHOOK_SECRET = os.environ.get("DEPLOY_WEBHOOK_SECRET", "")
 
 # bot.py's load_db() dedupes ALL_BEERS by beer id, keeping only the *first*
@@ -2571,6 +2579,7 @@ async def start_webapp_server(
     active_festival_key: str | None = None,
     get_festival_data=None,
     get_toggleable_commands=None,
+    refresh_command_menus=None,
 ) -> None:
     """Bind the aiohttp app on the port Fly's http_service expects (8080).
 
@@ -2596,7 +2605,7 @@ async def start_webapp_server(
     ALL_BEERS/SESSIONS_RAW globals (webapp_server.py can't import bot.py
     directly - bot.py already imports this module, so that would be
     circular), then feeds the result back into `_set_festival_data`."""
-    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key, _get_festival_data_fn, _get_toggleable_commands_fn
+    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key, _get_festival_data_fn, _get_toggleable_commands_fn, _refresh_command_menus_fn
     _ptb_bot = ptb_app.bot
     _ptb_app = ptb_app
     _data_dir = os.path.abspath(data_dir or ".")
@@ -2604,6 +2613,7 @@ async def start_webapp_server(
     _active_festival_key = active_festival_key
     _get_festival_data_fn = get_festival_data
     _get_toggleable_commands_fn = get_toggleable_commands
+    _refresh_command_menus_fn = refresh_command_menus
     _set_festival_data(festival_beers, sessions_raw)
     if data_dir:
         user_tokens.init(data_dir)
@@ -2818,10 +2828,13 @@ async def handle_command_flags_set(request: web.Request) -> web.Response:
     TOGGLEABLE_COMMANDS) or the photo-recognition flow (`photoRecognition`
     instead of `command`) on/off for everyone except the owner themselves -
     see feature_flags.py and bot.py's _require_command_enabled/_is_owner.
-    Takes effect on the next message that command's handler processes;
-    the Telegram command-menu SUGGESTION list itself only refreshes on the
-    bot's next restart (see post_init's own note), this only controls
-    whether the command actually still works."""
+    Takes effect on the very next message that command's handler
+    processes; also re-applies the Telegram command-menu SUGGESTION list
+    immediately (via `_refresh_command_menus_fn`, bot.py's own
+    refresh_command_menus) for a `command` toggle, so a disabled command
+    stops showing up in "/" autocomplete for other accounts right away
+    instead of only after the bot's next restart - confirmed live
+    confusing when this only updated the enforcement side."""
     init_data = await _require_valid_init_data(request)
     if not init_data:
         return _json_error("invalid_init_data", 401)
@@ -2845,6 +2858,8 @@ async def handle_command_flags_set(request: web.Request) -> web.Response:
     if not isinstance(command, str) or command not in valid_commands:
         return _json_error("unknown_command")
     await feature_flags.set_enabled(command, enabled)
+    if _refresh_command_menus_fn is not None:
+        await _refresh_command_menus_fn(_ptb_app)
     return web.json_response({"ok": True, "command": command, "enabled": enabled})
 
 

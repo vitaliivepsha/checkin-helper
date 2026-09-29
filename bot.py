@@ -3596,32 +3596,20 @@ def status_commands_for(lng: str, *, enabled: set[str] | None = None):
     return _filter_by_enabled(commands, enabled)
 
 
-async def post_init(app):
-    # Follow-up to /restart (see restart_cmd) - this fresh NSSM/systemd-
-    # relaunched process has no memory of that command, only the file it
-    # left behind under DATA_DIR, so this is the only place that can turn
-    # "Перезапускаю…" into a confirmed "✅ Перезапущено" instead of leaving
-    # it looking hung. Also doubles for webapp_server.py's GitHub-webhook
-    # auto-deploy handler (handle_deploy_webhook), which writes the same
-    # file with reason="deploy" after a `git pull` + stop_running() -
-    # same file, same restart mechanism, just a different confirmation text
-    # so the owner can tell a deploy happened apart from a manual /restart.
-    restart_notify_path = data_path("restart_notify.json")
-    if os.path.exists(restart_notify_path):
-        try:
-            with open(restart_notify_path, encoding="utf-8") as f:
-                info = json.load(f)
-            os.remove(restart_notify_path)
-            key = "auto_deploy_done" if info.get("reason") == "deploy" else "restart_done"
-            await app.bot.send_message(chat_id=info["chatId"], text=t(info.get("lang") or "en", key))
-        except Exception:
-            logger.warning("Could not send restart-done notification", exc_info=True)
-
-    # Snapshotted once at startup - a flag the owner flips later via the
-    # Mini App's "Керування функціями" screen takes effect on the handler
-    # side (_require_command_enabled) immediately either way; only this
-    # cosmetic Telegram command-menu suggestion list lags until the next
-    # restart, same as any other owner-scoped menu change in this loop.
+async def refresh_command_menus(app) -> None:
+    """Re-applies the Telegram command menu for every scope/language,
+    reflecting the CURRENT feature_flags state (see _enabled_command_names).
+    Called once at startup (post_init) and again by webapp_server.py's
+    handle_command_flags_set whenever the owner toggles a flag from the
+    Mini App - see start_webapp_server's `refresh_command_menus` callback
+    param (same cross-module-callback pattern as get_festival_data, since
+    webapp_server.py can't import bot.py back). Without this second call
+    site, a toggle only actually took effect (on the handler side,
+    _require_command_enabled) immediately, while the command-menu
+    SUGGESTION list itself stayed stale until the next full restart -
+    confirmed live confusing: the owner toggled a command off, still saw
+    it in another account's "/" autocomplete, and read that as the whole
+    feature not working, when only the cosmetic menu was lagging."""
     enabled_commands = await _enabled_command_names()
     for lng in ("en", "uk", "ru"):
         await app.bot.set_my_commands(
@@ -3647,6 +3635,30 @@ async def post_init(app):
             language_code=None if lng == "en" else lng,
         )
 
+
+async def post_init(app):
+    # Follow-up to /restart (see restart_cmd) - this fresh NSSM/systemd-
+    # relaunched process has no memory of that command, only the file it
+    # left behind under DATA_DIR, so this is the only place that can turn
+    # "Перезапускаю…" into a confirmed "✅ Перезапущено" instead of leaving
+    # it looking hung. Also doubles for webapp_server.py's GitHub-webhook
+    # auto-deploy handler (handle_deploy_webhook), which writes the same
+    # file with reason="deploy" after a `git pull` + stop_running() -
+    # same file, same restart mechanism, just a different confirmation text
+    # so the owner can tell a deploy happened apart from a manual /restart.
+    restart_notify_path = data_path("restart_notify.json")
+    if os.path.exists(restart_notify_path):
+        try:
+            with open(restart_notify_path, encoding="utf-8") as f:
+                info = json.load(f)
+            os.remove(restart_notify_path)
+            key = "auto_deploy_done" if info.get("reason") == "deploy" else "restart_done"
+            await app.bot.send_message(chat_id=info["chatId"], text=t(info.get("lang") or "en", key))
+        except Exception:
+            logger.warning("Could not send restart-done notification", exc_info=True)
+
+    await refresh_command_menus(app)
+
     start_limited_background_tasks(app)
     downtime_watch.start(app.bot, int(AUTO_TOAST_OWNER_ID), data_path("heartbeat.json"))
 
@@ -3659,6 +3671,7 @@ async def post_init(app):
                 reload_beer_db=reload_beer_db, active_festival_key=ACTIVE_FESTIVAL_KEY,
                 get_festival_data=get_festival_data,
                 get_toggleable_commands=get_toggleable_commands,
+                refresh_command_menus=refresh_command_menus,
             )
         )
         # Menu Button reverted back to the plain commands list
