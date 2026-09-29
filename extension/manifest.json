@@ -5,7 +5,7 @@
   "description": "Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.",
   "permissions": ["storage"],
   "host_permissions": [
-    "https://bronchial-inger-puddly.ngrok-free.dev/*"
+    "https://35-211-15-162.sslip.io/*"
   ],
   "background": {
     "service_worker": "background.js"

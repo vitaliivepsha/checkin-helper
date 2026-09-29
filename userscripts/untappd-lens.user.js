@@ -14,7 +14,7 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
-// @connect      bronchial-inger-puddly.ngrok-free.dev
+// @connect      35-211-15-162.sslip.io
 // ==/UserScript==
 
 /* eslint-disable no-undef */
@@ -22,10 +22,10 @@
   "use strict";
 
   // ---- Fill these in before use ----------------------------------------
-  // API_BASE: PUBLIC_BASE_URL from the bot's .env (the ngrok URL, or
-  // wherever webapp_server.py is reachable). Free-tier ngrok URLs change on
-  // every restart of the bot - update this line whenever that happens.
-  const API_BASE = "https://bronchial-inger-puddly.ngrok-free.dev";
+  // API_BASE: PUBLIC_BASE_URL from the bot's .env (wherever webapp_server.py
+  // is reachable) - update this AND the @connect line above if that ever
+  // changes (e.g. the VM's IP changes and the sslip.io hostname with it).
+  const API_BASE = "https://35-211-15-162.sslip.io";
   // API_TOKEN: the LENS_API_TOKEN value from the bot's .env. Treat this
   // like a password - anyone with it can read your Untappd history through
   // this endpoint.

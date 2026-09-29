@@ -5,11 +5,10 @@
 // behalf (the extension-level fetch isn't subject to the page's CORS).
 
 // ---- Fill these in before use ------------------------------------------
-// API_BASE: PUBLIC_BASE_URL from the bot's .env (the ngrok URL, or wherever
-// webapp_server.py is reachable). Free-tier ngrok URLs change on every
-// restart of the bot - update this AND manifest.json's host_permissions
-// whenever that happens.
-const API_BASE = "https://bronchial-inger-puddly.ngrok-free.dev";
+// API_BASE: PUBLIC_BASE_URL from the bot's .env (wherever webapp_server.py
+// is reachable) - update this AND manifest.json's host_permissions if that
+// ever changes (e.g. the VM's IP changes and the sslip.io hostname with it).
+const API_BASE = "https://35-211-15-162.sslip.io";
 // API_TOKEN: the LENS_API_TOKEN value from the bot's .env. Treat this like
 // a password - anyone with it can read your Untappd history through this
 // endpoint.
