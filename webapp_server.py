@@ -3461,8 +3461,11 @@ async def _auto_toast_loop() -> None:
     /auto_toast command / the Mini App's checkbox screen), polling their
     *combined* friend feed (get_my_friend_feed - Untappd's checkin/recent,
     added to the MCP server specifically for this) and toasting whatever is
-    new from a watched target, unless its venue's country is on that
-    owner's exclusion list.
+    new from a watched target, unless its venue's country OR its brewery's
+    own country is on that owner's exclusion list (checked separately - a
+    virtual check-in like "Untappd at Home" has no venue country at all,
+    so the brewery's own origin is often the only signal there is to
+    exclude by).
 
     This replaced an earlier per-target design (one get_user_checkins call
     per watched username - 75+ calls per lap for a heavy list) once
@@ -3572,7 +3575,20 @@ async def _auto_toast_loop() -> None:
                 if legacy_only and not auto_toast.is_legacy_style((item.get("beer") or {}).get("beer_style")):
                     continue  # Non-Alcoholic/RTD/Spirit/Wine - not a "real" beer check-in
                 venue_country = ((item.get("venue") or {}).get("location") or {}).get("venue_country")
+                # A virtual check-in ("Untappd at Home", or no venue at all)
+                # has no venue_country to exclude by - but the BEER itself
+                # still came from somewhere, and a country exclusion is
+                # meant to catch that beer regardless of where it was
+                # physically drunk (confirmed live: a Russian brewery's
+                # check-in at "Untappd at Home" sailed straight through a
+                # Russia exclusion that only ever looked at venue_country).
+                # item["brewery"] sits alongside item["beer"], same shape
+                # webapp_server's venue-backfill loop already reads
+                # brewery.country_name from.
+                brewery_country = (item.get("brewery") or {}).get("country_name")
                 if auto_toast.is_country_excluded(venue_country, excluded):
+                    continue
+                if auto_toast.is_country_excluded(brewery_country, excluded):
                     continue
                 try:
                     await client.toast_checkin(active_token, checkin_id)

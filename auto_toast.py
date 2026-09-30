@@ -62,13 +62,20 @@ def normalize_country_input(text: str) -> str:
     return _ALIAS_TO_CANONICAL.get(text.strip().lower(), text.strip().lower())
 
 
-def is_country_excluded(venue_country: str | None, excluded_keys: list[str]) -> bool:
-    """venue_country is the raw string from a check-in's venue.location -
-    absent for check-ins with no venue at all, which are never excluded
-    (nothing to judge by, default to allowing the toast)."""
-    if not venue_country:
+def is_country_excluded(country: str | None, excluded_keys: list[str]) -> bool:
+    """Checks one country string against the exclusion list - called twice
+    per check-in by webapp_server._auto_toast_loop, once for the venue's
+    own country (check-in.venue.location.venue_country) and once for the
+    brewery's (check-in.brewery.country_name), since either can be absent
+    independently of the other (a virtual check-in like "Untappd at Home"
+    has no venue country at all, but its beer still came from a real
+    brewery somewhere - and conversely a venue's country doesn't say
+    anything about a visiting/guest brewery's own origin). Absent is never
+    excluded either way (nothing to judge by, default to allowing the
+    toast)."""
+    if not country:
         return False
-    normalized = venue_country.strip().lower()
+    normalized = country.strip().lower()
     if not normalized:
         return False
     for key in excluded_keys:
