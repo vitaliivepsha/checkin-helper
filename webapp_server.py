@@ -2028,15 +2028,67 @@ async def handle_festival_map_move(request: web.Request) -> web.Response:
     zone = body.get("zone")
     side = body.get("side")
     index = body.get("index")
+    island_id = body.get("islandId")
     if not isinstance(brewery, str) or brewery not in _festival_brewery_zone_map(beers):
         return _json_error("invalid_brewery")
     if not isinstance(index, int) or index < 0:
         return _json_error("invalid_index")
+    if island_id is not None and not isinstance(island_id, str):
+        return _json_error("invalid_island")
 
-    moved = await festival_map.move_brewery(map_key, brewery, zone, side, index, _festival_editable_zone_names(beers))
+    moved = await festival_map.move_brewery(
+        map_key, brewery, zone, side, index, _festival_editable_zone_names(beers), island_id=island_id
+    )
     if not moved:
         return _json_error("invalid_zone")
     return web.json_response({"ok": True})
+
+
+async def handle_festival_map_island_create(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    festival_key = await _resolve_festival_key(user_id)
+    beers, _ = _festival_data_for(festival_key)
+    map_key = festival_key or _active_festival_key
+
+    zone = body.get("zone")
+    island_id = await festival_map.create_island(map_key, zone, _festival_editable_zone_names(beers))
+    if island_id is None:
+        return _json_error("invalid_zone")
+    return web.json_response({"ok": True, "islandId": island_id})
+
+
+async def handle_festival_map_island_delete(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    festival_key = await _resolve_festival_key(user_id)
+    beers, _ = _festival_data_for(festival_key)
+    map_key = festival_key or _active_festival_key
+
+    zone = body.get("zone")
+    island_id = body.get("islandId")
+    if not isinstance(island_id, str):
+        return _json_error("invalid_island")
+    deleted = await festival_map.delete_island(map_key, zone, island_id, _festival_editable_zone_names(beers))
+    return web.json_response({"ok": deleted})
 
 
 async def _get_my_list_items(user_id: int) -> list[dict]:
@@ -2517,6 +2569,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/queue/reset_personal", handle_queue_reset_personal)
     app.router.add_post("/api/checkin/festival_map/get", handle_festival_map_get)
     app.router.add_post("/api/checkin/festival_map/move", handle_festival_map_move)
+    app.router.add_post("/api/checkin/festival_map/island_create", handle_festival_map_island_create)
+    app.router.add_post("/api/checkin/festival_map/island_delete", handle_festival_map_island_delete)
     app.router.add_post("/api/checkin/wishlist/list", handle_wishlist_list)
     app.router.add_post("/api/checkin/wishlist/add", handle_wishlist_add)
     app.router.add_post("/api/checkin/wishlist/remove", handle_wishlist_remove)

@@ -1033,12 +1033,40 @@ body.map-edit-mode .brewery-pill {
 /* Outline for brewery pills on the festival map - derived from --hint so
    it stays clearly visible on both the light and dark card surface. */
 body { --pill-border: color-mix(in srgb, var(--hint) 45%, transparent); }
-.perimeter-mid .icon { width: 28px; height: 28px; stroke-width: 1.6; }
+.perimeter-mid .icon { width: 28px; height: 28px; stroke-width: 1.6; color: var(--hint); opacity: 0.6; }
 .map-zone-label .icon { width: 14px; height: 14px; vertical-align: -2px; }
 .perimeter-mid {
   grid-area: mid;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--hint); opacity: 0.6;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+}
+/* The decorative watermark icon is only useful while a zone has no
+   islands yet - once it does, it'd just compete with them for the same
+   small area. */
+.perimeter-mid.has-islands .icon { display: none; }
+.map-island-add-btn { display: none; }
+body.map-edit-mode .map-island-add-btn {
+  display: block;
+  background: none; border: 1px dashed var(--pill-border); border-radius: 999px;
+  color: var(--hint); font-size: 11px; padding: 3px 10px; cursor: pointer;
+}
+/* Interior clusters (see festival_map.py's own module docstring) - a
+   handful of small brewery groups floating in the zone's middle, for
+   venues whose real layout isn't just a perimeter. Each box is its own
+   flex-wrap list, same drag/drop gesture as the 4 perimeter sides (see
+   app.js's findDropTarget/onMapPillPointerUp) - just a second kind of
+   target list to point at. */
+.map-islands { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.map-island {
+  position: relative;
+  display: flex; flex-wrap: wrap; gap: 4px; max-width: 100%;
+  border: 1px dashed var(--pill-border); border-radius: 10px; padding: 5px 7px;
+}
+.map-island-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.map-island-remove {
+  position: absolute; top: -8px; right: -8px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--pill-border);
+  color: var(--hint); font-size: 12px; line-height: 1; padding: 0; cursor: pointer;
 }
 /* Left/right render as a shared virtual row grid in edit mode (see
    app.js's renderPerimeterPills) - the shorter side pads out with these

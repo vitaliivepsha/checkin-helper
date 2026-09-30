@@ -43,6 +43,20 @@ remove the old spot rather than leaving a gap) - based on what's actually
 at the target index when the move is made. Trailing Nones (nothing real
 left after them) are trimmed on every read/write, since they don't align
 with anything anymore once nothing follows them.
+
+A zone can also hold "islands" - a handful of small brewery clusters in the
+middle of the floor, for venues (WFP's 2nd floor, for one) whose real
+layout isn't just a perimeter. Each zone stores an `islands` dict, keyed by
+a locally-generated id, each value `{"label": str, "breweries": [...]}` -
+the `breweries` list uses this exact same None-slot convention, so
+move_brewery's claim-vs-reorder logic needs no island-specific branching,
+just a second kind of target list to point at. Dict insertion order is
+display order - no separate ordering field. Unlike the 4 perimeter sides,
+islands are never auto-seeded (get_layout's new-brewery placement always
+lands on the perimeter, same as before islands existed) and never
+implicitly created by a move - create_island/delete_island are the only
+way an island comes or goes, so move_brewery treats a request for an
+island id that doesn't exist as invalid rather than inventing it.
 """
 
 import asyncio
@@ -70,8 +84,8 @@ def _bucket_key(festival_key: str | None) -> str:
     return festival_key or _DEFAULT_BUCKET
 
 
-def _empty_zones(zones: list[str]) -> dict[str, dict[str, list[str]]]:
-    return {z: {s: [] for s in SIDES} for z in zones}
+def _empty_zones(zones: list[str]) -> dict[str, dict]:
+    return {z: {**{s: [] for s in SIDES}, "islands": {}} for z in zones}
 
 
 def _load_all() -> dict:
@@ -125,7 +139,7 @@ async def migrate_legacy_default(default_key: str | None) -> None:
         _save_all({_bucket_key(default_key): raw})
 
 
-def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dict[str, list[str | None]]]:
+def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dict]:
     loaded = _empty_zones(zones)
     bucket_data = all_data.get(bucket)
     saved = bucket_data.get("zones", {}) if isinstance(bucket_data, dict) else {}
@@ -137,19 +151,35 @@ def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dic
             items = saved_zone.get(s)
             if isinstance(items, list):
                 loaded[z][s] = [b for b in items if isinstance(b, str) or b is None]
+        saved_islands = saved_zone.get("islands")
+        if isinstance(saved_islands, dict):
+            for island_id, island in saved_islands.items():
+                if not isinstance(island_id, str) or not isinstance(island, dict):
+                    continue
+                breweries = island.get("breweries")
+                if not isinstance(breweries, list):
+                    continue
+                label = island.get("label")
+                loaded[z]["islands"][island_id] = {
+                    "label": label if isinstance(label, str) else "",
+                    "breweries": [b for b in breweries if isinstance(b, str) or b is None],
+                }
     return loaded
 
 
-def _trim_trailing_none(loaded: dict[str, dict[str, list[str | None]]]) -> bool:
-    """A None past the last real entry in a side's list doesn't align with
-    anything anymore (nothing further along to leave room for) - trims it
-    so an empty tail doesn't linger/grow forever as items get moved
-    around. Returns True if anything was actually trimmed (the caller's
-    cue to persist the change)."""
+def _island_lists(zone: dict) -> list[list[str | None]]:
+    return [island["breweries"] for island in zone["islands"].values()]
+
+
+def _trim_trailing_none(loaded: dict[str, dict]) -> bool:
+    """A None past the last real entry in a side's (or island's) list
+    doesn't align with anything anymore (nothing further along to leave
+    room for) - trims it so an empty tail doesn't linger/grow forever as
+    items get moved around. Returns True if anything was actually trimmed
+    (the caller's cue to persist the change)."""
     trimmed = False
     for zone in loaded.values():
-        for side in SIDES:
-            lst = zone[side]
+        for lst in [zone[side] for side in SIDES] + _island_lists(zone):
             while lst and lst[-1] is None:
                 lst.pop()
                 trimmed = True
@@ -173,7 +203,7 @@ def _seed_sides(breweries: list[str]) -> dict[str, list[str]]:
 
 async def get_layout(
     festival_key: str | None, known_breweries: list[str], brewery_zone_hint: dict[str, str], zones: list[str]
-) -> dict[str, dict[str, list[str | None]]]:
+) -> dict[str, dict]:
     """Returns the current zone layout for `festival_key` (for the given
     `zones` - whatever the caller currently considers that festival's main,
     editable zones), seeding in any brewery from `known_breweries` that
@@ -201,7 +231,18 @@ async def get_layout(
                 if len(filtered) != len(zone[side]):
                     pruned = True
                     zone[side] = filtered
-        placed = {b for zone in loaded.values() for side in zone.values() for b in side if b is not None}
+            for lst in _island_lists(zone):
+                filtered = [b for b in lst if b is None or b in known]
+                if len(filtered) != len(lst):
+                    pruned = True
+                    lst[:] = filtered
+        placed = {
+            b
+            for zone in loaded.values()
+            for lst in [zone[side] for side in SIDES] + _island_lists(zone)
+            for b in lst
+            if b is not None
+        }
         new_by_zone: dict[str, list[str]] = {}
         for brewery in known_breweries:
             if brewery in placed:
@@ -225,11 +266,16 @@ async def get_layout(
 
 
 async def move_brewery(
-    festival_key: str | None, brewery: str, zone: str, side: str, index: int, zones: list[str]
+    festival_key: str | None, brewery: str, zone: str, side: str, index: int, zones: list[str],
+    island_id: str | None = None,
 ) -> bool:
     """Moves `brewery` (from wherever it currently sits, if anywhere) into
-    `zone`/`side` at `index`, within `festival_key`'s own bucket. Returns
-    False only if `zone`/`side` is invalid for the given `zones` list.
+    `zone`/`side` at `index` (or, if `island_id` is given, into that
+    island instead - `side` is then ignored), within `festival_key`'s own
+    bucket. Returns False if `zone`/`side` is invalid for the given
+    `zones` list, or if `island_id` doesn't name an island that already
+    exists in `zone` (islands are only ever created via create_island -
+    a stale/unknown id is rejected rather than silently recreated).
 
     Two different behaviors, chosen by what's AT the target position when
     the move is made (see this module's own docstring):
@@ -241,20 +287,27 @@ async def move_brewery(
       everything from that point on, and its old position is fully
       removed (collapsed), same as this function always did before slots
       existed."""
-    if zone not in zones or side not in SIDES:
+    if zone not in zones:
+        return False
+    if island_id is None and side not in SIDES:
         return False
     bucket = _bucket_key(festival_key)
     async with _lock:
         all_data = _load_all()
         loaded = _load_bucket(all_data, bucket, zones)
 
-        target = loaded[zone][side]
+        if island_id is not None:
+            island = loaded[zone]["islands"].get(island_id)
+            if island is None:
+                return False
+            target = island["breweries"]
+        else:
+            target = loaded[zone][side]
         index = max(0, index)
         claim_slot = index >= len(target) or target[index] is None
 
         for z in loaded.values():
-            for s in SIDES:
-                lst = z[s]
+            for lst in [z[s] for s in SIDES] + _island_lists(z):
                 for i, b in enumerate(lst):
                     if b == brewery:
                         if claim_slot:
@@ -270,6 +323,50 @@ async def move_brewery(
         else:
             target.insert(min(index, len(target)), brewery)
 
+        _trim_trailing_none(loaded)
+        all_data[bucket] = {"zones": loaded}
+        _save_all(all_data)
+        return True
+
+
+async def create_island(festival_key: str | None, zone: str, zones: list[str]) -> str | None:
+    """Creates a new, empty island in `zone` and returns its id, or None
+    if `zone` is invalid. The id is locally unique within the zone
+    (`isl_<n>`, one past the highest existing numeric suffix there) - it's
+    never shown to the viewer, only used for drag/drop bookkeeping."""
+    if zone not in zones:
+        return None
+    bucket = _bucket_key(festival_key)
+    async with _lock:
+        all_data = _load_all()
+        loaded = _load_bucket(all_data, bucket, zones)
+        existing = loaded[zone]["islands"]
+        n = 1
+        for island_id in existing:
+            if island_id.startswith("isl_") and island_id[4:].isdigit():
+                n = max(n, int(island_id[4:]) + 1)
+        island_id = f"isl_{n}"
+        existing[island_id] = {"label": "", "breweries": []}
+        all_data[bucket] = {"zones": loaded}
+        _save_all(all_data)
+        return island_id
+
+
+async def delete_island(festival_key: str | None, zone: str, island_id: str, zones: list[str]) -> bool:
+    """Removes `island_id` from `zone`. Any breweries it still held are
+    appended to that zone's `top` list rather than discarded - same
+    "don't silently lose a placement" instinct as the rest of this
+    module. Returns False if `zone`/`island_id` don't exist."""
+    if zone not in zones:
+        return False
+    bucket = _bucket_key(festival_key)
+    async with _lock:
+        all_data = _load_all()
+        loaded = _load_bucket(all_data, bucket, zones)
+        island = loaded[zone]["islands"].pop(island_id, None)
+        if island is None:
+            return False
+        loaded[zone]["top"].extend(b for b in island["breweries"] if b is not None)
         _trim_trailing_none(loaded)
         all_data[bucket] = {"zones": loaded}
         _save_all(all_data)

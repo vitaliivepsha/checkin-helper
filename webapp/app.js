@@ -2611,7 +2611,11 @@
       <div class="perimeter-grid">
         <div class="perimeter-top"></div>
         <div class="perimeter-left"></div>
-        <div class="perimeter-mid">${ICON_BEER}</div>
+        <div class="perimeter-mid">
+          <div class="map-islands"></div>
+          <button type="button" class="map-island-add-btn">+ Острівець</button>
+          ${ICON_BEER}
+        </div>
         <div class="perimeter-right"></div>
         <div class="perimeter-bottom"></div>
       </div>`;
@@ -2695,7 +2699,10 @@
     // .filter(Boolean) drops empty-slot `null` entries (see
     // festival_map.py's own docstring) - they're placeholders, not real
     // breweries, and shouldn't inflate the zone's own beer count.
-    return MAP_SIDES.reduce((sum, side) => sum + (zoneSides[side] || []).filter(Boolean).length, 0);
+    const perimeter = MAP_SIDES.reduce((sum, side) => sum + (zoneSides[side] || []).filter(Boolean).length, 0);
+    const islands = Object.values(zoneSides.islands || {})
+      .reduce((sum, island) => sum + (island.breweries || []).filter(Boolean).length, 0);
+    return perimeter + islands;
   }
 
   // Overview cards are too small to show 20-28 readable pills, so outside
@@ -2767,6 +2774,70 @@
     });
   }
 
+  // Interior clusters (see festival_map.py's own docstring) - a handful of
+  // small brewery groups floating in a zone's decorative middle, for
+  // venues whose real layout isn't just a perimeter (WFP's 2nd floor, for
+  // one). Rendered inside the same .perimeter-mid the beer-icon watermark
+  // already lives in; the icon only shows while there are no islands yet
+  // (see style.css's .has-islands rule). Unlike renderPerimeterPills,
+  // islands are never auto-seeded/padded - they only exist once an editor
+  // explicitly creates one (the "+ Острівець" button), so there's no
+  // empty-state placeholder grid to build here.
+  function renderIslands(midEl, zone, islands, draggable) {
+    const wrap = midEl.querySelector(".map-islands");
+    wrap.innerHTML = "";
+    const entries = Object.entries(islands || {});
+    midEl.classList.toggle("has-islands", entries.length > 0);
+    entries.forEach(([islandId, island]) => {
+      const box = document.createElement("div");
+      box.className = "map-island";
+      box.dataset.islandId = islandId;
+      const pills = document.createElement("div");
+      pills.className = "map-island-pills";
+      (island.breweries || []).forEach((brewery) => {
+        if (brewery) pills.appendChild(makeBreweryPill(brewery, draggable));
+      });
+      box.appendChild(pills);
+      if (draggable) {
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "map-island-remove";
+        removeBtn.textContent = "×";
+        removeBtn.addEventListener("click", () => deleteMapIsland(zone, islandId));
+        box.appendChild(removeBtn);
+      }
+      wrap.appendChild(box);
+    });
+    // Only the edit-capable render path (buildZoneCard) has this button at
+    // all - the read-only detail view's static markup doesn't include one.
+    const addBtn = midEl.querySelector(".map-island-add-btn");
+    if (addBtn) addBtn.onclick = () => addMapIsland(zone);
+  }
+
+  async function addMapIsland(zone) {
+    const { ok, data } = await apiPost("/api/checkin/festival_map/island_create", { zone });
+    if (!ok || !data.islandId) return;
+    const zoneSides = state.festivalMap.zones[zone] || (state.festivalMap.zones[zone] = {});
+    zoneSides.islands = zoneSides.islands || {};
+    zoneSides.islands[data.islandId] = { label: "", breweries: [] };
+    renderFestivalMap();
+  }
+
+  // Optimistically returns the island's breweries to `top` locally too
+  // (mirrors festival_map.py's delete_island) so they don't visibly
+  // vanish until the next poll reconciles - same "match what the server
+  // will confirm" instinct as onMapPillPointerUp's own optimistic move.
+  async function deleteMapIsland(zone, islandId) {
+    const zoneSides = state.festivalMap.zones[zone];
+    const island = zoneSides && zoneSides.islands && zoneSides.islands[islandId];
+    if (island) {
+      delete zoneSides.islands[islandId];
+      zoneSides.top = (zoneSides.top || []).concat((island.breweries || []).filter(Boolean));
+    }
+    renderFestivalMap();
+    await apiPost("/api/checkin/festival_map/island_delete", { zone, islandId });
+  }
+
   let festivalMapDetailZone = null; // which zone (if any) the full-screen detail view is showing
 
   function renderFestivalMap() {
@@ -2796,6 +2867,7 @@
       const dotsContainer = zoneEl.querySelector(".map-zone-pills.preview");
       renderZonePreviewDots(dotsContainer, total);
       renderPerimeterPills(zoneEl.querySelector(".perimeter-grid"), zoneSides, true);
+      renderIslands(zoneEl.querySelector(".perimeter-mid"), zone, zoneSides.islands, true);
       zoneEl.querySelector(".map-zone-count").textContent = total;
       zoneEl.addEventListener("click", () => {
         if (festivalMapEditMode) return;
@@ -2823,6 +2895,7 @@
     $("festival-map-detail-label").textContent = zoneDisplayLabel(festivalMapDetailZone);
     $("festival-map-detail-count").textContent = zoneTotal(zoneSides);
     renderPerimeterPills($("festival-map-detail-pills"), zoneSides, false);
+    renderIslands($("festival-map-detail-pills").querySelector(".perimeter-mid"), festivalMapDetailZone, zoneSides.islands, false);
     applyActiveSearchHighlight();
   }
 
@@ -3066,8 +3139,13 @@
     else container.appendChild(placeholder);
   }
 
-  function sideOf(container) {
-    return MAP_SIDES.find((s) => container.classList.contains(`perimeter-${s}`));
+  // Where a pill's own container currently is - one of the 4 perimeter
+  // sides, or (if it's sitting inside a .map-island-pills box) an island,
+  // identified by its parent .map-island's data-island-id.
+  function containerLocation(container) {
+    const islandBox = container.closest(".map-island-pills");
+    if (islandBox) return { side: "island", islandId: islandBox.parentElement.dataset.islandId };
+    return { side: MAP_SIDES.find((s) => container.classList.contains(`perimeter-${s}`)), islandId: null };
   }
 
   function onMapPillPointerDown(e) {
@@ -3104,12 +3182,14 @@
     pill.style.top = `${e.clientY}px`;
     document.body.appendChild(pill);
 
+    const originalLoc = containerLocation(originalContainer);
     mapDrag = {
       brewery: pill.dataset.brewery,
       pill,
       placeholder,
       lastZone: originalZone,
-      lastSide: sideOf(originalContainer),
+      lastSide: originalLoc.side,
+      lastIslandId: originalLoc.islandId,
       lastContainer: originalContainer,
       lastIndex: originalIndex,
     };
@@ -3131,15 +3211,25 @@
     mapDragTimeoutHandle = setTimeout(cancelMapDrag, 8000);
   }
 
-  // Finds which zone the pointer is over, then which of that zone's 4
-  // independent side-lists (top/left/right/bottom) is closest - by rect
-  // distance, so dropping in the empty decorative middle still resolves to
-  // whichever side is nearest instead of missing entirely.
+  // Finds which zone the pointer is over, then either a precise hit on one
+  // of that zone's island boxes, or - failing that - which of the 4
+  // independent perimeter side-lists (top/left/right/bottom) is closest by
+  // rect distance, so dropping in the empty decorative middle still
+  // resolves to whichever side is nearest instead of missing entirely.
+  // Island hit-testing runs first and is exact (not nearest-by-distance)
+  // so dropping into a small island box next to the middle never gets
+  // stolen by a "nearer" perimeter side.
   function findDropTarget(x, y) {
     for (const zone of MAP_ZONES) {
       const zoneEl = findZoneEl(zone);
       const rect = zoneEl.getBoundingClientRect();
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        for (const box of zoneEl.querySelectorAll(".map-island-pills")) {
+          const bRect = box.getBoundingClientRect();
+          if (x >= bRect.left && x <= bRect.right && y >= bRect.top && y <= bRect.bottom) {
+            return { zone, zoneEl, side: "island", islandId: box.parentElement.dataset.islandId, sideContainer: box };
+          }
+        }
         const sections = perimeterSections(zoneEl);
         let side = null;
         let sideContainer = null;
@@ -3155,7 +3245,7 @@
             sideContainer = sections[s];
           }
         });
-        return { zone, zoneEl, side, sideContainer };
+        return { zone, zoneEl, side, islandId: null, sideContainer };
       }
     }
     return null;
@@ -3191,11 +3281,12 @@
     const target = findDropTarget(e.clientX, e.clientY);
     if (!target) return; // hovering outside any zone - leave the placeholder at its last valid slot
     target.zoneEl.classList.add("drag-over");
-    const horizontal = target.side === "top" || target.side === "bottom";
+    const horizontal = target.side === "top" || target.side === "bottom" || target.side === "island";
     const index = insertionIndex(target.sideContainer, e.clientX, e.clientY, mapDrag.placeholder, horizontal);
     if (target.sideContainer === mapDrag.lastContainer && index === mapDrag.lastIndex) return;
     mapDrag.lastZone = target.zone;
     mapDrag.lastSide = target.side;
+    mapDrag.lastIslandId = target.islandId;
     mapDrag.lastContainer = target.sideContainer;
     mapDrag.lastIndex = index;
     flipReorder(() => placePlaceholderAt(target.sideContainer, index));
@@ -3203,7 +3294,7 @@
 
   async function onMapPillPointerUp() {
     if (!mapDrag) return;
-    const { brewery, lastZone, lastSide, lastIndex } = mapDrag;
+    const { brewery, lastZone, lastSide, lastIslandId, lastIndex } = mapDrag;
     cancelMapDrag();
 
     // Optimistic local move so nothing snaps back while the request is in
@@ -3218,8 +3309,13 @@
     // existed. Keeping this decision in sync with the backend means the
     // optimistic render already matches what the next poll will confirm,
     // instead of visibly "jumping" once the server's real state arrives.
+    // An "island" target is just a second kind of list this can point at
+    // (targetSides.islands[id].breweries instead of targetSides[side]) -
+    // same claim-vs-reorder logic either way.
     const targetSides = state.festivalMap.zones[lastZone];
-    const target = targetSides[lastSide] || (targetSides[lastSide] = []);
+    const target = lastSide === "island"
+      ? (targetSides.islands[lastIslandId] || (targetSides.islands[lastIslandId] = { label: "", breweries: [] })).breweries
+      : (targetSides[lastSide] || (targetSides[lastSide] = []));
     const claimSlot = lastIndex >= target.length || !target[lastIndex];
 
     MAP_ZONES.forEach((zone) => {
@@ -3233,6 +3329,12 @@
         if (claimSlot) list[idx] = null;
         else list.splice(idx, 1);
       });
+      Object.values(zoneSides.islands || {}).forEach((island) => {
+        const idx = island.breweries.indexOf(brewery);
+        if (idx === -1) return;
+        if (claimSlot) island.breweries[idx] = null;
+        else island.breweries.splice(idx, 1);
+      });
     });
     if (claimSlot) {
       while (target.length <= lastIndex) target.push(null);
@@ -3242,7 +3344,10 @@
     }
     renderFestivalMap();
 
-    await apiPost("/api/checkin/festival_map/move", { brewery, zone: lastZone, side: lastSide, index: lastIndex });
+    await apiPost("/api/checkin/festival_map/move", {
+      brewery, zone: lastZone, side: lastSide, index: lastIndex,
+      islandId: lastSide === "island" ? lastIslandId : null,
+    });
   }
 
   // ---- Settings screen (⚙️) - quick on/off for the three watch features ----
