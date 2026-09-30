@@ -129,5 +129,341 @@
     "style": "IPA - American",
     "location": "Area 3",
     "url": "https://untappd.com/beer/70951"
+  },
+  {
+    "id": "5922342",
+    "name": "Osmička",
+    "brewery": "Brofaktura",
+    "style": "Lager - Světlé (Czech Pale)",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5922342"
+  },
+  {
+    "id": "6842271",
+    "name": "11 German Pils",
+    "brewery": "Brofaktura",
+    "style": "Pilsner - German",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6842271"
+  },
+  {
+    "id": "6961012",
+    "name": "HORKÝ REZNÍK",
+    "brewery": "Brofaktura",
+    "style": "Pilsner - Czech / Bohemian",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961012"
+  },
+  {
+    "id": "6961015",
+    "name": "Euphoric",
+    "brewery": "Brofaktura",
+    "style": "IPA - New Zealand",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961015"
+  },
+  {
+    "id": "6958846",
+    "name": "GEN P3",
+    "brewery": "Brofaktura",
+    "style": "IPA - American",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6958846"
+  },
+  {
+    "id": "6961011",
+    "name": "Kalte Welle",
+    "brewery": "Brofaktura",
+    "style": "IPA - Cold",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961011"
+  },
+  {
+    "id": "6961005",
+    "name": "No More Haze",
+    "brewery": "Brofaktura",
+    "style": "IPA - American",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961005"
+  },
+  {
+    "id": "6961002",
+    "name": "Red Hells Bells",
+    "brewery": "Brofaktura",
+    "style": "IPA - Red",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961002"
+  },
+  {
+    "id": "6961007",
+    "name": "Milk Stout",
+    "brewery": "Brofaktura",
+    "style": "Stout - Milk / Sweet",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961007"
+  },
+  {
+    "id": "6961000",
+    "name": "Scotch ALE",
+    "brewery": "Brofaktura",
+    "style": "Scotch Ale / Wee Heavy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961000"
+  },
+  {
+    "id": "6961021",
+    "name": "Cherrywood Smoked With Suska Sechlońska",
+    "brewery": "Brofaktura",
+    "style": "Porter - Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961021"
+  },
+  {
+    "id": "6961911",
+    "name": "Imperial Stout With Black Truffle, Vanilla & Maple Syrup",
+    "brewery": "Brofaktura",
+    "style": "Stout - Imperial / Double",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6961911"
+  },
+  {
+    "id": "6754493",
+    "name": "RANDALL WFP 22 Coffe Double FES Orzechy Laskowe, Ziarno Kakaowca, Tonka",
+    "brewery": "Brofaktura",
+    "style": "Stout - Foreign / Export",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6754493"
+  },
+  {
+    "id": "6819201",
+    "name": "Rubedo",
+    "brewery": "Browar Kingpin",
+    "style": "Farmhouse Ale - Saison",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6819201"
+  },
+  {
+    "id": "6819202",
+    "name": "Folia",
+    "brewery": "Browar Kingpin",
+    "style": "Farmhouse Ale - Saison",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6819202"
+  },
+  {
+    "id": "6921843",
+    "name": "Siesta",
+    "brewery": "Browar Kingpin",
+    "style": "Lager - Mexican",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6921843"
+  },
+  {
+    "id": "6921844",
+    "name": "Rendezvous",
+    "brewery": "Browar Kingpin",
+    "style": "Lager - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6921844"
+  },
+  {
+    "id": "6745086",
+    "name": "Vento Puro",
+    "brewery": "Browar Kingpin",
+    "style": "Pilsner - Italian",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6745086"
+  },
+  {
+    "id": "5854204",
+    "name": "Ripper",
+    "brewery": "Browar Kingpin",
+    "style": "Pilsner - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5854204"
+  },
+  {
+    "id": "3784575",
+    "name": "Pils",
+    "brewery": "Browar Kingpin",
+    "style": "Pilsner - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3784575"
+  },
+  {
+    "id": "6921840",
+    "name": "Drift",
+    "brewery": "Browar Kingpin",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6921840"
+  },
+  {
+    "id": "6205465",
+    "name": "Glimmer",
+    "brewery": "Browar Kingpin",
+    "style": "Pale Ale - American",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6205465"
+  },
+  {
+    "id": "6205467",
+    "name": "Split Screen",
+    "brewery": "Browar Kingpin",
+    "style": "IPA - Cold",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6205467"
+  },
+  {
+    "id": "5399972",
+    "name": "Free Ride",
+    "brewery": "Browar Kingpin",
+    "style": "Non-Alcoholic - IPA",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5399972"
+  },
+  {
+    "id": "5866774",
+    "name": "Free Yellow",
+    "brewery": "Browar Kingpin",
+    "style": "Non-Alcoholic - Fruit Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5866774"
+  },
+  {
+    "id": "6627119",
+    "name": "Sowie Bezalkoholwe Jasne",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Non-Alcoholic - Lager",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6627119"
+  },
+  {
+    "id": "6404832",
+    "name": "Sowie Bezalkoholowe Pomarańcza",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Non-Alcoholic - Shandy / Radler",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6404832"
+  },
+  {
+    "id": "4965760",
+    "name": "Sowie Bezalkoholowe Mango & Marakuja",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Non-Alcoholic - Fruit Beer",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4965760"
+  },
+  {
+    "id": "3827432",
+    "name": "Bezalkoholowe APA",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Non-Alcoholic - Pale Ale",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/3827432"
+  },
+  {
+    "id": "5189913",
+    "name": "Induktor",
+    "brewery": "Browar Wielka Sowa",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/5189913"
+  },
+  {
+    "id": "2793872",
+    "name": "Przepięcie",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Pale Ale - American",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/2793872"
+  },
+  {
+    "id": "2791504",
+    "name": "Amper",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Pale Ale - American",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/2791504"
+  },
+  {
+    "id": "4085030",
+    "name": "Faza",
+    "brewery": "Browar Wielka Sowa",
+    "style": "IPA - Other",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4085030"
+  },
+  {
+    "id": "4146646",
+    "name": "Sowie Porter",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4146646"
+  },
+  {
+    "id": "4142586",
+    "name": "Sowie Ciemne Niefiltrowane",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Kellerbier / Zwickelbier - Dunkel",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4142586"
+  },
+  {
+    "id": "4909782",
+    "name": "Sowie Malinowe",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Fruit Beer",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4909782"
+  },
+  {
+    "id": "3062144",
+    "name": "Sowie Miodowe",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Honey Beer",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/3062144"
+  },
+  {
+    "id": "3342634",
+    "name": "Sowie Pszeniczne z Mango i Marakują",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Wheat Beer - Fruited",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/3342634"
+  },
+  {
+    "id": "2798895",
+    "name": "Sowie Pszeniczne",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Wheat Beer - Hefeweizen",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/2798895"
+  },
+  {
+    "id": "2498621",
+    "name": "Sowie Jasne Pełne",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Lager - Pale",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/2498621"
+  },
+  {
+    "id": "2452694",
+    "name": "Sowie Marcowe",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Märzen",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/2452694"
+  },
+  {
+    "id": "2655797",
+    "name": "Sowie Pils",
+    "brewery": "Browar Wielka Sowa",
+    "style": "Pilsner - German",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/2655797"
   }
 ]
