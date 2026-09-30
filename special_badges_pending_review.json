@@ -1,0 +1,12 @@
+[
+  {
+    "url": "https://untappd.com/blog/new-badge-mischievously-drinkable/1959",
+    "note": "Mischievously Drinkable (Elysian Brewing, Oct 1 - Dec 31, 2026): requires one of four specific Elysian Dust Series beers (Space Dust IPA, Juice Dust Juicy IPA, Phaze Dust Hazy IPA, Easy Dust Non-Alc IPA) - a brewery/specific-beer match, not a style or country match, so special_badges.json's reader (kind: style/country only) can't compute this.",
+    "foundAt": "2026-09-30"
+  },
+  {
+    "url": "https://untappd.com/blog/new-badge-punchtoeberfest/1951",
+    "note": "Punchtöberfest (Oct 1-31, 2026, sponsored by Punch Cigars): criteria is 'check in any beer ... in the USA only', which reads as a check-in VENUE location restriction, not a brewery-country match - badge_stats.compute_special_badges' 'country' kind matches a beer's own country field (brewery origin), so this isn't the same thing and can't be safely encoded as kind: country without risking false positives for e.g. a US drinker checking in a German import.",
+    "foundAt": "2026-09-30"
+  }
+]
