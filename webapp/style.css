@@ -1061,7 +1061,14 @@ body.map-edit-mode .map-island-add-btn {
   display: flex; flex-wrap: wrap; gap: 4px; max-width: 100%;
   border: 1px dashed var(--pill-border); border-radius: 10px; padding: 5px 7px;
 }
-.map-island-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+/* min-width/min-height matter even more here than on .perimeter-row-slot
+   (which only pads an otherwise non-empty row) - a BRAND NEW island has
+   zero pills, and a flex container with no children and no floor
+   collapses to a literal 0x0 rect, which app.js's findDropTarget hit-tests
+   precisely (not by nearest-distance, unlike the perimeter fallback) - an
+   empty island would be a real box you can see but can never actually
+   drop anything onto. */
+.map-island-pills { display: flex; flex-wrap: wrap; gap: 4px; min-width: 50px; min-height: 27px; }
 .map-island-remove {
   position: absolute; top: -8px; right: -8px;
   width: 18px; height: 18px; border-radius: 50%;
