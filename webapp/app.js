@@ -3605,14 +3605,28 @@
 
   // ---- Usage badge (loaded once on start) ----
 
+  // Shared by both the MCP quota badge and the owner-only direct-API one
+  // below - same ring math, different element ids and label.
+  function renderUsageBadge(wrapId, badgeId, ringId, remaining, limit, label) {
+    $(badgeId).textContent = `${remaining}/${limit} ${label}`;
+    // Ring shows the share of quota still left (r=9 in the 24-unit box).
+    const circ = 2 * Math.PI * 9;
+    const left = limit ? Math.max(0, Math.min(1, remaining / limit)) : 0;
+    $(ringId).setAttribute("stroke-dasharray", `${(circ * left).toFixed(1)} ${circ.toFixed(1)}`);
+    $(wrapId).classList.remove("hidden");
+  }
+
   apiPost("/api/checkin/usage", {}).then(({ ok, data }) => {
     if (ok && data.remaining != null) {
-      $("usage-badge").textContent = `${data.remaining}/${data.limit} запитів API`;
-      // Ring shows the share of quota still left (r=9 in the 24-unit box).
-      const circ = 2 * Math.PI * 9;
-      const left = data.limit ? Math.max(0, Math.min(1, data.remaining / data.limit)) : 0;
-      $("usage-ring-fill").setAttribute("stroke-dasharray", `${(circ * left).toFixed(1)} ${circ.toFixed(1)}`);
-      $("usage-wrap").classList.remove("hidden");
+      renderUsageBadge("usage-wrap", "usage-badge", "usage-ring-fill", data.remaining, data.limit, "запитів API");
+    }
+    // Owner-only (see handle_usage) - the separate direct-Untappd-API quota
+    // background sync loops fall back to, absent for every other viewer.
+    if (ok && data.directUsage && data.directUsage.remaining != null) {
+      renderUsageBadge(
+        "direct-usage-wrap", "direct-usage-badge", "direct-usage-ring-fill",
+        data.directUsage.remaining, data.directUsage.limit, "прямих запитів",
+      );
     }
     if (ok && data.lastVenue) {
       state.lastVenue = data.lastVenue;

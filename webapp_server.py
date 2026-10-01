@@ -1251,12 +1251,26 @@ async def handle_usage(request: web.Request) -> web.Response:
     last_seen = usage.get("lastSeen", {})
     instance = usage.get("instance", {})
     profile = await user_tokens.get_profile(tg_user.get("id"))
+    is_owner = str(tg_user.get("id")) == AUTO_TOAST_OWNER_ID
+    # The direct Untappd API (untappd_direct.py) is a completely separate
+    # credential/quota pool from the MCP one above - only the recognized
+    # owner's background sync loops ever use it (see that module's own
+    # docstring), so surfacing it to anyone else would just be a confusing
+    # "0/0" for a pool they never touch. get_api_usage() is free (reads
+    # module state captured from the real API's own response headers, no
+    # network call), so this costs nothing even when there's nothing to show.
+    direct_usage = None
+    if is_owner:
+        direct_last_seen = untappd_direct.get_api_usage().get("lastSeen", {})
+        if direct_last_seen.get("remaining") is not None:
+            direct_usage = {"limit": direct_last_seen.get("limit"), "remaining": direct_last_seen.get("remaining")}
     return web.json_response({
         "limit": last_seen.get("limit"),
         "remaining": last_seen.get("remaining"),
         "callsLastHour": instance.get("callsLastHour"),
         "lastVenue": (profile or {}).get("last_venue"),
-        "isAutoToastOwner": str(tg_user.get("id")) == AUTO_TOAST_OWNER_ID,
+        "isAutoToastOwner": is_owner,
+        "directUsage": direct_usage,
     })
 
 

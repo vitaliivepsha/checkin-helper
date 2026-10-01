@@ -107,6 +107,15 @@
           </svg>
           <span id="usage-badge"></span>
         </div>
+        <!-- Owner-only: the separate direct-Untappd-API quota (see
+             webapp_server.py's handle_usage) - absent for everyone else. -->
+        <div class="usage-badge hidden" id="direct-usage-wrap">
+          <svg class="usage-ring" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" class="usage-ring-track"/>
+            <circle cx="12" cy="12" r="9" class="usage-ring-fill" id="direct-usage-ring-fill"/>
+          </svg>
+          <span id="direct-usage-badge"></span>
+        </div>
       </div>
       <button id="events-bar-btn" class="icon-btn" title="Останні події" aria-label="Останні події">
         <svg class="icon"><use href="#icon-bell"/></svg>
