@@ -1411,7 +1411,12 @@ async def handle_festival_brewery(request: web.Request) -> web.Response:
     festival_beers, sessions_raw = _festival_data_for(festival_key)
     beer_sessions, _, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
 
-    candidates = [b for b in festival_beers if (b.get("brewery") or "").strip() == brewery]
+    # Match by STAND, not the beer's own credited brewery - a map pill is
+    # always a stand (see _stand_brewery's own docstring), and a pure stand
+    # name like a collab host that holds no beers credited to itself
+    # directly (e.g. WFP's "OneMoreBeer") would otherwise match nothing at
+    # all, even though it visibly has beers on the map.
+    candidates = [b for b in festival_beers if _stand_brewery(b) == brewery]
 
     beers = []
     for b in candidates:
