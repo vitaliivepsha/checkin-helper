@@ -299,9 +299,23 @@ async def _no_cache_middleware(request: web.Request, handler):
     """Telegram's Mini App WebView has been observed to cache aggressively
     regardless of headers, but set this anyway - it's the correct behavior
     for a page whose content changes on every deploy, and some clients do
-    honor it."""
+    honor it.
+
+    Exempts everything under /static/checkin/ (app.js, style.css, festival
+    tile images): that mount's own URLs are already version-busted with
+    `_BUILD_VERSION` on every file name that can change (see handle_index
+    and _festival_image_url) specifically so the CURRENT version is safe to
+    cache indefinitely - a new deploy gets a new URL, not a cache-bust
+    header. Forcing no-store on top of that defeated the whole point: it
+    was confirmed live that opening the Mini App always re-fetched every
+    festival tile image from scratch (visible as a brief blank/loading tile
+    every single time, never just once) even though the exact same
+    `?v=<token>` URL never changes between opens."""
     response = await handler(request)
-    response.headers["Cache-Control"] = "no-store"
+    if not request.path.startswith("/static/checkin/"):
+        response.headers["Cache-Control"] = "no-store"
+    elif "Cache-Control" not in response.headers:
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     return response
 
 
@@ -2798,13 +2812,20 @@ def _festival_image_url(entry: dict) -> str | None:
     is a bare file name inside webapp/festivals/, which the existing
     /static/checkin/ mount already serves; anything with a path separator is
     ignored rather than trusted, so a registry edit can't reach outside that
-    folder."""
+    folder.
+
+    Version-busted with the same `_BUILD_VERSION` token as app.js/style.css
+    (see handle_index) so _no_cache_middleware can safely cache this exact
+    URL indefinitely - confirmed live that without it, the Mini App's "Мій
+    фестиваль"/switcher tiles re-fetched every festival's picture from
+    scratch on every single open (a visible blank tile each time), not just
+    once after a deploy."""
     name = (entry.get("image") or "").strip()
     if not name or "/" in name or "\\" in name or name.startswith("."):
         return None
     if not os.path.exists(os.path.join(WEBAPP_DIR, "festivals", name)):
         return None
-    return f"/static/checkin/festivals/{name}"
+    return f"/static/checkin/festivals/{name}?v={_BUILD_VERSION}"
 
 
 async def handle_festival_list(request: web.Request) -> web.Response:
