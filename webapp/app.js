@@ -3652,4 +3652,19 @@
 
   // ---- Unread events indicator (loaded once on start) ----
   checkForUnreadEvents();
+
+  // ---- Deep link into the map (loaded once on start) ----
+  // A festival-novelty Telegram notification's "Відкрити на карті" button
+  // (see webapp_server.py's _notify_festival_novelty) opens the Mini App
+  // with these two query params instead of a bare /checkin - jump straight
+  // to that brewery's stand the same way an in-app map search result does
+  // (openFestivalMapDetail's own highlight), skipping the normal idle
+  // search screen entirely for this one launch.
+  const deepLinkParams = new URLSearchParams(window.location.search);
+  const deepLinkZone = deepLinkParams.get("mapZone");
+  const deepLinkBrewery = deepLinkParams.get("mapBrewery");
+  if (deepLinkZone && deepLinkBrewery) {
+    showScreen("festival-map");
+    fetchFestivalMap().then(() => openFestivalMapDetail(deepLinkZone, deepLinkBrewery));
+  }
 })();

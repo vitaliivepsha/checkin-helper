@@ -3701,6 +3701,7 @@ async def post_init(app):
                 get_festival_data=get_festival_data,
                 get_toggleable_commands=get_toggleable_commands,
                 refresh_command_menus=refresh_command_menus,
+                public_base_url=PUBLIC_BASE_URL,
             )
         )
         # Menu Button reverted back to the plain commands list

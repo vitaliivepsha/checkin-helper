@@ -17,13 +17,13 @@ import logging
 import os
 import re
 import time
-from urllib.parse import parse_qsl
+from urllib.parse import parse_qsl, quote
 
 import aiohttp
 from aiohttp import web
 from aiohttp.web_log import AccessLogger
 from rapidfuzz import fuzz, process
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 import auto_toast
 import badge_index
@@ -327,6 +327,13 @@ _festival_beers: list = []
 # _auto_toast_loop send festival_watch notifications directly, without a
 # second bot instance or a round-trip back into bot.py.
 _ptb_bot = None
+
+# bot.py's own PUBLIC_BASE_URL (the Mini App's public origin) - needed here
+# specifically to build a deep-link "Відкрити на карті" button on a festival
+# novelty notification (see _notify_festival_novelty), the same web_app
+# button pattern bot.py's own /checkin uses. None when PUBLIC_BASE_URL isn't
+# configured (e.g. local dev) - that button is just skipped then.
+_public_base_url: str | None = None
 
 # The full Application, kept alongside _ptb_bot specifically for
 # .bot_data - _notify_new_comment stashes the commenter's username there
@@ -2716,6 +2723,7 @@ async def start_webapp_server(
     get_festival_data=None,
     get_toggleable_commands=None,
     refresh_command_menus=None,
+    public_base_url: str | None = None,
 ) -> None:
     """Bind the aiohttp app on the port Fly's http_service expects (8080).
 
@@ -2741,7 +2749,7 @@ async def start_webapp_server(
     ALL_BEERS/SESSIONS_RAW globals (webapp_server.py can't import bot.py
     directly - bot.py already imports this module, so that would be
     circular), then feeds the result back into `_set_festival_data`."""
-    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key, _get_festival_data_fn, _get_toggleable_commands_fn, _refresh_command_menus_fn
+    global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key, _get_festival_data_fn, _get_toggleable_commands_fn, _refresh_command_menus_fn, _public_base_url
     _ptb_bot = ptb_app.bot
     _ptb_app = ptb_app
     _data_dir = os.path.abspath(data_dir or ".")
@@ -2750,6 +2758,7 @@ async def start_webapp_server(
     _get_festival_data_fn = get_festival_data
     _get_toggleable_commands_fn = get_toggleable_commands
     _refresh_command_menus_fn = refresh_command_menus
+    _public_base_url = public_base_url
     _set_festival_data(festival_beers, sessions_raw)
     if data_dir:
         user_tokens.init(data_dir)
@@ -3455,6 +3464,7 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
         )
 
         on_list = bid is not None and bid in known_beer_ids
+        reply_markup = None
         if on_list:
             if not notify_listed:
                 continue  # opted out of "on the list, not queued yet" pings (see set_notify_listed)
@@ -3479,12 +3489,32 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
             )
             event_text = f"{username}: {beer_name} на {venue_name}" + (" (вже пив)" if already_had else "")
 
+            # Even though THIS beer isn't in the festival's list, its credited
+            # brewery (or whichever real stand it aliases to - see
+            # _festival_brewery_aliases, e.g. a collab poured at a host's
+            # stand) might already have a pin on the map from its OTHER
+            # beers - worth a direct "Відкрити на карті" deep-link then,
+            # same web_app button pattern as bot.py's /checkin (the only
+            # one confirmed to carry real initData into the WebView).
+            if _public_base_url:
+                zone_hint = _festival_brewery_zone_map(_festival_beers)
+                stand_brewery = _festival_brewery_aliases(_festival_beers).get(brewery_name, brewery_name)
+                zone = zone_hint.get(stand_brewery)
+                if zone:
+                    map_url = (
+                        f"{_public_base_url}/checkin"
+                        f"?mapZone={quote(zone)}&mapBrewery={quote(stand_brewery)}"
+                    )
+                    reply_markup = InlineKeyboardMarkup(
+                        [[InlineKeyboardButton("📍 Відкрити на карті", web_app=WebAppInfo(url=map_url))]]
+                    )
+
         await event_log.add_event(
             owner_id, "novelty", event_text,
             beer_id=bid, checkin_id=item.get("checkin_id"), username=username,
         )
         try:
-            await _ptb_bot.send_message(chat_id=owner_id, text=text, parse_mode="HTML")
+            await _ptb_bot.send_message(chat_id=owner_id, text=text, parse_mode="HTML", reply_markup=reply_markup)
         except Exception:
             logger.exception("festival_watch: failed to notify owner %s", owner_id)
 
