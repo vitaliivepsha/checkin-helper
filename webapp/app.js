@@ -828,7 +828,7 @@
         </div>
         <div class="row-actions">
           ${isNative
-            ? `<button class="wishlist-remove-btn" data-id="${beer.id}" data-beer-id="${beer.beerId}">${ICON_CLOSE}</button>`
+            ? `<button class="wishlist-remove-btn" data-id="${beer.id}" data-beer-id="${beer.beerId}" data-name="${escapeHtml(beer.name || "")}">${ICON_CLOSE}</button>`
             : `<span class="wishlist-sheet-tag" title="Додано через Google Sheet — видаліть рядок у таблиці">з таблиці</span>`}
           <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
         </div>`;
@@ -845,11 +845,23 @@
       listEl.appendChild(row);
     });
     listEl.querySelectorAll(".wishlist-remove-btn").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
+      btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        await apiPost("/api/checkin/wishlist/remove", { id: btn.dataset.id });
-        syncSearchRowWishlistState(Number(btn.dataset.beerId), null);
-        fetchWishlist();
+        const doRemove = async () => {
+          await apiPost("/api/checkin/wishlist/remove", { id: btn.dataset.id });
+          syncSearchRowWishlistState(Number(btn.dataset.beerId), null);
+          fetchWishlist();
+        };
+        // Same Telegram-native-confirm-with-browser-fallback pattern as
+        // the queue's own "Очистити всю чергу?" - this one-tap "x" has no
+        // selection step in front of it (unlike the bulk selection-delete
+        // flow below), so it's the one most prone to an accidental tap.
+        const msg = `Прибрати "${btn.dataset.name}" зі списку?`;
+        if (tg && tg.showConfirm) {
+          tg.showConfirm(msg, (confirmed) => { if (confirmed) doRemove(); });
+        } else if (confirm(msg)) {
+          doRemove();
+        }
       });
     });
   }
