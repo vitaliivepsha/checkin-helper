@@ -97,6 +97,7 @@
   const state = {
     selectedBeer: null,
     rating: 4,
+    ratingStep: "0.25", // persists across beers for this session - a viewer preference, not per-beer
     venues: null,
     selectedVenue: null,
     lastVenue: null,     // remembered from the previous check-in - festival venue doesn't change mid-day
@@ -1868,22 +1869,35 @@
     showScreen(screenForOrigin(state.origin));
   });
 
-  const PILL_VALUES = [3.75, 4, 4.25, 4.5, 4.75, 5];
+  // Quick-pick presets, one set per scale - kept to 6 so they always fit
+  // one row (#rating-pills is a 6-column grid). The 0.1 set isn't an even
+  // subdivision of the 0.25 one; it's just 6 sensible high-end picks at
+  // that finer precision.
+  const PILL_VALUES = {
+    "0.25": [3.75, 4, 4.25, 4.5, 4.75, 5],
+    "0.1": [3.8, 4.0, 4.2, 4.5, 4.8, 5.0],
+  };
   const pillsEl = $("rating-pills");
-  PILL_VALUES.forEach((v) => {
-    const pill = document.createElement("button");
-    pill.type = "button";
-    pill.className = "pill";
-    pill.textContent = v.toFixed(2).replace(/0$/, "").replace(/\.$/, "");
-    pill.dataset.value = v;
-    pill.addEventListener("click", () => {
-      state.rating = v;
-      $("rating-slider").value = String(v);
-      $("rating-readout").textContent = v.toFixed(2);
-      updatePillHighlight();
+
+  function buildRatingPills() {
+    pillsEl.innerHTML = "";
+    PILL_VALUES[state.ratingStep].forEach((v) => {
+      const pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "pill";
+      pill.textContent = v.toFixed(2).replace(/0$/, "").replace(/\.$/, "");
+      pill.dataset.value = v;
+      pill.addEventListener("click", () => {
+        state.rating = v;
+        $("rating-slider").value = String(v);
+        $("rating-readout").textContent = v.toFixed(2);
+        updatePillHighlight();
+      });
+      pillsEl.appendChild(pill);
     });
-    pillsEl.appendChild(pill);
-  });
+    updatePillHighlight();
+  }
+  buildRatingPills();
 
   function updatePillHighlight() {
     pillsEl.querySelectorAll(".pill").forEach((p) => {
@@ -1895,6 +1909,23 @@
     state.rating = parseFloat(e.target.value);
     $("rating-readout").textContent = state.rating.toFixed(2);
     updatePillHighlight();
+  });
+
+  $("rating-scale-toggle").querySelectorAll(".pill").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const step = btn.dataset.step;
+      if (step === state.ratingStep) return;
+      state.ratingStep = step;
+      $("rating-scale-toggle").querySelectorAll(".pill").forEach((b) => b.classList.toggle("active", b === btn));
+      $("rating-slider").step = step;
+      // Snap the current rating onto the new grid so the slider/readout
+      // never show a value the new scale couldn't actually produce.
+      const stepNum = parseFloat(step);
+      state.rating = Math.min(5, Math.max(0, Math.round(state.rating / stepNum) * stepNum));
+      $("rating-slider").value = String(state.rating);
+      $("rating-readout").textContent = state.rating.toFixed(2);
+      buildRatingPills();
+    });
   });
 
   function renderVenueList(venues) {
