@@ -2978,6 +2978,15 @@
       MAP_SIDES.forEach((side) => {
         (sides[side] || []).forEach((brewery) => { if (brewery) list.push({ brewery, zone }); });
       });
+      // Islands (see renderIslands) are a separate list the perimeter walk
+      // above never touches - a stand moved into one would otherwise
+      // silently drop out of search entirely, taking every collab alias
+      // resolving to it down with it (confirmed live: dragging "OneMoreBeer"
+      // into an island made "Brouwerij Lindemans" unsearchable too, since
+      // the alias lookup below only ever finds a REAL pill in this list).
+      Object.values(sides.islands || {}).forEach((island) => {
+        (island.breweries || []).forEach((brewery) => { if (brewery) list.push({ brewery, zone }); });
+      });
     });
     Object.entries(state.festivalMap.bonusCategories).forEach(([category, breweries]) => {
       breweries.forEach((brewery) => list.push({ brewery, zone: null, category }));
