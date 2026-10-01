@@ -320,6 +320,7 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
 .result-name { display: flex; align-items: baseline; gap: 4px; font-weight: 600; min-width: 0; }
 .result-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .badge { font-size: 13px; flex-shrink: 0; }
+.badge-pending { color: var(--button); cursor: pointer; }
 .result-row.had-it { opacity: 0.6; }
 .had-it-badge {
   font-size: 13px; white-space: nowrap; flex-shrink: 0;

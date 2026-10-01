@@ -2030,6 +2030,18 @@ async def handle_queue_list(request: web.Request) -> web.Response:
         for it in items:
             it.setdefault("hadIt", None)
 
+    # Mark queue items the viewer already attempted and that got saved to
+    # their own "Відкладені" list instead of completing the queue item (see
+    # handle_submit) - without this, a queue row that's actually already
+    # been tried looks identical to one nobody has touched yet.
+    pending_queue_ids = {
+        it.get("queueItemId")
+        for it in await pending_checkins.list_items(user_id)
+        if it.get("queueItemId")
+    }
+    for it in items:
+        it["pendingForMe"] = it.get("id") in pending_queue_ids
+
     return web.json_response({"items": items, "total": len(all_items), "groupTitle": group["chatTitle"]})
 
 

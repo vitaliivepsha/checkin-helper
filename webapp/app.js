@@ -478,6 +478,18 @@
     });
   }
 
+  // Inline badge for a queue row the viewer already tried to check in -
+  // Untappd failed at the time, so it's sitting in "Відкладені" instead of
+  // completing this queue item (see pendingForMe, set server-side in
+  // handle_queue_list from pending_checkins.list_items). Without this the
+  // row looks untouched even though it's already been attempted and is
+  // just waiting on a manual retry. Tapping it jumps straight there.
+  function pendingForMeBadgeHtml(beer) {
+    return beer.pendingForMe
+      ? `<span class="badge badge-pending" title="Вже збережено у Відкладені">${ICON_REFRESH}</span>`
+      : "";
+  }
+
   async function addToQueue(beer, btn) {
     const { ok, data } = await apiPost("/api/checkin/queue/add", beer);
     if (!ok || !data.ok) {
@@ -608,7 +620,7 @@
         <div class="queue-next-body">
           <div class="thumb"><img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
           <div class="result-main">
-            <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
+            <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}${pendingForMeBadgeHtml(beer)}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
             ${metaLine(beer.brewery)}
             ${metaChips(beer)}
           </div>
@@ -623,7 +635,7 @@
         <div class="queue-number">${idx + 1}</div>
         <div class="thumb"><img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
         <div class="result-main">
-          <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
+          <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}${pendingForMeBadgeHtml(beer)}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
           ${metaLine(beer.brewery)}
           ${metaChips(beer)}
           <div class="result-meta">додав(-ла) ${escapeHtml(addedBy)}</div>
@@ -634,11 +646,18 @@
         </div>`;
       row.addEventListener("click", (e) => {
         if (queueSelectionMode) { toggleQueueSelected(beer.id); return; }
-        if (e.target.closest(".queue-remove-btn") || e.target.closest(".untappd-link-btn")) return;
+        if (e.target.closest(".queue-remove-btn") || e.target.closest(".untappd-link-btn") || e.target.closest(".badge-pending")) return;
         selectBeer(beer, { origin: "queue", queueItemId: beer.id });
       });
       bindLongPress(row, () => { if (!queueSelectionMode) enterQueueSelectionMode(beer.id); });
       row.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(beer.beerId, e));
+      const pendingBadge = row.querySelector(".badge-pending");
+      if (pendingBadge) {
+        pendingBadge.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showScreen("pending-checkins");
+        });
+      }
       listEl.appendChild(row);
     });
     listEl.querySelectorAll(".queue-remove-btn").forEach((btn) => {
