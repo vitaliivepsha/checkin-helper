@@ -1825,6 +1825,15 @@
     $("venue-list").classList.add("hidden");
     setSelectedVenueDisplay(state.lastVenue ? (state.lastVenue.name || "") : "");
     updatePillHighlight();
+    // Reset the submit button back to its default state - without this,
+    // whatever it last showed (Зачекінено!/Збережено/a disabled "Надсилаю…")
+    // from a PREVIOUS check-in attempt stuck around on every later beer
+    // opened via this same screen, since nothing else ever touches it
+    // until the next submit.
+    const confirmBtn = $("to-confirm-btn");
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = `${ICON_CHECK} Чекінити`;
+    $("submit-status").textContent = "";
     showScreen("rate");
   }
 
@@ -2055,7 +2064,25 @@
     };
 
     const { ok, status, data } = await apiPost("/api/checkin/submit", body);
-    if (ok && data.ok) {
+    if (ok && data.pending) {
+      // Untappd failed (rate-limited or otherwise) - saved for manual retry
+      // instead of lost (see pending_checkins.py), so this is shown as a
+      // handled outcome, not a hard error. Checked BEFORE the generic
+      // data.ok branch below - handle_submit sets data.ok=true on this
+      // response too (the HTTP round-trip itself succeeded), so pending
+      // must win the check or it's indistinguishable from a real check-in.
+      btn.innerHTML = `${ICON_REFRESH} Збережено`;
+      $("submit-status").textContent = "Untappd зараз недоступний — зберіг чекін, спробуєш пізніше у «Відкладені».";
+      updatePendingCheckinsCountOnly();
+
+      setTimeout(() => {
+        if (state.origin === "search") {
+          $("search-input").value = "";
+          $("results").innerHTML = "";
+        }
+        showScreen(screenForOrigin(state.origin));
+      }, 2000);
+    } else if (ok && data.ok) {
       if (venue) {
         // Keep in-memory state in sync with what the server just persisted,
         // so the next beer in this same session is pre-filled without
@@ -2074,21 +2101,6 @@
         }
         showScreen(screenForOrigin(state.origin));
       }, state.origin === "queue" ? 1200 : 1500);
-    } else if (ok && data.pending) {
-      // Untappd failed (rate-limited or otherwise) - saved for manual retry
-      // instead of lost (see pending_checkins.py), so this is shown as a
-      // handled outcome, not a hard error.
-      btn.innerHTML = `${ICON_REFRESH} Збережено`;
-      $("submit-status").textContent = "Untappd зараз недоступний — зберіг чекін, спробуєш пізніше у «Відкладені».";
-      updatePendingCheckinsCountOnly();
-
-      setTimeout(() => {
-        if (state.origin === "search") {
-          $("search-input").value = "";
-          $("results").innerHTML = "";
-        }
-        showScreen(screenForOrigin(state.origin));
-      }, 2000);
     } else {
       btn.disabled = false;
       btn.innerHTML = `${ICON_CHECK} Чекінити`;

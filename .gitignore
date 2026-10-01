@@ -19,6 +19,7 @@ status.json
 festival_map.json
 festival_mode.json
 wishlist_items.json
+pending_checkins.json
 badge_index_sync.json
 group_membership.json
 group_festivals.json
