@@ -419,6 +419,22 @@ body.festival-mode-active .home-hero-icon-festival { display: block; }
   font-size: 11px; font-weight: 600; white-space: nowrap;
 }
 
+/* "Відкладені чекіни" row actions - same chip language as .add-queue-btn,
+   just with a text label since "retry" (unlike remove) isn't obvious from
+   an icon alone. */
+.pending-checkin-actions { gap: 8px; }
+.pending-retry-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: none; border-radius: 999px; padding: 6px 10px;
+  background: var(--accent-soft); color: var(--accent-ink);
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  cursor: pointer; transition: transform 0.1s ease;
+}
+.pending-retry-btn:active { transform: scale(var(--tap-scale)); }
+.pending-retry-btn .icon { width: 14px; height: 14px; }
+.pending-retry-btn:disabled { opacity: 0.6; }
+.pending-fail-reason { color: var(--hint); font-size: 11px; }
+
 .queue-header {
   display: flex; flex-wrap: wrap; justify-content: space-between;
   align-items: center; gap: 6px 10px; margin-bottom: 10px;

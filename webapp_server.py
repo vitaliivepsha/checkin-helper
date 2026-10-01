@@ -48,6 +48,7 @@ import untappd_mcp
 import user_tokens
 import venue_index
 import special_badge_dismissals
+import pending_checkins
 import wishlist_items
 import wishlist_sheets
 
@@ -1281,6 +1282,21 @@ async def handle_usage(request: web.Request) -> web.Response:
     })
 
 
+async def _apply_checkin_side_effects(
+    user_id: int, beer_id: int, rating: float, foursquare_id: str | None, queue_item_id: str | None,
+) -> None:
+    """Everything that follows a REAL, successful check-in besides the
+    Untappd call itself - shared by handle_submit's own success path and
+    handle_pending_retry's (a retried pending item gets exactly the same
+    bookkeeping a first-try success would have)."""
+    # Reflect the fresh check-in immediately, without another quota-costing call.
+    _had_it_cache.setdefault(user_id, {})[beer_id] = ({"hadIt": True, "userRating": rating}, time.time(), True)
+    await had_it_index.record_checkin(user_id, beer_id, rating)
+    await venue_index.record_checkin(user_id, foursquare_id)
+    if queue_item_id:
+        await checkin_queue.mark_completed(queue_item_id, user_id)
+
+
 async def handle_submit(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
@@ -1333,29 +1349,110 @@ async def handle_submit(request: web.Request) -> web.Response:
             await checkin_queue.mark_completed(queue_item_id, user_id)
         return web.json_response({"ok": True, "dryRun": True, "would_send": would_send})
 
+    # display-only fields, sent by the client alongside the ones above
+    # purely so a failed attempt's pending record (below) can render a
+    # normal-looking row without an extra quota-costing beer lookup -
+    # never used on the success path.
+    pending_fields = {
+        "beerId": beer_id, "rating": rating, "shout": shout,
+        "foursquareId": foursquare_id, "geolat": geolat, "geolng": geolng,
+        "venueName": venue_name, "queueItemId": queue_item_id,
+        "beerName": body.get("beerName"), "brewery": body.get("brewery"),
+        "style": body.get("style"), "abv": body.get("abv"), "labelUrl": body.get("labelUrl"),
+    }
+
     try:
         checkin = await untappd_mcp.check_in(
             token, beer_id=beer_id, rating=rating, shout=shout,
             foursquare_id=foursquare_id, geolat=geolat, geolng=geolng,
         )
     except untappd_mcp.UntappdRateLimited:
-        return _json_error("rate_limited", 429)
+        # Saved instead of just failing, so the attempt (rating/comment/
+        # venue included) isn't lost - see pending_checkins.py and the
+        # Mini App's "Відкладені чекіни" screen for the retry side of this.
+        item = await pending_checkins.add_item(user_id, {**pending_fields, "failReason": "rate_limited"})
+        return web.json_response({"ok": True, "pending": True, "item": item})
     except untappd_mcp.UntappdMCPError as e:
         logger.warning("check_in failed: %s", e)
+        item = await pending_checkins.add_item(user_id, {**pending_fields, "failReason": "checkin_failed"})
+        return web.json_response({"ok": True, "pending": True, "item": item})
+
+    await _apply_checkin_side_effects(user_id, beer_id, rating, foursquare_id, queue_item_id)
+    return web.json_response({"ok": True, "checkin": checkin})
+
+
+async def handle_pending_list(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+    return web.json_response({"items": await pending_checkins.list_items(user_id)})
+
+
+async def handle_pending_retry(request: web.Request) -> web.Response:
+    """Re-attempts a saved pending check-in with exactly the rating/comment/
+    venue it originally captured - same two-exception handling as
+    handle_submit's own real-check-in branch, just scoped to one item: a
+    second failure leaves it in the list for another try later instead of
+    losing it."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+    token = await _resolve_token(tg_user)
+    if not token:
+        return _json_error("not_connected", 403)
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    item_id = body.get("id")
+    if not item_id:
+        return _json_error("invalid_id")
+    item = await pending_checkins.get_item(user_id, item_id)
+    if not item:
+        return _json_error("not_found", 404)
+
+    try:
+        checkin = await untappd_mcp.check_in(
+            token, beer_id=item["beerId"], rating=item.get("rating") or 0, shout=item.get("shout") or "",
+            foursquare_id=item.get("foursquareId"), geolat=item.get("geolat"), geolng=item.get("geolng"),
+        )
+    except untappd_mcp.UntappdRateLimited:
+        return _json_error("rate_limited", 429)
+    except untappd_mcp.UntappdMCPError as e:
+        logger.warning("pending check-in retry failed: %s", e)
         return _json_error("checkin_failed", 502)
 
-    # Reflect the fresh check-in immediately, without another quota-costing call.
-    # Real check-in path only - never from the CHECKIN_DRY_RUN branch above,
-    # which returns before reaching here, so a dry run never poisons the
-    # lifetime index with a beer that was never actually drunk.
-    _had_it_cache.setdefault(user_id, {})[beer_id] = ({"hadIt": True, "userRating": rating}, time.time(), True)
-    await had_it_index.record_checkin(user_id, beer_id, rating)
-    await venue_index.record_checkin(user_id, foursquare_id)
-
-    if queue_item_id:
-        await checkin_queue.mark_completed(queue_item_id, user_id)
-
+    await _apply_checkin_side_effects(
+        user_id, item["beerId"], item.get("rating") or 0, item.get("foursquareId"), item.get("queueItemId"),
+    )
+    await pending_checkins.remove_item(user_id, item_id)
     return web.json_response({"ok": True, "checkin": checkin})
+
+
+async def handle_pending_remove(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+
+    item_id = body.get("id")
+    if not item_id:
+        return _json_error("invalid_id")
+
+    removed = await pending_checkins.remove_item(user_id, item_id)
+    return web.json_response({"ok": True, "removed": removed})
 
 
 def _all_festival_beer_ids(session_beer_ids: dict | None = None) -> set:
@@ -2614,6 +2711,9 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/wishlist/list", handle_wishlist_list)
     app.router.add_post("/api/checkin/wishlist/add", handle_wishlist_add)
     app.router.add_post("/api/checkin/wishlist/remove", handle_wishlist_remove)
+    app.router.add_post("/api/checkin/pending/list", handle_pending_list)
+    app.router.add_post("/api/checkin/pending/retry", handle_pending_retry)
+    app.router.add_post("/api/checkin/pending/remove", handle_pending_remove)
     app.router.add_post("/api/checkin/autotoast/friends", handle_autotoast_friends)
     app.router.add_post("/api/checkin/autotoast/toggle", handle_autotoast_toggle)
     app.router.add_post("/api/checkin/autotoast/set_targets", handle_autotoast_set_targets)
@@ -2780,6 +2880,7 @@ async def start_webapp_server(
         badge_index.init(data_dir)
         wishlist_sheets.init(data_dir)
         wishlist_items.init(data_dir)
+        pending_checkins.init(data_dir)
         special_badge_dismissals.init(data_dir)
     port = int(os.environ.get("PORT", 8080))
     aio_app = _build_app()

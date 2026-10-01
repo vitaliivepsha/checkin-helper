@@ -235,6 +235,13 @@
   <div id="wishlist-list" class="results"></div>
 </div>
 
+<div id="screen-pending-checkins" class="screen">
+  <button class="back-btn" data-back="search">Назад</button>
+  <h2>Відкладені чекіни</h2>
+  <div id="pending-checkins-status" class="hint"></div>
+  <div id="pending-checkins-list" class="results"></div>
+</div>
+
 <div id="screen-stats" class="screen">
   <button class="back-btn" data-back="search">Назад</button>
   <h2>Прогрес фестивалю</h2>
@@ -620,6 +627,13 @@
   <button id="wishlist-bar-btn" class="nav-tab">
     <svg class="icon"><use href="#icon-clipboard-list"/></svg>
     <span class="nav-label">Мій список</span>
+  </button>
+  <button id="pending-checkins-bar-btn" class="nav-tab hidden">
+    <span class="nav-icon-wrap">
+      <svg class="icon"><use href="#icon-refresh"/></svg>
+      <span class="nav-badge" id="pending-checkins-count">0</span>
+    </span>
+    <span class="nav-label">Відкладені</span>
   </button>
   <button id="badges-bar-btn" class="nav-tab">
     <svg class="icon"><use href="#icon-award"/></svg>

@@ -46,6 +46,7 @@
   const ICON_STAR = '<svg class="icon icon-filled"><use href="#icon-star"/></svg>';
   const ICON_HEART = '<svg class="icon icon-filled"><use href="#icon-heart"/></svg>';
   const ICON_AWARD = '<svg class="icon"><use href="#icon-award"/></svg>';
+  const ICON_REFRESH = '<svg class="icon"><use href="#icon-refresh"/></svg>';
   // Maxed-out badge marker, in front of its name (replaces the old trophy emoji).
   const DONE_MARK = `<span class="badge-done-mark" title="Максимальний рівень">${ICON_TROPHY}</span>`;
 
@@ -104,6 +105,7 @@
     queue: [],          // shared, server-backed - everyone in the group sees the same list
     wishlist: [],       // personal - own items merged server-side with the user's Google Sheet rows
     wishlistSort: "date",
+    pendingCheckins: [], // failed check-in attempts saved for manual retry - see fetchPendingCheckins
     currentSession: null, // which session's drill-down list is currently open
     origin: "search",    // where to return after rate/confirm: "search", "queue" or "session-beers"
     queueItemId: null,   // the server's item id, not an array index (another phone can remove items)
@@ -267,6 +269,7 @@
     stats: "stats-bar-btn",
     "session-beers": "stats-bar-btn",
     wishlist: "wishlist-bar-btn",
+    "pending-checkins": "pending-checkins-bar-btn",
     badges: "badges-bar-btn",
     "badge-detail": "badges-bar-btn",
     "festival-map": "festival-map-bar-btn",
@@ -333,6 +336,9 @@
     }
     if (name === "wishlist") {
       fetchWishlist();
+    }
+    if (name === "pending-checkins") {
+      fetchPendingCheckins();
     }
     if (name === "autotoast") {
       fetchAutoToastFriends();
@@ -674,6 +680,7 @@
   $("queue-selection-cancel-btn").addEventListener("click", exitQueueSelectionMode);
 
   updateQueueCountOnly();
+  updatePendingCheckinsCountOnly();
 
   // ---- Personal editable wishlist ("Мій список") ----
   // Per-user, unlike the shared queue above - own items (wishlist_items.py,
@@ -892,6 +899,93 @@
     fetchWishlist();
   });
   $("wishlist-selection-cancel-btn").addEventListener("click", exitWishlistSelectionMode);
+
+  // ---- Pending check-ins ("Відкладені чекіни") ----
+  // A check-in that failed (Untappd rate-limited, or any other error) is
+  // saved server-side instead of just being lost (see webapp_server.py's
+  // handle_submit) - this tab surfaces that list so the exact same rating/
+  // comment/venue can be retried with one tap, without starting over. Tab
+  // itself stays hidden (see updatePendingCheckinsCountOnly) whenever the
+  // list is empty, same convention as the queue tab.
+
+  async function fetchPendingCheckins() {
+    $("pending-checkins-list").innerHTML = "";
+    $("pending-checkins-status").textContent = "Завантажую…";
+    const { ok, data } = await apiPost("/api/checkin/pending/list", {});
+    state.pendingCheckins = ok ? (data.items || []) : [];
+    renderPendingCheckinsList();
+  }
+
+  async function updatePendingCheckinsCountOnly() {
+    const { ok, data } = await apiPost("/api/checkin/pending/list", {});
+    const items = ok ? (data.items || []) : [];
+    $("pending-checkins-count").textContent = String(items.length);
+    $("pending-checkins-bar-btn").classList.toggle("hidden", items.length === 0);
+  }
+
+  const PENDING_FAIL_REASON_LABEL = {
+    rate_limited: "Untappd тимчасово обмежив запити",
+    checkin_failed: "Не вдалося з'єднатися з Untappd",
+  };
+
+  function renderPendingCheckinsList() {
+    const listEl = $("pending-checkins-list");
+    listEl.innerHTML = "";
+    $("pending-checkins-status").textContent = state.pendingCheckins.length
+      ? "" : "Немає відкладених чекінів.";
+    state.pendingCheckins.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "result-row";
+      row.innerHTML = `
+        <div class="thumb"><img src="${item.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
+        <div class="result-main">
+          <div class="result-name"><span class="result-name-text">${escapeHtml(item.beerName || "")}</span></div>
+          ${metaLine(item.brewery)}
+          <div class="hint">
+            ${item.rating ? `★ ${item.rating}` : ""}${item.venueName ? ` · 📍 ${escapeHtml(item.venueName)}` : ""}
+          </div>
+          <div class="hint pending-fail-reason">${escapeHtml(PENDING_FAIL_REASON_LABEL[item.failReason] || "Не вдалося зачекінити")}</div>
+        </div>
+        <div class="row-actions pending-checkin-actions">
+          <button class="pending-retry-btn" data-id="${item.id}">${ICON_REFRESH} Ще раз</button>
+          <button class="wishlist-remove-btn" data-id="${item.id}" data-name="${escapeHtml(item.beerName || "")}">${ICON_CLOSE}</button>
+        </div>`;
+      row.querySelector(".pending-retry-btn").addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = "Чекіню…";
+        const { ok, data } = await apiPost("/api/checkin/pending/retry", { id: item.id });
+        if (ok && data.ok) {
+          if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+          state.pendingCheckins = state.pendingCheckins.filter((p) => p.id !== item.id);
+          renderPendingCheckinsList();
+          updatePendingCheckinsCountOnly();
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = `${ICON_REFRESH} Ще раз`;
+          row.querySelector(".pending-fail-reason").textContent = "Не вдалося — спробуй пізніше.";
+        }
+      });
+      row.querySelector(".wishlist-remove-btn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        const doRemove = async () => {
+          await apiPost("/api/checkin/pending/remove", { id: item.id });
+          state.pendingCheckins = state.pendingCheckins.filter((p) => p.id !== item.id);
+          renderPendingCheckinsList();
+          updatePendingCheckinsCountOnly();
+        };
+        const msg = `Прибрати "${item.beerName}" з відкладених чекінів?`;
+        if (tg && tg.showConfirm) {
+          tg.showConfirm(msg, (confirmed) => { if (confirmed) doRemove(); });
+        } else if (confirm(msg)) {
+          doRemove();
+        }
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  $("pending-checkins-bar-btn").addEventListener("click", () => showScreen("pending-checkins"));
 
   // ---- Festival progress screen ----
   // Personal, like the rest of the app's had-it-driven features - counts
@@ -1943,8 +2037,9 @@
     $("submit-status").textContent = "";
 
     const venue = state.selectedVenue;
+    const beer = state.selectedBeer;
     const body = {
-      beerId: state.selectedBeer.beerId,
+      beerId: beer.beerId,
       rating: state.rating,
       shout: $("shout-input").value.trim(),
       foursquareId: venue ? venue.foursquareId : null,
@@ -1952,6 +2047,11 @@
       geolng: venue ? venue.lng : null,
       venueName: venue ? venue.name : null,
       queueItemId: state.origin === "queue" ? state.queueItemId : null,
+      // Display-only - only ever used if this attempt ends up saved as a
+      // pending check-in (see webapp_server.py's handle_submit), so that
+      // screen can render a normal-looking row without an extra lookup.
+      beerName: beer.name, brewery: beer.brewery, style: beer.style,
+      abv: beer.abv, labelUrl: beer.labelUrl,
     };
 
     const { ok, status, data } = await apiPost("/api/checkin/submit", body);
@@ -1974,6 +2074,21 @@
         }
         showScreen(screenForOrigin(state.origin));
       }, state.origin === "queue" ? 1200 : 1500);
+    } else if (ok && data.pending) {
+      // Untappd failed (rate-limited or otherwise) - saved for manual retry
+      // instead of lost (see pending_checkins.py), so this is shown as a
+      // handled outcome, not a hard error.
+      btn.innerHTML = `${ICON_REFRESH} Збережено`;
+      $("submit-status").textContent = "Untappd зараз недоступний — зберіг чекін, спробуєш пізніше у «Відкладені».";
+      updatePendingCheckinsCountOnly();
+
+      setTimeout(() => {
+        if (state.origin === "search") {
+          $("search-input").value = "";
+          $("results").innerHTML = "";
+        }
+        showScreen(screenForOrigin(state.origin));
+      }, 2000);
     } else {
       btn.disabled = false;
       btn.innerHTML = `${ICON_CHECK} Чекінити`;
