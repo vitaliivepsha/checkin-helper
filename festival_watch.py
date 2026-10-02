@@ -81,6 +81,9 @@ async def get_config(owner_id: int) -> dict:
             # see set_alt_venue.
             "altVenueId": entry.get("altVenueId"),
             "altVenueName": entry.get("altVenueName"),
+            # Cursor of the loop's own direct friends-feed poll - see
+            # webapp_server._festival_watch_friends_owner.
+            "friendsLastCheckinId": entry.get("friendsLastCheckinId"),
             # Off by default - see set_notify_listed's own docstring for why.
             "notifyListedBeers": entry.get("notifyListedBeers", False),
         }
@@ -148,6 +151,18 @@ async def clear_alt_venue(owner_id: int) -> None:
         entry["altVenueId"] = None
         entry["altVenueName"] = None
         entry["altVenueLastCheckinId"] = None
+        _save(data)
+
+
+async def record_friends_tick(owner_id: int, last_checkin_id: int | None) -> None:
+    """None resets the cursor (next poll re-baselines instead of replaying
+    whatever piled up while the poll wasn't running)."""
+    async with _lock:
+        data = _load()
+        entry = _owner_entry(data, owner_id)
+        if entry.get("friendsLastCheckinId") == last_checkin_id:
+            return
+        entry["friendsLastCheckinId"] = last_checkin_id
         _save(data)
 
 

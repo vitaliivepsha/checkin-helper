@@ -4020,6 +4020,56 @@ def _start_festival_watch_venue() -> None:
     _festival_watch_venue_task = asyncio.create_task(_festival_watch_venue_loop())
 
 
+async def _festival_watch_friends_owner() -> int | None:
+    """The owner whose friends feed _festival_watch_venue_loop must poll
+    itself (via DIRECT_TOKEN) because _check_festival_novelty's usual ride on
+    _auto_toast_loop's feed isn't running for them - festival mode skips that
+    loop entirely, and it also needs auto-toast enabled with a target. Only
+    ever the bot owner: checkin/recent returns the TOKEN's OWN friends, and
+    DIRECT_TOKEN is the owner's account (same restriction as _get_had_it's
+    direct fallback). Also resets the poll's cursor whenever it isn't
+    needed, so the first poll after it becomes needed again re-baselines
+    instead of replaying whatever happened in between."""
+    if not (DIRECT_TOKEN and OWNER_TELEGRAM_ID):
+        return None
+    owner_id = int(OWNER_TELEGRAM_ID)
+    watch = await festival_watch.get_config(owner_id)
+    if not watch["enabled"] or watch["lat"] is None or watch["lng"] is None:
+        await festival_watch.record_friends_tick(owner_id, None)
+        return None
+    toast = await auto_toast.get_config(owner_id)
+    auto_toast_covers_it = (
+        toast["enabled"] and toast["targets"]
+        and not await festival_mode.is_enabled(owner_id)
+    )
+    if auto_toast_covers_it:
+        await festival_watch.record_friends_tick(owner_id, None)
+        return None
+    return owner_id
+
+
+async def _poll_festival_friends(owner_id: int) -> None:
+    """One direct friends-feed pass for _check_festival_novelty - same
+    cursor/bootstrap/stale-min_id handling as the venue polls above."""
+    min_id = (await festival_watch.get_config(owner_id))["friendsLastCheckinId"]
+    try:
+        page = await untappd_direct.get_my_friend_feed(DIRECT_TOKEN, limit=50, min_id=min_id)
+    except untappd_mcp.UntappdMCPError as e:
+        if min_id is None or "min_id" not in str(e).lower():
+            raise
+        page = await untappd_direct.get_my_friend_feed(DIRECT_TOKEN, limit=50)
+        min_id = None
+    items = (page.get("checkins") or {}).get("items", [])
+    if not items:
+        return
+    newest_id = max((it.get("checkin_id") or 0) for it in items)
+    if min_id is not None:
+        await _check_festival_novelty(
+            owner_id, [it for it in items if (it.get("checkin_id") or 0) > min_id],
+        )
+    await festival_watch.record_friends_tick(owner_id, newest_id)
+
+
 async def _festival_watch_venue_loop() -> None:
     """Independent poll of venue/checkins/{venue_id} for every owner whose
     festival_watch point has resolved to a real Untappd venue (see
@@ -4036,7 +4086,10 @@ async def _festival_watch_venue_loop() -> None:
 
     Each owner can watch a main venue (polled every pass) and an optional
     second "alt" venue (festival_watch.set_alt_venue, polled only every
-    FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS-th pass).
+    FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS-th pass). The bot owner's friends
+    feed is also polled here whenever _auto_toast_loop isn't covering it
+    (see _festival_watch_friends_owner), so a friend logging a new beer at a
+    different venue within the radius is still caught during festival mode.
 
     Cursor-based like auto_toast's own feed walk, but deliberately simpler:
     no multi-tick catchup walk for a page-cap overrun - a single venue's
@@ -4059,7 +4112,8 @@ async def _festival_watch_venue_loop() -> None:
                 await asyncio.sleep(FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS)
                 continue
             targets = await festival_watch.list_venue_jobs()
-            if not targets:
+            friends_owner = await _festival_watch_friends_owner()
+            if not targets and friends_owner is None:
                 await asyncio.sleep(FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS)
                 continue
             # See FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR's own comment - spreads
@@ -4069,6 +4123,8 @@ async def _festival_watch_venue_loop() -> None:
             # costs 1/N of a main one (polled every Nth pass).
             main_count = sum(1 for t in targets if t["slot"] == "main")
             alt_count = len(targets) - main_count
+            if friends_owner is not None:
+                main_count += 1  # the direct friends-feed poll costs one call per pass
             tick_interval = max(
                 FESTIVAL_WATCH_VENUE_INTERVAL_SECONDS,
                 3600 * (main_count + alt_count / FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS)
@@ -4150,6 +4206,15 @@ async def _festival_watch_venue_loop() -> None:
                     logger.warning("festival_watch venue tick failed for owner %s: %s", owner_id, e)
                 except Exception:
                     logger.exception("festival_watch venue tick failed for owner %s", owner_id)
+            if friends_owner is not None:
+                try:
+                    await _poll_festival_friends(friends_owner)
+                except untappd_mcp.UntappdRateLimited:
+                    pass  # retry next pass, same as the venue polls
+                except untappd_mcp.UntappdMCPError as e:
+                    logger.warning("festival_watch friends poll failed for owner %s: %s", friends_owner, e)
+                except Exception:
+                    logger.exception("festival_watch friends poll failed for owner %s", friends_owner)
         except asyncio.CancelledError:
             raise
         except Exception:

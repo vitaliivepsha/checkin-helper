@@ -69,3 +69,13 @@ def test_first_sight_is_bounded():
     seen = webapp_server._festival_novelty_seen[1]
     assert len(seen) == webapp_server._FESTIVAL_NOVELTY_SEEN_MAX
     assert 0 not in seen
+
+
+async def test_friends_cursor_roundtrip_and_reset(tmp_path):
+    festival_watch.init(str(tmp_path))
+    await _enable_with_main_venue()
+    assert (await festival_watch.get_config(1))["friendsLastCheckinId"] is None
+    await festival_watch.record_friends_tick(1, 42)
+    assert (await festival_watch.get_config(1))["friendsLastCheckinId"] == 42
+    await festival_watch.record_friends_tick(1, None)
+    assert (await festival_watch.get_config(1))["friendsLastCheckinId"] is None

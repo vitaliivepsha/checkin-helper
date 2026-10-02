@@ -2281,7 +2281,7 @@
     const hintEl = $("festival-watch-venue-hint");
     hintEl.classList.toggle("hidden", !venueMode);
     if (venueMode) {
-      hintEl.innerHTML = `<svg class="icon"><use href="#icon-pin"/></svg> Прив'язано до "${escapeHtml(data.venueName || "цієї локації")}" на Untappd — бачить усіх, хто там чекіниться. Поза festival mode (і з увімкненим авто-тостом) друзі в межах радіуса ловляться окремо, навіть в іншій локації.`;
+      hintEl.innerHTML = `<svg class="icon"><use href="#icon-pin"/></svg> Прив'язано до "${escapeHtml(data.venueName || "цієї локації")}" на Untappd — бачить усіх, хто там чекіниться. Друзі в межах радіуса ловляться окремо, навіть в іншій локації.`;
     }
     const altEl = $("festival-watch-alt-current");
     altEl.classList.toggle("hidden", data.altVenueId == null);
