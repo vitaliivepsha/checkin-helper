@@ -821,5 +821,461 @@
     "location": "Area 2",
     "url": "https://untappd.com/beer/87339",
     "standBrewery": "OneMoreBeer"
+  },
+  {
+    "id": "6991254",
+    "name": "Ducktor Haze",
+    "brewery": "AleBrowar",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6991254"
+  },
+  {
+    "id": "6991251",
+    "name": "Rauchmärzen",
+    "brewery": "AleBrowar",
+    "style": "Rauchbier",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6991251"
+  },
+  {
+    "id": "6991250",
+    "name": "Bock",
+    "brewery": "AleBrowar",
+    "style": "Bock - Single / Traditional",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6991250"
+  },
+  {
+    "id": "4763656",
+    "name": "Bezalkoholowe IPA",
+    "brewery": "Brofaktura",
+    "style": "Non-Alcoholic - IPA",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/4763656"
+  },
+  {
+    "id": "5120516",
+    "name": "Bezalkoholowe Fruit Ale Mango & Marakuja",
+    "brewery": "Brofaktura",
+    "style": "Non-Alcoholic - Fruit Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5120516"
+  },
+  {
+    "id": "6726053",
+    "name": "Jasne Bezalkoholowe",
+    "brewery": "Brofaktura",
+    "style": "Non-Alcoholic - Lager",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6726053"
+  },
+  {
+    "id": "6783246",
+    "name": "Čtyřka",
+    "brewery": "Brofaktura",
+    "style": "Lager - Světlé (Czech Pale)",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6783246"
+  },
+  {
+    "id": "6628782",
+    "name": "Hoppy Grodzisz '26 TOMYSKI & PŁ-01",
+    "brewery": "Brofaktura",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6628782"
+  },
+  {
+    "id": "6441654",
+    "name": "GRODZISKIE",
+    "brewery": "Brofaktura",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6441654"
+  },
+  {
+    "id": "6639682",
+    "name": "Cherrywood Smoked",
+    "brewery": "Brofaktura",
+    "style": "Porter - Smoked",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6639682"
+  },
+  {
+    "id": "6517732",
+    "name": "ÆGIR ÖL",
+    "brewery": "Brofaktura",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6517732"
+  },
+  {
+    "id": "6639681",
+    "name": "Imperial Stout",
+    "brewery": "Brofaktura",
+    "style": "Stout - Imperial / Double",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6639681"
+  },
+  {
+    "id": "6196268",
+    "name": "Coffee Double Foreign Extra Stout",
+    "brewery": "Brofaktura",
+    "style": "Stout - Imperial / Double Coffee",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6196268"
+  },
+  {
+    "id": "6639677",
+    "name": "Lodowy Sad",
+    "brewery": "Brofaktura",
+    "style": "Barleywine - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6639677"
+  },
+  {
+    "id": "6987370",
+    "name": "Starosta",
+    "brewery": "Browar Bednary",
+    "style": "Old / Stock Ale",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6987370"
+  },
+  {
+    "id": "996515",
+    "name": "Czarny Karzeł",
+    "brewery": "Browar Bednary",
+    "style": "Stout - American",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/996515"
+  },
+  {
+    "id": "3343877",
+    "name": "Superhumans",
+    "brewery": "Browar Bednary",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/3343877"
+  },
+  {
+    "id": "2589337",
+    "name": "Łowickie Pils",
+    "brewery": "Browar Bednary",
+    "style": "Pilsner - Other",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/2589337"
+  },
+  {
+    "id": "4655630",
+    "name": "Ale Ciacho!",
+    "brewery": "Browar Bednary",
+    "style": "Spiced / Herbed Beer",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/4655630"
+  },
+  {
+    "id": "6422272",
+    "name": "Origami Crane Bezalkoholowe",
+    "brewery": "Browar Bednary",
+    "style": "Non-Alcoholic - IPA",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6422272"
+  },
+  {
+    "id": "6422275",
+    "name": "Superluminal Observer",
+    "brewery": "Browar Bednary",
+    "style": "Belgian Quadrupel",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6422275"
+  },
+  {
+    "id": "5993316",
+    "name": "Behemoth Bednarski",
+    "brewery": "Browar Bednary",
+    "style": "Porter - Baltic",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/5993316"
+  },
+  {
+    "id": "6401228",
+    "name": "The Dancer",
+    "brewery": "Browar Brokreacja",
+    "style": "Wheat Beer - Witbier / Blanche",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6401228"
+  },
+  {
+    "id": "6629742",
+    "name": "Nafciarz Mead & Laphroaig Barrel Aged",
+    "brewery": "Browar Brokreacja",
+    "style": "Porter - Smoked",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6629742"
+  },
+  {
+    "id": "6962049",
+    "name": "SWEET TEMPTATION WFP SPECIALITY 3",
+    "brewery": "Browar Brokreacja",
+    "style": "Barleywine - Other",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6962049"
+  },
+  {
+    "id": "6962048",
+    "name": "SWEET TEMPTATION WFP SPECIALITY 2",
+    "brewery": "Browar Brokreacja",
+    "style": "Barleywine - Other",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6962048"
+  },
+  {
+    "id": "6962007",
+    "name": "Stargazer WFP Speciality 3",
+    "brewery": "Browar Brokreacja",
+    "style": "IPA - Belgian",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6962007"
+  },
+  {
+    "id": "6961995",
+    "name": "Stargazer WFP Speciality 2",
+    "brewery": "Browar Brokreacja",
+    "style": "IPA - Belgian",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6961995"
+  },
+  {
+    "id": "6962037",
+    "name": "BRO HERO: MATEUSZ WFP SPECIALITY 3",
+    "brewery": "Browar Brokreacja",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6962037"
+  },
+  {
+    "id": "6962015",
+    "name": "BRO HERO: MATEUSZ WFP SPECIALITY 2",
+    "brewery": "Browar Brokreacja",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6962015"
+  },
+  {
+    "id": "6962047",
+    "name": "SWEET TEMPTATION WFP SPECIALITY 1",
+    "brewery": "Browar Brokreacja",
+    "style": "Barleywine - Other",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6962047"
+  },
+  {
+    "id": "6961988",
+    "name": "Stargazer WFP Speciality 1",
+    "brewery": "Browar Brokreacja",
+    "style": "IPA - Belgian",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6961988"
+  },
+  {
+    "id": "6962012",
+    "name": "BRO HERO: MATEUSZ WFP SPECIALITY 1",
+    "brewery": "Browar Brokreacja",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6962012"
+  },
+  {
+    "id": "6814219",
+    "name": "Fruktolisk Beta",
+    "brewery": "Browar Brokreacja",
+    "style": "Sour - Smoothie / Pastry",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6814219"
+  },
+  {
+    "id": "6961984",
+    "name": "HDR",
+    "brewery": "Browar Brokreacja",
+    "style": "IPA - American",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6961984"
+  },
+  {
+    "id": "6961982",
+    "name": "Vanilla Faun",
+    "brewery": "Browar Brokreacja",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6961982"
+  },
+  {
+    "id": "6961987",
+    "name": "Don Rosso",
+    "brewery": "Browar Brokreacja",
+    "style": "IPA - American",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6961987"
+  },
+  {
+    "id": "6275713",
+    "name": "Zatorskie",
+    "brewery": "Browar Brokreacja",
+    "style": "Lager - Helles",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6275713"
+  },
+  {
+    "id": "6430983",
+    "name": "Czeski Lager",
+    "brewery": "Browar Warszawski",
+    "style": "Lager - Světlé (Czech Pale)",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6430983"
+  },
+  {
+    "id": "4500157",
+    "name": "West Coast IPA",
+    "brewery": "Browar Warszawski",
+    "style": "IPA - American",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4500157"
+  },
+  {
+    "id": "4500158",
+    "name": "Milkshake IPA",
+    "brewery": "Browar Warszawski",
+    "style": "IPA - Milkshake",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4500158"
+  },
+  {
+    "id": "4500150",
+    "name": "Grodziskie",
+    "brewery": "Browar Warszawski",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4500150"
+  },
+  {
+    "id": "5571254",
+    "name": "Onlyfans Phantasm Juicy IPA",
+    "brewery": "Browar Warszawski",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/5571254"
+  },
+  {
+    "id": "6645598",
+    "name": "The Unit",
+    "brewery": "Browar Warszawski",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6645598"
+  },
+  {
+    "id": "6327611",
+    "name": "Helles",
+    "brewery": "Browar Warszawski",
+    "style": "Lager - Helles",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6327611"
+  },
+  {
+    "id": "4500149",
+    "name": "Pszeniczne",
+    "brewery": "Browar Warszawski",
+    "style": "Wheat Beer - Hefeweizen",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4500149"
+  },
+  {
+    "id": "4500148",
+    "name": "Marcowe",
+    "brewery": "Browar Warszawski",
+    "style": "Märzen",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4500148"
+  },
+  {
+    "id": "6919367",
+    "name": "Tomato",
+    "brewery": "Magic Road",
+    "style": "Sour - Tomato / Vegetable Gose",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919367"
+  },
+  {
+    "id": "6919368",
+    "name": "Hot Tomato",
+    "brewery": "Magic Road",
+    "style": "Sour - Tomato / Vegetable Gose",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919368"
+  },
+  {
+    "id": "6919369",
+    "name": "Wonders - Peach, Banana, Coconut Milk",
+    "brewery": "Magic Road",
+    "style": "Sour - Smoothie / Pastry",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919369"
+  },
+  {
+    "id": "6919372",
+    "name": "Pretty - Mango, Calamansi & Vanilla",
+    "brewery": "Magic Road",
+    "style": "Sour - Smoothie / Pastry",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919372"
+  },
+  {
+    "id": "6919376",
+    "name": "Fufty / Fifty - Cherry & Dark Grapes",
+    "brewery": "Magic Road",
+    "style": "Fruit Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919376"
+  },
+  {
+    "id": "6919382",
+    "name": "Sorbet",
+    "brewery": "Magic Road",
+    "style": "Sour - Fruited",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919382"
+  },
+  {
+    "id": "6919385",
+    "name": "Mini Pretty",
+    "brewery": "Magic Road",
+    "style": "Fruit Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919385"
+  },
+  {
+    "id": "6919390",
+    "name": "Beauty - Raspberries, Peach & Vanilla",
+    "brewery": "Magic Road",
+    "style": "Sour - Smoothie / Pastry",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919390"
+  },
+  {
+    "id": "6919402",
+    "name": "DRIP",
+    "brewery": "Magic Road",
+    "style": "Pale Ale - American",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919402"
+  },
+  {
+    "id": "6919397",
+    "name": "Rizz",
+    "brewery": "Magic Road",
+    "style": "IPA - Session",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6919397"
   }
 ]
