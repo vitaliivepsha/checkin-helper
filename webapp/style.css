@@ -910,14 +910,6 @@ input[type="range"] { width: 100%; accent-color: var(--button); }
 }
 #wishlist-sort-pills .pill.active { background: var(--surface-2); color: var(--text); }
 
-/* 0.25 vs 0.1 rating-granularity switch, above the readout - 0.25 is the
-   default (matches Untappd's own standard quarter-star scale); 0.1 is for
-   accounts with Untappd's "precise ratings" (Insiders) enabled. Purely a
-   client-side input-precision choice - see untappd_mcp.check_in, the API
-   itself stores whatever float is sent regardless of this setting. */
-.rating-scale-toggle { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
-.rating-scale-toggle .pill { min-height: 28px; padding: 0 12px; font-size: 12px; }
-
 /* Rating presets on the rate screen - one row of equal-width buttons, so
    all six always fit on one line at any phone width. */
 #rating-pills { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
