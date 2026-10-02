@@ -258,6 +258,10 @@ FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR = float(os.environ.get("FESTIVAL_WATCH_VENU
 FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS = float(os.environ.get("FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS", "300"))
 FESTIVAL_WATCH_VENUE_MIN_REMAINING = int(os.environ.get("FESTIVAL_WATCH_VENUE_MIN_REMAINING", "5"))
 FESTIVAL_WATCH_VENUE_CHECK_LIMIT = int(os.environ.get("FESTIVAL_WATCH_VENUE_CHECK_LIMIT", "25"))
+# An owner's optional second venue (festival_watch.set_alt_venue) is polled
+# only on every Nth pass of the loop, so it costs ~1/N of a main venue's
+# quota - and counts as 1/N of a target in the interval budget math below.
+FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS = max(1, int(os.environ.get("FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS", "4")))
 
 _festival_watch_venue_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
 
@@ -500,6 +504,27 @@ _AUTOTOAST_FRIENDS_MAX_PAGES = 12  # caps one refresh at 12 calls (300 friends)
 # fine for a soft anti-spam cap, unlike real state.
 _FESTIVAL_NOVELTY_NOTIFY_MAX_PER_HOUR = 3
 _festival_novelty_notify_counts: dict[tuple[int, int], tuple[int, float]] = {}
+
+# Check-in ids already handled per owner - the friends+radius check and the
+# venue-checkins loop can both see the same check-in (a friend at the main
+# venue). In-memory only: both sources have persisted cursors, so a restart
+# doesn't replay anything. Bounded per owner, oldest evicted first.
+_FESTIVAL_NOVELTY_SEEN_MAX = 500
+_festival_novelty_seen: dict[int, dict[int, None]] = {}
+
+
+def _festival_novelty_first_sight(owner_id: int, checkin_id: int | None) -> bool:
+    """True the first time this (owner, check-in) is seen, False after - and
+    always True when the item carries no checkin_id (nothing to dedup on)."""
+    if checkin_id is None:
+        return True
+    seen = _festival_novelty_seen.setdefault(owner_id, {})
+    if checkin_id in seen:
+        return False
+    seen[checkin_id] = None
+    if len(seen) > _FESTIVAL_NOVELTY_SEEN_MAX:
+        del seen[next(iter(seen))]
+    return True
 
 
 def _festival_novelty_notify_allowed(owner_id: int, bid: int) -> bool:
@@ -2653,6 +2678,47 @@ async def handle_festival_watch_set_location(request: web.Request) -> web.Respon
     return web.json_response({"ok": True})
 
 
+async def handle_festival_watch_set_alt_venue(request: web.Request) -> web.Response:
+    """Sets the optional second watched venue (festival_watch.set_alt_venue)
+    from a picked Foursquare place. Unlike set_location, a failed Untappd
+    venue resolution IS an error here - the alt venue has no GPS+radius
+    fallback, it only exists as a venue_id."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    user_id = tg_user.get("id")
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+    foursquare_id = body.get("foursquareId")
+    if not foursquare_id:
+        return _json_error("invalid_venue")
+    if not DIRECT_TOKEN:
+        return _json_error("no_direct_token", 503)
+    try:
+        resolved = await untappd_direct.lookup_venue_by_foursquare(DIRECT_TOKEN, foursquare_id)
+    except untappd_mcp.UntappdRateLimited:
+        return _json_error("rate_limited", 429)
+    except untappd_mcp.UntappdMCPError as e:
+        logger.warning("festival_watch alt venue resolution failed for %s: %s", foursquare_id, e)
+        return _json_error("lookup_failed", 502)
+    if not resolved:
+        return _json_error("venue_not_found", 404)
+    await festival_watch.set_alt_venue(user_id, resolved["venueId"], resolved["venueName"] or body.get("name"))
+    return web.json_response({"ok": True})
+
+
+async def handle_festival_watch_clear_alt_venue(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    user_id = (init_data.get("user") or {}).get("id")
+    await festival_watch.clear_alt_venue(user_id)
+    return web.json_response({"ok": True})
+
+
 async def handle_festival_watch_set_radius(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
@@ -2732,6 +2798,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/autotoast/remove_target", handle_autotoast_remove_target)
     app.router.add_post("/api/checkin/festival_watch/get", handle_festival_watch_get)
     app.router.add_post("/api/checkin/festival_watch/set_location", handle_festival_watch_set_location)
+    app.router.add_post("/api/checkin/festival_watch/set_alt_venue", handle_festival_watch_set_alt_venue)
+    app.router.add_post("/api/checkin/festival_watch/clear_alt_venue", handle_festival_watch_clear_alt_venue)
     app.router.add_post("/api/checkin/festival_watch/set_radius", handle_festival_watch_set_radius)
     app.router.add_post("/api/checkin/festival_watch/toggle", handle_festival_watch_toggle)
     app.router.add_post("/api/checkin/festival_watch/set_notify_listed", handle_festival_watch_set_notify_listed)
@@ -3485,19 +3553,17 @@ async def _check_festival_novelty(owner_id: int, items: list[dict]) -> None:
 
     Note this only ever sees the owner's own Untappd *friends* -
     get_my_friend_feed is "checkin/recent," which is friends-only by
-    Untappd's own definition. Skipped entirely once the owner's watch point
-    has resolved to a real venue_id (watch["venueId"] set) - from that point
-    on, _festival_watch_venue_loop's own venue-checkins poll (sees EVERYONE
-    at that venue, strangers included - see untappd_direct.py) is strictly
-    better and fully replaces this friends-only check for that owner;
-    running both would double-notify the same real-world event. Bare
-    GPS-point owners (no resolved venue) keep relying on this one."""
+    Untappd's own definition. Runs even when the owner's watch point has
+    resolved to a real venue_id and _festival_watch_venue_loop is polling it
+    (which sees EVERYONE at that exact venue): venue/checkins only returns
+    check-ins attributed to that one venue_id, so a friend logging the same
+    pour at a neighbouring venue is invisible there but still caught here by
+    radius. The two overlap on friends at the main venue - dedup by
+    checkin_id lives in _notify_festival_novelty."""
     if not items:
         return
     watch = await festival_watch.get_config(owner_id)
     if not watch["enabled"] or watch["lat"] is None or watch["lng"] is None:
-        return
-    if watch["venueId"] is not None:
         return
     profile = await user_tokens.get_profile(owner_id)
     own_username_lower = (profile or {}).get("username", "").lower()
@@ -3521,7 +3587,8 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
     friends-only/radius path and _festival_watch_venue_loop's venue-checkins
     path) - `items` must already be exactly the candidates worth notifying
     about (own-username and radius/venue filtering both already done by the
-    caller). Per beer, in order:
+    caller). A check-in both sources see is handled once (see
+    _festival_novelty_first_sight). Per beer, in order:
 
     1. Already in the owner's active group's shared queue
        (_beer_already_queued) - skip entirely, the group already knows.
@@ -3541,6 +3608,8 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
     known_beer_ids = _all_festival_beer_ids()
     notify_listed = (await festival_watch.get_config(owner_id))["notifyListedBeers"]
     for item in items:
+        if not _festival_novelty_first_sight(owner_id, item.get("checkin_id")):
+            continue  # already handled via the other novelty source
         username = (item.get("user") or {}).get("user_name") or "?"
         raw_bid = (item.get("beer") or {}).get("bid")
         bid = int(raw_bid) if raw_bid is not None else None
@@ -3962,8 +4031,12 @@ async def _festival_watch_venue_loop() -> None:
     never untappd_mcp, since the MCP server doesn't expose this endpoint at
     all. A no-op forever if DIRECT_TOKEN isn't configured (no owner's watch
     point can ever have resolved to a venueId in that case either - see
-    handle_festival_watch_set_location - so list_enabled_owners_with_venue()
-    would just always come back empty).
+    handle_festival_watch_set_location - so list_venue_jobs() would just
+    always come back empty).
+
+    Each owner can watch a main venue (polled every pass) and an optional
+    second "alt" venue (festival_watch.set_alt_venue, polled only every
+    FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS-th pass).
 
     Cursor-based like auto_toast's own feed walk, but deliberately simpler:
     no multi-tick catchup walk for a page-cap overrun - a single venue's
@@ -3974,6 +4047,7 @@ async def _festival_watch_venue_loop() -> None:
     lower-than-limit page would leave nothing missed - min_id already
     bounds the query so nothing in between is skipped either way."""
     await asyncio.sleep(5)  # let the server finish binding first
+    tick_no = 0
     while True:
         # Default floor - overwritten below once `targets` is known; stays
         # at the floor if an exception hits before that (the final sleep at
@@ -3984,17 +4058,21 @@ async def _festival_watch_venue_loop() -> None:
             if not DIRECT_TOKEN:
                 await asyncio.sleep(FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS)
                 continue
-            targets = await festival_watch.list_enabled_owners_with_venue()
+            targets = await festival_watch.list_venue_jobs()
             if not targets:
                 await asyncio.sleep(FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS)
                 continue
             # See FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR's own comment - spreads
             # the same total hourly call budget across however many targets
             # are currently enabled, instead of every target adding its own
-            # fixed-interval load on top of the others.
+            # fixed-interval load on top of the others. An alt venue only
+            # costs 1/N of a main one (polled every Nth pass).
+            main_count = sum(1 for t in targets if t["slot"] == "main")
+            alt_count = len(targets) - main_count
             tick_interval = max(
                 FESTIVAL_WATCH_VENUE_INTERVAL_SECONDS,
-                3600 * len(targets) / FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR,
+                3600 * (main_count + alt_count / FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS)
+                / FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR,
             )
 
             usage = untappd_direct.get_api_usage()  # free, no network call
@@ -4002,8 +4080,13 @@ async def _festival_watch_venue_loop() -> None:
                 await asyncio.sleep(tick_interval)
                 continue
 
+            alt_due = tick_no % FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS == 0
+            tick_no += 1
             for target in targets:
                 owner_id = target["ownerId"]
+                slot = target["slot"]
+                if slot == "alt" and not alt_due:
+                    continue
                 try:
                     # Deliberately NOT gated on festival_mode.is_enabled, unlike
                     # every other DIRECT_TOKEN consumer (had_it/venue backfill,
@@ -4050,7 +4133,7 @@ async def _festival_watch_venue_loop() -> None:
                         # Bootstrap (first-ever watch, or a just-reset
                         # stale cursor): note the newest id as the new
                         # baseline, don't notify about anything older.
-                        await festival_watch.record_venue_tick(owner_id, newest_id)
+                        await festival_watch.record_venue_tick(owner_id, newest_id, slot)
                         continue
 
                     profile = await user_tokens.get_profile(owner_id)
@@ -4060,7 +4143,7 @@ async def _festival_watch_venue_loop() -> None:
                         if ((it.get("user") or {}).get("user_name") or "").lower() != own_username_lower
                     ]
                     await _notify_festival_novelty(owner_id, candidates, target["venueName"] or "локації")
-                    await festival_watch.record_venue_tick(owner_id, newest_id)
+                    await festival_watch.record_venue_tick(owner_id, newest_id, slot)
                 except untappd_mcp.UntappdRateLimited:
                     break  # this tick's shared DIRECT_TOKEN quota is spent - skip remaining targets, retry next tick
                 except untappd_mcp.UntappdMCPError as e:

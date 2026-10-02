@@ -77,6 +77,10 @@ async def get_config(owner_id: int) -> dict:
             # venue - see set_venue's own docstring for what that unlocks.
             "venueId": entry.get("venueId"),
             "venueName": entry.get("venueName"),
+            # Optional second venue, polled less often than the main one -
+            # see set_alt_venue.
+            "altVenueId": entry.get("altVenueId"),
+            "altVenueName": entry.get("altVenueName"),
             # Off by default - see set_notify_listed's own docstring for why.
             "notifyListedBeers": entry.get("notifyListedBeers", False),
         }
@@ -117,6 +121,33 @@ async def set_venue(owner_id: int, venue_id: int, venue_name: str | None) -> Non
         entry["venueId"] = venue_id
         entry["venueName"] = venue_name
         entry["venueLastCheckinId"] = None
+        _save(data)
+
+
+async def set_alt_venue(owner_id: int, venue_id: int, venue_name: str | None) -> None:
+    """A second Untappd venue to watch next to the main one (e.g. the
+    neighbouring address people sometimes check into by mistake). Independent
+    of set_location - changing the main point never touches it. Polled by
+    the same venue-checkins loop but only every Nth tick (see
+    webapp_server.FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS), so it costs a
+    fraction of the main venue's quota. Fresh cursor, since another venue's
+    check-in ids are an unrelated numbering."""
+    async with _lock:
+        data = _load()
+        entry = _owner_entry(data, owner_id)
+        entry["altVenueId"] = venue_id
+        entry["altVenueName"] = venue_name
+        entry["altVenueLastCheckinId"] = None
+        _save(data)
+
+
+async def clear_alt_venue(owner_id: int) -> None:
+    async with _lock:
+        data = _load()
+        entry = _owner_entry(data, owner_id)
+        entry["altVenueId"] = None
+        entry["altVenueName"] = None
+        entry["altVenueLastCheckinId"] = None
         _save(data)
 
 
@@ -167,44 +198,37 @@ def is_within(lat: float, lng: float, center_lat: float, center_lng: float, radi
     return haversine_meters(lat, lng, center_lat, center_lng) <= radius_meters
 
 
-async def list_enabled_owners() -> list[int]:
-    """Owners with a saved point and the watch turned on, EXCLUDING anyone
-    whose point has since resolved to a real venue_id - what
-    _auto_toast_loop's friends-only, GPS+radius novelty check iterates each
-    tick. An owner with venueId set is handled exclusively by the separate,
-    better venue-checkins loop instead (see list_enabled_owners_with_venue) -
-    checking them here too would double-notify the same real-world event."""
+async def list_venue_jobs() -> list[dict]:
+    """One job per watched venue - what the independent venue-checkins poll
+    loop (webapp_server._festival_watch_venue_loop) iterates. Each job is
+    {"ownerId", "slot", "venueId", "venueName", "lastCheckinId"}, slot being
+    "main" (polled every tick) or "alt" (polled only every Nth tick). Runs
+    alongside the friends+radius check (_check_festival_novelty), not
+    instead of it - a check-in logged at a neighbouring venue is invisible
+    to venue/checkins but still caught by the radius check."""
     async with _lock:
         data = _load()
-        return [
-            int(owner_id_str) for owner_id_str, entry in data.items()
-            if entry.get("enabled") and entry.get("lat") is not None and entry.get("lng") is not None
-            and entry.get("venueId") is None
-        ]
+        jobs = []
+        for owner_id_str, entry in data.items():
+            if not entry.get("enabled"):
+                continue
+            owner_id = int(owner_id_str)
+            if entry.get("venueId") is not None:
+                jobs.append({
+                    "ownerId": owner_id, "slot": "main", "venueId": entry["venueId"],
+                    "venueName": entry.get("venueName"), "lastCheckinId": entry.get("venueLastCheckinId"),
+                })
+            if entry.get("altVenueId") is not None:
+                jobs.append({
+                    "ownerId": owner_id, "slot": "alt", "venueId": entry["altVenueId"],
+                    "venueName": entry.get("altVenueName"), "lastCheckinId": entry.get("altVenueLastCheckinId"),
+                })
+        return jobs
 
 
-async def list_enabled_owners_with_venue() -> list[dict]:
-    """[{"ownerId", "venueId", "venueName", "lastCheckinId"}] for every
-    owner with the watch on AND a resolved venue_id - what the independent
-    venue-checkins poll loop (webapp_server._festival_watch_venue_loop)
-    iterates each tick, completely separate from list_enabled_owners above."""
-    async with _lock:
-        data = _load()
-        return [
-            {
-                "ownerId": int(owner_id_str),
-                "venueId": entry["venueId"],
-                "venueName": entry.get("venueName"),
-                "lastCheckinId": entry.get("venueLastCheckinId"),
-            }
-            for owner_id_str, entry in data.items()
-            if entry.get("enabled") and entry.get("venueId") is not None
-        ]
-
-
-async def record_venue_tick(owner_id: int, last_checkin_id: int) -> None:
+async def record_venue_tick(owner_id: int, last_checkin_id: int, slot: str = "main") -> None:
     async with _lock:
         data = _load()
         entry = _owner_entry(data, owner_id)
-        entry["venueLastCheckinId"] = last_checkin_id
+        entry["altVenueLastCheckinId" if slot == "alt" else "venueLastCheckinId"] = last_checkin_id
         _save(data)

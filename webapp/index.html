@@ -294,6 +294,12 @@
     <label class="checkbox-label festival-watch-radius-label">Радіус сповіщень (метри)</label>
     <input id="festival-watch-radius-input" type="number" min="50" max="5000" step="50" value="500">
   </div>
+  <div id="festival-watch-alt-block">
+    <div class="hint">Додаткова локація (напр. сусідня адреса) — перевіряється рідше за основну</div>
+    <div id="festival-watch-alt-current" class="venue-selected-card hidden"></div>
+    <input id="festival-watch-alt-search-input" type="text" placeholder="Знайти додаткову локацію за назвою…" autocomplete="off">
+    <div id="festival-watch-alt-search-results" class="venue-list hidden"></div>
+  </div>
   <label class="checkbox-label">
     <input type="checkbox" id="festival-watch-notify-listed-toggle"> Сповіщати і про пиво зі списку фестивалю, яке ще не в черзі
   </label>
