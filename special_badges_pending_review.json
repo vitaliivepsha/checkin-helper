@@ -8,5 +8,10 @@
     "url": "https://untappd.com/blog/new-badge-punchtoeberfest/1951",
     "note": "Punchtöberfest (Oct 1-31, 2026, sponsored by Punch Cigars): criteria is 'check in any beer ... in the USA only', which reads as a check-in VENUE location restriction, not a brewery-country match - badge_stats.compute_special_badges' 'country' kind matches a beer's own country field (brewery origin), so this isn't the same thing and can't be safely encoded as kind: country without risking false positives for e.g. a US drinker checking in a German import.",
     "foundAt": "2026-09-30"
+  },
+  {
+    "url": "https://untappd.com/blog/new-badges-nc-beer-month-passport-sweepstakes/1957",
+    "note": "NC Beer Month Passport (Oct 1-31, 2026): four separate badges (Welcome + Level 1/2/3) requiring check-ins at 1/5/10/15 distinct North Carolina breweries respectively - a venue-location (state) + distinct-brewery-count match, not a style or country match, so special_badges.json's reader (kind: style/country only) can't compute this.",
+    "foundAt": "2026-10-02"
   }
 ]
