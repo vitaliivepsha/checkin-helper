@@ -11,46 +11,50 @@ async def _enable_with_main_venue(owner=1, venue_id=10):
 async def test_jobs_main_only(tmp_path):
     festival_watch.init(str(tmp_path))
     await _enable_with_main_venue()
+    await festival_watch.add_extra_venue(1, 20, "Extra")
     jobs = await festival_watch.list_venue_jobs()
-    assert [(j["slot"], j["venueId"]) for j in jobs] == [("main", 10)]
+    assert [j["venueId"] for j in jobs] == [10]
 
 
-async def test_alt_venue_adds_second_job_and_has_own_cursor(tmp_path):
+async def test_extra_venues_add_list_remove_and_cursor(tmp_path):
     festival_watch.init(str(tmp_path))
     await _enable_with_main_venue()
-    await festival_watch.set_alt_venue(1, 20, "Alt Venue")
-    await festival_watch.record_venue_tick(1, 111, "main")
-    await festival_watch.record_venue_tick(1, 222, "alt")
-    jobs = {j["slot"]: j for j in await festival_watch.list_venue_jobs()}
-    assert jobs["main"]["lastCheckinId"] == 111
-    assert jobs["alt"]["venueId"] == 20
-    assert jobs["alt"]["lastCheckinId"] == 222
+    assert await festival_watch.add_extra_venue(1, 20, "A") is True
+    assert await festival_watch.add_extra_venue(1, 21, "B") is True
+    assert await festival_watch.add_extra_venue(1, 20, "A again") is False
+    await festival_watch.record_extra_venue_tick(1, 21, 555)
+    jobs = {j["venueId"]: j for j in await festival_watch.list_extra_venue_jobs()}
+    assert jobs[20]["lastCheckinId"] is None and jobs[21]["lastCheckinId"] == 555
+    assert [v["venueId"] for v in (await festival_watch.get_config(1))["extraVenues"]] == [20, 21]
+    assert await festival_watch.remove_extra_venue(1, 20) is True
+    assert await festival_watch.remove_extra_venue(1, 20) is False
+    assert [j["venueId"] for j in await festival_watch.list_extra_venue_jobs()] == [21]
 
 
-async def test_set_location_keeps_alt_venue(tmp_path):
+async def test_extra_venue_cap(tmp_path):
+    festival_watch.init(str(tmp_path))
+    for i in range(festival_watch.MAX_EXTRA_VENUES):
+        assert await festival_watch.add_extra_venue(1, 1000 + i, "v") is True
+    assert await festival_watch.add_extra_venue(1, 9999, "one too many") is False
+
+
+async def test_set_location_keeps_extra_venues(tmp_path):
     festival_watch.init(str(tmp_path))
     await _enable_with_main_venue()
-    await festival_watch.set_alt_venue(1, 20, "Alt Venue")
+    await festival_watch.add_extra_venue(1, 20, "Extra")
     await festival_watch.set_location(1, 56.0, 13.0, "Elsewhere")
     cfg = await festival_watch.get_config(1)
     assert cfg["venueId"] is None
-    assert cfg["altVenueId"] == 20
-
-
-async def test_clear_alt_venue(tmp_path):
-    festival_watch.init(str(tmp_path))
-    await _enable_with_main_venue()
-    await festival_watch.set_alt_venue(1, 20, "Alt Venue")
-    await festival_watch.clear_alt_venue(1)
-    assert [j["slot"] for j in await festival_watch.list_venue_jobs()] == ["main"]
+    assert [v["venueId"] for v in cfg["extraVenues"]] == [20]
 
 
 async def test_disabled_owner_has_no_jobs(tmp_path):
     festival_watch.init(str(tmp_path))
     await _enable_with_main_venue()
-    await festival_watch.set_alt_venue(1, 20, "Alt Venue")
+    await festival_watch.add_extra_venue(1, 20, "Extra")
     await festival_watch.set_enabled(1, False)
     assert await festival_watch.list_venue_jobs() == []
+    assert await festival_watch.list_extra_venue_jobs() == []
 
 
 def test_first_sight_dedupes_per_owner():

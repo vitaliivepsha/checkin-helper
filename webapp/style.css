@@ -512,9 +512,9 @@ body.festival-mode-active .festival-banner { display: flex; }
 .toggle-switch input:focus-visible + .toggle-slider { outline: 2px solid var(--button); outline-offset: 2px; }
 
 .festival-watch-radius-label { margin-top: 12px; }
-#festival-watch-alt-block { margin-top: 16px; }
-#festival-watch-alt-current:not(.hidden) { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-#festival-watch-alt-current span { flex: 1; min-width: 0; }
+#festival-watch-extra-block { margin-top: 16px; }
+#festival-watch-extra-list .venue-selected-card { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+#festival-watch-extra-list .venue-selected-card span { flex: 1; min-width: 0; }
 
 .settings-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;

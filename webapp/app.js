@@ -2283,16 +2283,19 @@
     if (venueMode) {
       hintEl.innerHTML = `<svg class="icon"><use href="#icon-pin"/></svg> Прив'язано до "${escapeHtml(data.venueName || "цієї локації")}" на Untappd — бачить усіх, хто там чекіниться. Друзі в межах радіуса ловляться окремо, навіть в іншій локації.`;
     }
-    const altEl = $("festival-watch-alt-current");
-    altEl.classList.toggle("hidden", data.altVenueId == null);
-    if (data.altVenueId != null) {
-      altEl.innerHTML = `${ICON_PIN} <span>${escapeHtml(data.altVenueName || "Додаткова локація")}</span>
-        <button class="queue-remove-btn" id="festival-watch-alt-clear-btn" aria-label="Прибрати">${ICON_CLOSE}</button>`;
-      $("festival-watch-alt-clear-btn").addEventListener("click", async () => {
-        await apiPost("/api/checkin/festival_watch/clear_alt_venue", {});
+    const extrasEl = $("festival-watch-extra-list");
+    extrasEl.innerHTML = "";
+    (data.extraVenues || []).forEach((v) => {
+      const card = document.createElement("div");
+      card.className = "venue-selected-card";
+      card.innerHTML = `${ICON_PIN} <span>${escapeHtml(v.venueName || String(v.venueId))}</span>
+        <button class="queue-remove-btn" aria-label="Прибрати">${ICON_CLOSE}</button>`;
+      card.querySelector("button").addEventListener("click", async () => {
+        await apiPost("/api/checkin/festival_watch/remove_extra_venue", { venueId: v.venueId });
         await fetchFestivalWatch();
       });
-    }
+      extrasEl.appendChild(card);
+    });
   }
 
   $("festival-watch-enabled-toggle").addEventListener("change", async (e) => {
@@ -2412,38 +2415,41 @@
     listEl.classList.remove("hidden");
   }
 
-  let festivalWatchAltSearchDebounce = null;
-  $("festival-watch-alt-search-input").addEventListener("input", (e) => {
+  let festivalWatchExtraSearchDebounce = null;
+  $("festival-watch-extra-search-input").addEventListener("input", (e) => {
     const q = e.target.value.trim();
-    clearTimeout(festivalWatchAltSearchDebounce);
+    clearTimeout(festivalWatchExtraSearchDebounce);
     if (q.length < 2) {
-      $("festival-watch-alt-search-results").classList.add("hidden");
+      $("festival-watch-extra-search-results").classList.add("hidden");
       return;
     }
-    festivalWatchAltSearchDebounce = setTimeout(async () => {
+    festivalWatchExtraSearchDebounce = setTimeout(async () => {
       const loc = state.lastKnownLocation;
       const { ok, data } = await apiPost("/api/checkin/venues/nearby", {
         query: q, lat: loc ? loc.lat : null, lng: loc ? loc.lng : null,
       });
       if (!ok) return;
-      const listEl = $("festival-watch-alt-search-results");
+      const listEl = $("festival-watch-extra-search-results");
       listEl.innerHTML = "";
       (data.venues || []).forEach((v) => {
         const item = document.createElement("div");
         item.className = "venue-item";
         item.textContent = v.name || v.foursquareId;
         item.addEventListener("click", async () => {
-          const res = await apiPost("/api/checkin/festival_watch/set_alt_venue", {
+          const res = await apiPost("/api/checkin/festival_watch/add_extra_venue", {
             foursquareId: v.foursquareId, name: v.name,
           });
           if (!res.ok) {
-            alert(res.data && res.data.error === "venue_not_found"
-              ? "Цієї локації ще немає в Untappd — додаткову локацію не збережено."
-              : "Не вдалося зберегти додаткову локацію — спробуй пізніше.");
+            const err = res.data && res.data.error;
+            alert(err === "venue_not_found"
+              ? "Цієї локації ще немає в Untappd — не додано."
+              : err === "already_listed_or_full"
+                ? "Ця локація вже в списку (або список заповнений)."
+                : "Не вдалося додати локацію — спробуй пізніше.");
             return;
           }
           listEl.classList.add("hidden");
-          $("festival-watch-alt-search-input").value = "";
+          $("festival-watch-extra-search-input").value = "";
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
           await fetchFestivalWatch();
         });
@@ -3811,7 +3817,7 @@
     "session-search-input",
     "autotoast-search-input",
     "festival-watch-search-input",
-    "festival-watch-alt-search-input",
+    "festival-watch-extra-search-input",
     "festival-map-search-input",
     "badges-search-input",
     "venue-search-input",

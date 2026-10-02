@@ -77,10 +77,11 @@ async def get_config(owner_id: int) -> dict:
             # venue - see set_venue's own docstring for what that unlocks.
             "venueId": entry.get("venueId"),
             "venueName": entry.get("venueName"),
-            # Optional second venue, polled less often than the main one -
-            # see set_alt_venue.
-            "altVenueId": entry.get("altVenueId"),
-            "altVenueName": entry.get("altVenueName"),
+            # [{"venueId", "venueName"}] - see add_extra_venue.
+            "extraVenues": [
+                {"venueId": v["venueId"], "venueName": v.get("venueName")}
+                for v in entry.get("extraVenues", [])
+            ],
             # Cursor of the loop's own direct friends-feed poll - see
             # webapp_server._festival_watch_friends_owner.
             "friendsLastCheckinId": entry.get("friendsLastCheckinId"),
@@ -127,31 +128,62 @@ async def set_venue(owner_id: int, venue_id: int, venue_name: str | None) -> Non
         _save(data)
 
 
-async def set_alt_venue(owner_id: int, venue_id: int, venue_name: str | None) -> None:
-    """A second Untappd venue to watch next to the main one (e.g. the
-    neighbouring address people sometimes check into by mistake). Independent
-    of set_location - changing the main point never touches it. Polled by
-    the same venue-checkins loop but only every Nth tick (see
-    webapp_server.FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS), so it costs a
-    fraction of the main venue's quota. Fresh cursor, since another venue's
-    check-in ids are an unrelated numbering."""
+MAX_EXTRA_VENUES = 30
+
+
+async def add_extra_venue(owner_id: int, venue_id: int, venue_name: str | None) -> bool:
+    """Adds an Untappd venue to the owner's extra-venues list (neighbouring
+    addresses people check into by mistake, other bars near the festival...).
+    Polled by webapp_server._festival_watch_scrape_loop via
+    venue_scrape - no API quota, so the list can be long. Independent of
+    set_location. False when it's already listed or the list is full."""
     async with _lock:
         data = _load()
         entry = _owner_entry(data, owner_id)
-        entry["altVenueId"] = venue_id
-        entry["altVenueName"] = venue_name
-        entry["altVenueLastCheckinId"] = None
+        extras = entry.setdefault("extraVenues", [])
+        if len(extras) >= MAX_EXTRA_VENUES or any(v["venueId"] == venue_id for v in extras):
+            return False
+        extras.append({"venueId": venue_id, "venueName": venue_name, "lastCheckinId": None})
         _save(data)
+        return True
 
 
-async def clear_alt_venue(owner_id: int) -> None:
+async def remove_extra_venue(owner_id: int, venue_id: int) -> bool:
     async with _lock:
         data = _load()
         entry = _owner_entry(data, owner_id)
-        entry["altVenueId"] = None
-        entry["altVenueName"] = None
-        entry["altVenueLastCheckinId"] = None
+        extras = entry.get("extraVenues", [])
+        kept = [v for v in extras if v["venueId"] != venue_id]
+        if len(kept) == len(extras):
+            return False
+        entry["extraVenues"] = kept
         _save(data)
+        return True
+
+
+async def list_extra_venue_jobs() -> list[dict]:
+    """[{"ownerId", "venueId", "venueName", "lastCheckinId"}] for every extra
+    venue of every owner with the watch enabled."""
+    async with _lock:
+        return [
+            {
+                "ownerId": int(owner_id_str), "venueId": v["venueId"],
+                "venueName": v.get("venueName"), "lastCheckinId": v.get("lastCheckinId"),
+            }
+            for owner_id_str, entry in _load().items() if entry.get("enabled")
+            for v in entry.get("extraVenues", [])
+        ]
+
+
+async def record_extra_venue_tick(owner_id: int, venue_id: int, last_checkin_id: int) -> None:
+    async with _lock:
+        data = _load()
+        entry = _owner_entry(data, owner_id)
+        for v in entry.get("extraVenues", []):
+            if v["venueId"] == venue_id:
+                v["lastCheckinId"] = last_checkin_id
+                _save(data)
+                return
 
 
 async def record_friends_tick(owner_id: int, last_checkin_id: int | None) -> None:
@@ -214,36 +246,25 @@ def is_within(lat: float, lng: float, center_lat: float, center_lng: float, radi
 
 
 async def list_venue_jobs() -> list[dict]:
-    """One job per watched venue - what the independent venue-checkins poll
-    loop (webapp_server._festival_watch_venue_loop) iterates. Each job is
-    {"ownerId", "slot", "venueId", "venueName", "lastCheckinId"}, slot being
-    "main" (polled every tick) or "alt" (polled only every Nth tick). Runs
-    alongside the friends+radius check (_check_festival_novelty), not
-    instead of it - a check-in logged at a neighbouring venue is invisible
-    to venue/checkins but still caught by the radius check."""
+    """[{"ownerId", "venueId", "venueName", "lastCheckinId"}] for every owner
+    with the watch on AND a resolved main venue_id - what the API venue-
+    checkins loop (webapp_server._festival_watch_venue_loop) iterates. Runs
+    alongside the friends+radius check (_check_festival_novelty) and the
+    extra-venue scrape, not instead of them."""
     async with _lock:
-        data = _load()
-        jobs = []
-        for owner_id_str, entry in data.items():
-            if not entry.get("enabled"):
-                continue
-            owner_id = int(owner_id_str)
-            if entry.get("venueId") is not None:
-                jobs.append({
-                    "ownerId": owner_id, "slot": "main", "venueId": entry["venueId"],
-                    "venueName": entry.get("venueName"), "lastCheckinId": entry.get("venueLastCheckinId"),
-                })
-            if entry.get("altVenueId") is not None:
-                jobs.append({
-                    "ownerId": owner_id, "slot": "alt", "venueId": entry["altVenueId"],
-                    "venueName": entry.get("altVenueName"), "lastCheckinId": entry.get("altVenueLastCheckinId"),
-                })
-        return jobs
+        return [
+            {
+                "ownerId": int(owner_id_str), "venueId": entry["venueId"],
+                "venueName": entry.get("venueName"), "lastCheckinId": entry.get("venueLastCheckinId"),
+            }
+            for owner_id_str, entry in _load().items()
+            if entry.get("enabled") and entry.get("venueId") is not None
+        ]
 
 
-async def record_venue_tick(owner_id: int, last_checkin_id: int, slot: str = "main") -> None:
+async def record_venue_tick(owner_id: int, last_checkin_id: int) -> None:
     async with _lock:
         data = _load()
         entry = _owner_entry(data, owner_id)
-        entry["altVenueLastCheckinId" if slot == "alt" else "venueLastCheckinId"] = last_checkin_id
+        entry["venueLastCheckinId"] = last_checkin_id
         _save(data)

@@ -44,6 +44,7 @@ import group_membership
 import user_festivals
 import had_it_index
 import untappd_direct
+import venue_scrape
 import untappd_mcp
 import user_tokens
 import venue_index
@@ -258,12 +259,16 @@ FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR = float(os.environ.get("FESTIVAL_WATCH_VENU
 FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS = float(os.environ.get("FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS", "300"))
 FESTIVAL_WATCH_VENUE_MIN_REMAINING = int(os.environ.get("FESTIVAL_WATCH_VENUE_MIN_REMAINING", "5"))
 FESTIVAL_WATCH_VENUE_CHECK_LIMIT = int(os.environ.get("FESTIVAL_WATCH_VENUE_CHECK_LIMIT", "25"))
-# An owner's optional second venue (festival_watch.set_alt_venue) is polled
-# only on every Nth pass of the loop, so it costs ~1/N of a main venue's
-# quota - and counts as 1/N of a target in the interval budget math below.
-FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS = max(1, int(os.environ.get("FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS", "4")))
+# Extra venues (festival_watch.add_extra_venue) are scraped, not API-polled -
+# see _festival_watch_scrape_loop. Pause between two venues' requests within
+# one pass (politeness / not looking like a burst), the pass interval, and
+# the cap on the backoff after a Cloudflare block.
+FESTIVAL_WATCH_SCRAPE_INTERVAL_SECONDS = float(os.environ.get("FESTIVAL_WATCH_SCRAPE_INTERVAL_SECONDS", "150"))
+FESTIVAL_WATCH_SCRAPE_GAP_SECONDS = float(os.environ.get("FESTIVAL_WATCH_SCRAPE_GAP_SECONDS", "3"))
+FESTIVAL_WATCH_SCRAPE_MAX_BACKOFF_SECONDS = float(os.environ.get("FESTIVAL_WATCH_SCRAPE_MAX_BACKOFF_SECONDS", "1800"))
 
 _festival_watch_venue_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
+_festival_watch_scrape_task = None  # same, for _festival_watch_scrape_loop
 
 # Full-badge-list sync loop (see _badge_index_sync_loop) - replaces
 # badge_index.py's original "scavenge from whichever check-ins happen to
@@ -2678,11 +2683,12 @@ async def handle_festival_watch_set_location(request: web.Request) -> web.Respon
     return web.json_response({"ok": True})
 
 
-async def handle_festival_watch_set_alt_venue(request: web.Request) -> web.Response:
-    """Sets the optional second watched venue (festival_watch.set_alt_venue)
-    from a picked Foursquare place. Unlike set_location, a failed Untappd
-    venue resolution IS an error here - the alt venue has no GPS+radius
-    fallback, it only exists as a venue_id."""
+async def handle_festival_watch_add_extra_venue(request: web.Request) -> web.Response:
+    """Adds a picked Foursquare place to the owner's extra-venues list
+    (festival_watch.add_extra_venue, scraped by _festival_watch_scrape_loop).
+    Unlike set_location, a failed Untappd venue resolution IS an error here -
+    an extra venue has no GPS+radius fallback, it only exists as a venue_id.
+    Costs one DIRECT_TOKEN call (the foursquare lookup), once, at add time."""
     init_data = await _require_valid_init_data(request)
     if not init_data:
         return _json_error("invalid_init_data", 401)
@@ -2702,21 +2708,27 @@ async def handle_festival_watch_set_alt_venue(request: web.Request) -> web.Respo
     except untappd_mcp.UntappdRateLimited:
         return _json_error("rate_limited", 429)
     except untappd_mcp.UntappdMCPError as e:
-        logger.warning("festival_watch alt venue resolution failed for %s: %s", foursquare_id, e)
+        logger.warning("festival_watch extra venue resolution failed for %s: %s", foursquare_id, e)
         return _json_error("lookup_failed", 502)
     if not resolved:
         return _json_error("venue_not_found", 404)
-    await festival_watch.set_alt_venue(user_id, resolved["venueId"], resolved["venueName"] or body.get("name"))
+    added = await festival_watch.add_extra_venue(user_id, resolved["venueId"], resolved["venueName"] or body.get("name"))
+    if not added:
+        return _json_error("already_listed_or_full", 409)
     return web.json_response({"ok": True})
 
 
-async def handle_festival_watch_clear_alt_venue(request: web.Request) -> web.Response:
+async def handle_festival_watch_remove_extra_venue(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
         return _json_error("invalid_init_data", 401)
     user_id = (init_data.get("user") or {}).get("id")
-    await festival_watch.clear_alt_venue(user_id)
-    return web.json_response({"ok": True})
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+    removed = await festival_watch.remove_extra_venue(user_id, body.get("venueId"))
+    return web.json_response({"ok": True, "removed": removed})
 
 
 async def handle_festival_watch_set_radius(request: web.Request) -> web.Response:
@@ -2798,8 +2810,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/autotoast/remove_target", handle_autotoast_remove_target)
     app.router.add_post("/api/checkin/festival_watch/get", handle_festival_watch_get)
     app.router.add_post("/api/checkin/festival_watch/set_location", handle_festival_watch_set_location)
-    app.router.add_post("/api/checkin/festival_watch/set_alt_venue", handle_festival_watch_set_alt_venue)
-    app.router.add_post("/api/checkin/festival_watch/clear_alt_venue", handle_festival_watch_clear_alt_venue)
+    app.router.add_post("/api/checkin/festival_watch/add_extra_venue", handle_festival_watch_add_extra_venue)
+    app.router.add_post("/api/checkin/festival_watch/remove_extra_venue", handle_festival_watch_remove_extra_venue)
     app.router.add_post("/api/checkin/festival_watch/set_radius", handle_festival_watch_set_radius)
     app.router.add_post("/api/checkin/festival_watch/toggle", handle_festival_watch_toggle)
     app.router.add_post("/api/checkin/festival_watch/set_notify_listed", handle_festival_watch_set_notify_listed)
@@ -2975,6 +2987,7 @@ async def start_webapp_server(
         _start_auto_toast()
         _start_comment_watch()
         _start_festival_watch_venue()
+        _start_festival_watch_scrape()
         _start_badge_index_sync()
         _start_special_badges_sync()
 
@@ -4084,9 +4097,8 @@ async def _festival_watch_venue_loop() -> None:
     handle_festival_watch_set_location - so list_venue_jobs() would just
     always come back empty).
 
-    Each owner can watch a main venue (polled every pass) and an optional
-    second "alt" venue (festival_watch.set_alt_venue, polled only every
-    FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS-th pass). The bot owner's friends
+    Only the MAIN venue is polled here (API quota); extra venues are scraped
+    by _festival_watch_scrape_loop. The bot owner's friends
     feed is also polled here whenever _auto_toast_loop isn't covering it
     (see _festival_watch_friends_owner), so a friend logging a new beer at a
     different venue within the radius is still caught during festival mode.
@@ -4100,7 +4112,6 @@ async def _festival_watch_venue_loop() -> None:
     lower-than-limit page would leave nothing missed - min_id already
     bounds the query so nothing in between is skipped either way."""
     await asyncio.sleep(5)  # let the server finish binding first
-    tick_no = 0
     while True:
         # Default floor - overwritten below once `targets` is known; stays
         # at the floor if an exception hits before that (the final sleep at
@@ -4119,16 +4130,12 @@ async def _festival_watch_venue_loop() -> None:
             # See FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR's own comment - spreads
             # the same total hourly call budget across however many targets
             # are currently enabled, instead of every target adding its own
-            # fixed-interval load on top of the others. An alt venue only
-            # costs 1/N of a main one (polled every Nth pass).
-            main_count = sum(1 for t in targets if t["slot"] == "main")
-            alt_count = len(targets) - main_count
-            if friends_owner is not None:
-                main_count += 1  # the direct friends-feed poll costs one call per pass
+            # fixed-interval load on top of the others. The direct friends-
+            # feed poll costs one more call per pass.
+            call_count = len(targets) + (1 if friends_owner is not None else 0)
             tick_interval = max(
                 FESTIVAL_WATCH_VENUE_INTERVAL_SECONDS,
-                3600 * (main_count + alt_count / FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS)
-                / FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR,
+                3600 * call_count / FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR,
             )
 
             usage = untappd_direct.get_api_usage()  # free, no network call
@@ -4136,13 +4143,8 @@ async def _festival_watch_venue_loop() -> None:
                 await asyncio.sleep(tick_interval)
                 continue
 
-            alt_due = tick_no % FESTIVAL_WATCH_ALT_VENUE_EVERY_N_TICKS == 0
-            tick_no += 1
             for target in targets:
                 owner_id = target["ownerId"]
-                slot = target["slot"]
-                if slot == "alt" and not alt_due:
-                    continue
                 try:
                     # Deliberately NOT gated on festival_mode.is_enabled, unlike
                     # every other DIRECT_TOKEN consumer (had_it/venue backfill,
@@ -4189,7 +4191,7 @@ async def _festival_watch_venue_loop() -> None:
                         # Bootstrap (first-ever watch, or a just-reset
                         # stale cursor): note the newest id as the new
                         # baseline, don't notify about anything older.
-                        await festival_watch.record_venue_tick(owner_id, newest_id, slot)
+                        await festival_watch.record_venue_tick(owner_id, newest_id)
                         continue
 
                     profile = await user_tokens.get_profile(owner_id)
@@ -4199,7 +4201,7 @@ async def _festival_watch_venue_loop() -> None:
                         if ((it.get("user") or {}).get("user_name") or "").lower() != own_username_lower
                     ]
                     await _notify_festival_novelty(owner_id, candidates, target["venueName"] or "локації")
-                    await festival_watch.record_venue_tick(owner_id, newest_id, slot)
+                    await festival_watch.record_venue_tick(owner_id, newest_id)
                 except untappd_mcp.UntappdRateLimited:
                     break  # this tick's shared DIRECT_TOKEN quota is spent - skip remaining targets, retry next tick
                 except untappd_mcp.UntappdMCPError as e:
@@ -4220,6 +4222,81 @@ async def _festival_watch_venue_loop() -> None:
         except Exception:
             logger.exception("festival_watch venue loop tick failed")
         await asyncio.sleep(tick_interval)
+
+
+def _start_festival_watch_scrape() -> None:
+    global _festival_watch_scrape_task
+    if _festival_watch_scrape_task and not _festival_watch_scrape_task.done():
+        return
+    _festival_watch_scrape_task = asyncio.create_task(_festival_watch_scrape_loop())
+
+
+async def _festival_watch_scrape_loop() -> None:
+    """Scrapes every owner's extra venues (festival_watch.add_extra_venue)
+    via venue_scrape - logged-out public activity pages, so no Untappd API
+    quota and no DIRECT_TOKEN needed, which is why the list can be long
+    (unlike the quota-bound main venue in _festival_watch_venue_loop).
+    Same cursor/bootstrap idea as that loop: the first pass over a venue only
+    records the newest check-in id, later passes notify about newer ones via
+    the shared _notify_festival_novelty (deduped by checkin_id).
+
+    Fragile by nature - Cloudflare can start challenging this server at any
+    time. A block backs the whole loop off exponentially (up to
+    FESTIVAL_WATCH_SCRAPE_MAX_BACKOFF_SECONDS) instead of retrying hard, and
+    resets after the next clean pass. A single venue failing otherwise
+    (layout change, venue has no stream) is just logged and skipped."""
+    await asyncio.sleep(8)  # let the server finish binding first
+    backoff = 0.0
+    while True:
+        interval = FESTIVAL_WATCH_SCRAPE_INTERVAL_SECONDS
+        try:
+            jobs = await festival_watch.list_extra_venue_jobs()
+            if not jobs:
+                await asyncio.sleep(FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS)
+                continue
+            blocked = False
+            fetched: dict[int, list[dict]] = {}  # two owners sharing a venue = one request
+            for job in jobs:
+                try:
+                    await _scrape_extra_venue(job, fetched)
+                except venue_scrape.ScrapeBlocked as e:
+                    logger.warning("festival_watch scrape blocked (%s) - backing off", e)
+                    blocked = True
+                    break
+                except venue_scrape.ScrapeError as e:
+                    logger.warning("festival_watch scrape of venue %s failed: %s", job["venueId"], e)
+                except Exception:
+                    logger.exception("festival_watch scrape of venue %s failed", job["venueId"])
+                await asyncio.sleep(FESTIVAL_WATCH_SCRAPE_GAP_SECONDS)
+            if blocked:
+                backoff = min(max(backoff * 2, interval), FESTIVAL_WATCH_SCRAPE_MAX_BACKOFF_SECONDS)
+                interval = backoff
+            else:
+                backoff = 0.0
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("festival_watch scrape loop tick failed")
+        await asyncio.sleep(interval)
+
+
+async def _scrape_extra_venue(job: dict, fetched: dict[int, list[dict]]) -> None:
+    owner_id, venue_id, cursor = job["ownerId"], job["venueId"], job["lastCheckinId"]
+    if venue_id not in fetched:
+        fetched[venue_id] = await venue_scrape.fetch_venue_activity(venue_id)
+    items = fetched[venue_id]
+    if not items:
+        return
+    newest_id = max(it["checkin_id"] for it in items)
+    if cursor is not None:
+        profile = await user_tokens.get_profile(owner_id)
+        own_username_lower = (profile or {}).get("username", "").lower()
+        candidates = [
+            it for it in items
+            if it["checkin_id"] > cursor and it["user"]["user_name"].lower() != own_username_lower
+        ]
+        await _notify_festival_novelty(owner_id, candidates, job["venueName"] or "локації")
+    await festival_watch.record_extra_venue_tick(owner_id, venue_id, max(newest_id, cursor or 0))
 
 
 def _start_badge_index_sync() -> None:
