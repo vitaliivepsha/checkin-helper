@@ -54,6 +54,7 @@ import venue_index
 import special_badge_dismissals
 import pending_checkins
 import wishlist_items
+import lens_log
 import wishlist_sheets
 
 logger = logging.getLogger(__name__)
@@ -2122,7 +2123,24 @@ async def handle_lens_lookup(request: web.Request) -> web.Response:
                 }
 
     results = await asyncio.gather(*(_resolve_one(it) for it in items))
+    try:
+        await lens_log.record(items, results)
+    except Exception:
+        logger.exception("lens_log: failed to record a lookup batch")  # never fail the user's page over bookkeeping
     return web.json_response({"ok": True, "results": results})
+
+
+async def handle_lens_report(request: web.Request) -> web.Response:
+    """Review view of lens_log.py (same X-Lens-Token as /api/lens/lookup):
+    unmatched products, suspicious matches and outcome changes - e.g.
+    `curl -H "X-Lens-Token: $LENS_API_TOKEN" <origin>/api/lens/report?limit=30`."""
+    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+        return _json_error("unauthorized", 401)
+    try:
+        limit = max(1, min(200, int(request.query.get("limit", "50"))))
+    except ValueError:
+        limit = 50
+    return web.json_response(await lens_log.report(limit))
 
 
 async def handle_deploy_webhook(request: web.Request) -> web.Response:
@@ -3023,6 +3041,7 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/special_badges/dismiss", handle_special_badges_dismiss)
     app.router.add_post("/api/checkin/style_info", handle_style_info)
     app.router.add_post("/api/lens/lookup", handle_lens_lookup)
+    app.router.add_get("/api/lens/report", handle_lens_report)
     app.router.add_post("/api/deploy/webhook", handle_deploy_webhook)
     app.router.add_post("/api/checkin/festival/list", handle_festival_list)
     app.router.add_post("/api/checkin/festival/switch", handle_festival_switch)
@@ -3167,6 +3186,7 @@ async def start_webapp_server(
         badge_index.init(data_dir)
         wishlist_sheets.init(data_dir)
         wishlist_items.init(data_dir)
+        lens_log.init(data_dir)
         pending_checkins.init(data_dir)
         special_badge_dismissals.init(data_dir)
     port = int(os.environ.get("PORT", 8080))

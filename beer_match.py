@@ -1360,3 +1360,30 @@ async def resolve_beer(
         "country": country,
         "hadIt": had_it,
     }
+
+
+def classify_match(query_name: str, query_brewery: str, matched_name: str) -> tuple[str, int]:
+    """How closely a resolved beer's catalog name agrees with the shop title
+    it was resolved from, as (kind, delta) - for the lens outcome log
+    (lens_log.py), so reviewing it can focus on the matches most likely to
+    be WRONG instead of reading all of them. Compares the cleaned query
+    (packaging/noise stripped, brewery tokens dropped) with the catalog name
+    as token sets:
+      "exact"            - identical;
+      "candidate_longer" - the catalog name has extra words (delta = how
+                           many) - the superset case;
+      "query_longer"     - the shop title has words the catalog name lacks
+                           (delta = how many) - matched via a shortened
+                           query variant;
+      "different"        - neither contains the other (delta = size of the
+                           symmetric difference) - the most suspicious."""
+    _, _, clean_name = _query_context(query_name, query_brewery)
+    q = _token_set(clean_name) - _token_set(query_brewery)
+    c = _token_set(matched_name)
+    if q == c:
+        return "exact", 0
+    if q < c:
+        return "candidate_longer", len(c - q)
+    if c < q:
+        return "query_longer", len(q - c)
+    return "different", len(q ^ c)
