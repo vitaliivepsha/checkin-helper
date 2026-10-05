@@ -1078,7 +1078,9 @@ async def handle_index(request: web.Request) -> web.Response:
 
 
 def _public_client_ip(request: web.Request) -> str:
-    forwarded = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    # Last hop, not first: behind ngrok -> gateway the closest proxy's own
+    # entry is the one that can't have been supplied by the client.
+    forwarded = request.headers.get("X-Forwarded-For", "").split(",")[-1].strip()
     return forwarded or request.remote or "?"
 
 
