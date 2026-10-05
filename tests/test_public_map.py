@@ -20,6 +20,7 @@ async def client(monkeypatch):
     monkeypatch.setattr(ws, "_load_festivals_registry", lambda: [{"key": "wfp2026"}])
     monkeypatch.setattr(ws, "_public_limiter", public_map_util.RateLimiter())
     monkeypatch.setattr(ws, "_public_cache", public_map_util.TTLCache(ttl_seconds=30))
+    monkeypatch.setattr(ws, "_public_search_cache", public_map_util.TTLCache(ttl_seconds=60))
     app = web.Application()
     app.router.add_get("/map", ws.handle_public_index)
     app.router.add_post("/api/public/i18n", ws.handle_public_i18n)
@@ -138,3 +139,34 @@ async def test_private_brewery_handler_still_works_after_sharing_stand_beers(mon
     by_id = {b["beerId"]: b for b in beers}
     assert set(by_id) == {222, 333}
     assert by_id[222]["hadIt"] is True and by_id[222]["userRating"] == 4.0
+
+
+async def test_repeated_search_is_computed_once_and_ignores_case_and_spacing(client, monkeypatch):
+    calls = []
+    real = ws._search_festival_beers
+
+    def counting(*args, **kwargs):
+        calls.append(args[0])
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(ws, "_search_festival_beers", counting)
+    first = await (await client.post("/api/public/search", json={"query": "Hazy  Dream"})).json()
+    again = await (await client.post("/api/public/search", json={"query": "hazy dream"})).json()
+    assert first == again and first["results"]
+    assert calls == ["hazy dream"]
+    await client.post("/api/public/search", json={"query": "dark matter"})
+    assert calls == ["hazy dream", "dark matter"]
+
+
+async def test_search_runs_off_the_event_loop_thread(client, monkeypatch):
+    import threading
+    seen = []
+    real = ws._search_festival_beers
+
+    def recording(*args, **kwargs):
+        seen.append(threading.current_thread() is threading.main_thread())
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(ws, "_search_festival_beers", recording)
+    await client.post("/api/public/search", json={"query": "stout"})
+    assert seen == [False]

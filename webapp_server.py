@@ -6,6 +6,7 @@ start_limited_background_tasks for the established pattern this mirrors.
 """
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import csv
 import hashlib
 import hmac
@@ -277,6 +278,13 @@ PUBLIC_MAP_RATE_LIMIT_PER_MIN = int(os.environ.get("PUBLIC_MAP_RATE_LIMIT_PER_MI
 PUBLIC_MAP_SEARCH_RATE_LIMIT_PER_MIN = int(os.environ.get("PUBLIC_MAP_SEARCH_RATE_LIMIT_PER_MIN", "60"))
 _public_cache = public_map_util.TTLCache(ttl_seconds=30)
 _public_limiter = public_map_util.RateLimiter()
+# Fuzzy search is the one CPU-heavy public endpoint (~10 ms of pure CPU each,
+# measured) and this process also runs the Telegram bot on the same event
+# loop - so identical queries are cached and the matching itself runs in a
+# small worker pool instead of on the loop (rapidfuzz releases the GIL while
+# scoring), otherwise a burst of searches stalled EVERYTHING for hundreds of ms.
+_public_search_cache = public_map_util.TTLCache(ttl_seconds=60, max_entries=1000)
+_public_search_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="public-search")
 
 # Full-badge-list sync loop (see _badge_index_sync_loop) - replaces
 # badge_index.py's original "scavenge from whichever check-ins happen to
@@ -1172,6 +1180,31 @@ async def handle_public_brewery(request: web.Request) -> web.Response:
     return web.json_response({"brewery": brewery, "beers": beers})
 
 
+def _public_search_index(festival_key: str | None) -> tuple:
+    """Per-festival lookup tables the search needs, built once per cache
+    window instead of per query."""
+    festival_beers, sessions_raw = _festival_data_for(festival_key)
+    beer_sessions, _, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
+    by_id = {_int_beer_id(b): b for b in festival_beers}
+    return festival_beers, beer_sessions, session_order, by_id, _festival_brewery_zone_map(festival_beers)
+
+
+def _public_search_compute(index: tuple, query: str) -> list[dict]:
+    """Pure CPU work over immutable-by-convention data - safe to run in the
+    search worker pool (nothing here touches shared mutable state)."""
+    festival_beers, beer_sessions, session_order, by_id, zone_hint = index
+    hits = _search_festival_beers(query, festival_beers, beer_sessions, session_order, limit=25)
+    results = []
+    for hit in hits:
+        raw = by_id.get(hit["beerId"]) or {}
+        stand = _stand_brewery(raw) or hit["brewery"]
+        results.append({
+            "beerId": hit["beerId"], "name": hit["name"], "brewery": hit["brewery"],
+            "style": hit["style"], "stand": stand, "zone": zone_hint.get(stand),
+        })
+    return results
+
+
 async def handle_public_search(request: web.Request) -> web.Response:
     """Search over the loaded festival beer list only (local fuzzy match,
     zero Untappd quota) - each hit carries the stand/zone it's poured at so
@@ -1184,19 +1217,18 @@ async def handle_public_search(request: web.Request) -> web.Response:
     if len(query) < 2 or len(query) > 80:
         return web.json_response({"results": []})
     festival_key = _public_festival_key(body)
-    festival_beers, sessions_raw = _festival_data_for(festival_key)
-    beer_sessions, _, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
-    hits = _search_festival_beers(query, festival_beers, beer_sessions, session_order, limit=25)
-    by_id = {_int_beer_id(b): b for b in festival_beers}
-    zone_hint = _festival_brewery_zone_map(festival_beers)
-    results = []
-    for hit in hits:
-        raw = by_id.get(hit["beerId"]) or {}
-        stand = _stand_brewery(raw) or hit["brewery"]
-        results.append({
-            "beerId": hit["beerId"], "name": hit["name"], "brewery": hit["brewery"],
-            "style": hit["style"], "stand": stand, "zone": zone_hint.get(stand),
-        })
+    normalized = " ".join(query.lower().split())
+    cache_key = (festival_key, normalized)
+    results = _public_search_cache.get(cache_key)
+    if results is None:
+        index = _public_cache.get(("search_index", festival_key))
+        if index is None:
+            index = _public_search_index(festival_key)
+            _public_cache.set(("search_index", festival_key), index)
+        results = await asyncio.get_running_loop().run_in_executor(
+            _public_search_pool, _public_search_compute, index, normalized,
+        )
+        _public_search_cache.set(cache_key, results)
     return web.json_response({"results": results})
 
 
