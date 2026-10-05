@@ -15,6 +15,8 @@ import json
 import os
 import time
 
+import resync_schedule
+
 _path: str | None = None
 _lock = asyncio.Lock()
 _mirror: dict | None = None
@@ -288,7 +290,7 @@ _rotation_cursor = 0
 
 
 async def next_turn(
-    user_ids: list[int], full_resync_cooldown_seconds: float, quick_recheck_cooldown_seconds: float
+    user_ids: list[int], quick_recheck_cooldown_seconds: float
 ) -> tuple[int, int | None, str] | None:
     """Round-robin entry point for the backfill loop. Advances the rotation
     cursor on every call (even when nobody turns out to be eligible), so one
@@ -298,7 +300,7 @@ async def next_turn(
     for the full reasoning), adapted to this file's cursor-based (max_id,
     newest-first) pagination: (1) an initial/in-progress full walk always
     continues; (2) once fully synced, a full walk restarts after
-    full_resync_cooldown_seconds; (3) otherwise a cheap "quick" recheck of
+    once per calendar month (resync_schedule); (3) otherwise a cheap "quick" recheck of
     the most recent check-ins runs (continuing mid-cycle, or starting a
     fresh one from max_id=None after quick_recheck_cooldown_seconds).
 
@@ -337,7 +339,7 @@ async def next_turn(
                 _rotation_cursor = (idx + 1) % n
                 return user_id, entry["next_max_id"], "full"
 
-            if now - last_synced > full_resync_cooldown_seconds:
+            if resync_schedule.full_resync_due(last_synced, now):
                 entry["next_max_id"] = None
                 entry["fully_synced"] = False
                 entry["full_checkins_seen"] = 0

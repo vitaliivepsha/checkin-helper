@@ -138,10 +138,9 @@ HAD_IT_BACKFILL_INTERVAL_SECONDS = float(os.environ.get("HAD_IT_BACKFILL_INTERVA
 HAD_IT_BACKFILL_IDLE_SLEEP_SECONDS = float(os.environ.get("HAD_IT_BACKFILL_IDLE_SLEEP_SECONDS", "600"))
 HAD_IT_BACKFILL_PAGE_SIZE = int(os.environ.get("HAD_IT_BACKFILL_PAGE_SIZE", "50"))
 HAD_IT_BACKFILL_MIN_REMAINING = int(os.environ.get("HAD_IT_BACKFILL_MIN_REMAINING", "20"))
-# Full walk only every 30 days now (was daily) - a cheap top-N "quick"
-# recheck (below) handles day-to-day catch-up far more cheaply; see
-# had_it_index.next_turn's own docstring for the full priority order.
-HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS = float(os.environ.get("HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS", str(30 * 24 * 60 * 60)))
+# Full walk only once per calendar month (resync_schedule.full_resync_due) - a
+# cheap top-N "quick" recheck (below) handles day-to-day catch-up far more
+# cheaply; see had_it_index.next_turn's own docstring for the priority order.
 HAD_IT_QUICK_RECHECK_COOLDOWN_SECONDS = float(os.environ.get("HAD_IT_QUICK_RECHECK_COOLDOWN_SECONDS", str(24 * 60 * 60)))
 HAD_IT_QUICK_RECHECK_LIMIT = int(os.environ.get("HAD_IT_QUICK_RECHECK_LIMIT", "400"))
 
@@ -156,11 +155,10 @@ VENUE_BACKFILL_INTERVAL_SECONDS = float(os.environ.get("VENUE_BACKFILL_INTERVAL_
 VENUE_BACKFILL_IDLE_SLEEP_SECONDS = float(os.environ.get("VENUE_BACKFILL_IDLE_SLEEP_SECONDS", "600"))
 VENUE_BACKFILL_PAGE_SIZE = int(os.environ.get("VENUE_BACKFILL_PAGE_SIZE", "25"))
 VENUE_BACKFILL_MIN_REMAINING = int(os.environ.get("VENUE_BACKFILL_MIN_REMAINING", "25"))
-# Full walk only every 30 days now (was daily) - same reasoning as
-# HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS; a cheap daily "quick" recheck of
-# the most recent check-ins (below) handles day-to-day catch-up, including
-# keeping badge_index.py's ground-truth badge levels fresh.
-VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS = float(os.environ.get("VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS", str(30 * 24 * 60 * 60)))
+# Full walk only once per calendar month - same reasoning as the had-it one
+# above; a cheap daily "quick" recheck of the most recent check-ins (below)
+# handles day-to-day catch-up, including keeping badge_index.py's ground-truth
+# badge levels fresh.
 VENUE_QUICK_RECHECK_COOLDOWN_SECONDS = float(os.environ.get("VENUE_QUICK_RECHECK_COOLDOWN_SECONDS", str(24 * 60 * 60)))
 VENUE_QUICK_RECHECK_LIMIT = int(os.environ.get("VENUE_QUICK_RECHECK_LIMIT", "400"))
 
@@ -3360,8 +3358,8 @@ async def _had_it_backfill_loop() -> None:
     had_it_index.json, a handful of pages at a time, so the had-it badge
     eventually covers a user's entire history - not just what a live
     per-search check happens to ask about. Two kinds of pass, picked by
-    had_it_index.next_turn: a full walk (initial, then only every
-    HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS) and a much cheaper daily
+    had_it_index.next_turn: a full walk (initial, then once per calendar month,
+    see resync_schedule) and a much cheaper daily
     "quick" recheck of just the first HAD_IT_QUICK_RECHECK_LIMIT beers
     (catches new check-ins/rating edits made in the real Untappd app,
     which always land at the front of get_user_beers' recency-sorted
@@ -3381,7 +3379,7 @@ async def _had_it_backfill_loop() -> None:
             user_ids = await user_tokens.list_user_ids()
             turn = (
                 await had_it_index.next_turn(
-                    user_ids, HAD_IT_BACKFILL_RESYNC_COOLDOWN_SECONDS, HAD_IT_QUICK_RECHECK_COOLDOWN_SECONDS
+                    user_ids, HAD_IT_QUICK_RECHECK_COOLDOWN_SECONDS
                 )
                 if user_ids else None
             )
@@ -3472,7 +3470,7 @@ async def _venue_backfill_loop() -> None:
             user_ids = await user_tokens.list_user_ids()
             turn = (
                 await venue_index.next_turn(
-                    user_ids, VENUE_BACKFILL_RESYNC_COOLDOWN_SECONDS, VENUE_QUICK_RECHECK_COOLDOWN_SECONDS
+                    user_ids, VENUE_QUICK_RECHECK_COOLDOWN_SECONDS
                 )
                 if user_ids else None
             )

@@ -16,6 +16,8 @@ import json
 import os
 import time
 
+import resync_schedule
+
 _path: str | None = None
 _lock = asyncio.Lock()
 _mirror: dict | None = None
@@ -374,7 +376,7 @@ _rotation_cursor = 0
 
 
 async def next_turn(
-    user_ids: list[int], full_resync_cooldown_seconds: float, quick_recheck_cooldown_seconds: float
+    user_ids: list[int], quick_recheck_cooldown_seconds: float
 ) -> tuple[int, int, str] | None:
     """Round-robin entry point for the backfill loop. Advances the rotation
     cursor on every call (even when nobody turns out to be eligible), so one
@@ -382,7 +384,7 @@ async def next_turn(
 
     Per user, in priority order: (1) an initial/in-progress full walk always
     continues; (2) once fully synced, a full walk restarts (offset reset to
-    0) after full_resync_cooldown_seconds - the only way to catch anything a
+    0) once per calendar month (resync_schedule.full_resync_due) - the only way to catch anything a
     quick recheck can't (a skipped/malformed page, data backfilled late, or
     a bid Untappd itself merged away - see record_page's stale-bid cleanup);
     (3) otherwise a cheap top-N "quick" recheck runs (continuing mid-cycle,
@@ -431,7 +433,7 @@ async def next_turn(
                 _rotation_cursor = (idx + 1) % n
                 return user_id, entry["next_offset"], "full"
 
-            if now - last_synced > full_resync_cooldown_seconds:
+            if resync_schedule.full_resync_due(last_synced, now):
                 entry["next_offset"] = 0
                 entry["fully_synced"] = False
                 # Fresh pass starting now - see record_page's own comment
