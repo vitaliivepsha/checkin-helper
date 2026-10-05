@@ -26,10 +26,20 @@
   // is reachable) - update this AND the @connect line above if that ever
   // changes (e.g. the VM's IP changes and the sslip.io hostname with it).
   const API_BASE = "https://35-211-15-162.sslip.io";
-  // API_TOKEN: the LENS_API_TOKEN value from the bot's .env. Treat this
-  // like a password - anyone with it can read your Untappd history through
-  // this endpoint.
-  const API_TOKEN = "e9jqZfhZlKqRgeJ4qeK6-XX62uyTkheSwflb7zKV20I";
+  // API_TOKEN: the LENS_API_TOKEN value from the bot's .env. Treat it like a
+  // password - anyone with it can read your Untappd history through this
+  // endpoint - so it is NOT stored in this file (which is committed to git):
+  // asked once on first run and kept in Tampermonkey's own storage. To change
+  // it later, clear the "lensApiToken" value in the script's Storage tab.
+  function getApiToken() {
+    let token = GM_getValue("lensApiToken", "");
+    if (!token) {
+      token = (prompt("Untappd Lens: paste LENS_API_TOKEN (from the bot's .env)") || "").trim();
+      if (token) GM_setValue("lensApiToken", token);
+    }
+    return token;
+  }
+  const API_TOKEN = getApiToken();
   // ------------------------------------------------------------------------
 
   const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h - had_it_index changes slowly; avoids re-querying every page view
