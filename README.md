@@ -16,6 +16,17 @@ Telegram бот для розпізнавання пива на фото та п
 на фестивалі: пошук пива → вибір → оцінка (0–5 з кроком 0.25) → екран
 підтвердження → реальний чекін на Untappd.
 
+**Публічна карта фестивалю.** `GET /map` (`PUBLIC_BASE_URL` + `/map`, опційно
+`?fest=<ключ із festivals.json>` і deep link `?mapZone=…&mapBrewery=…`) —
+той самий `index.html`/`app.js` у read-only режимі (`window.PUBLIC_MAP`, клас
+`public-map`) без Telegram і логіну: карта зон, пивоварні → список їхніх пив
+із посиланнями на Untappd і пошук по базі фестивалю (локальний, без квоти
+Untappd). Усе особисте (черга, чекіни, вішліст, налаштування, редагування
+карти) відрізане в `apiPost`: публічний режим говорить лише з
+`/api/public/*` (`handle_public_*`), решта запитів не виходять із браузера.
+Кеш 30 с і ліміт на IP (`PUBLIC_MAP_RATE_LIMIT_PER_MIN`=180,
+`PUBLIC_MAP_SEARCH_RATE_LIMIT_PER_MIN`=60); сторінка `noindex`.
+
 **Мови Mini App.** Користувацький текст НЕ пишеться в `app.js`/`index.html`
 напряму: ключі `app_*` лежать в `i18n.py` (`APP_STRINGS`, en + uk; ru — аліас
 на uk), сервер віддає таблицю через `/api/checkin/i18n` за `language_code`

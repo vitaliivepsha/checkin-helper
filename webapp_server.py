@@ -45,6 +45,7 @@ import group_membership
 import user_festivals
 import had_it_index
 import untappd_direct
+import public_map_util
 import venue_scrape
 import untappd_mcp
 import user_tokens
@@ -268,6 +269,14 @@ FESTIVAL_WATCH_SCRAPE_MAX_BACKOFF_SECONDS = float(os.environ.get("FESTIVAL_WATCH
 
 _festival_watch_venue_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
 _festival_watch_scrape_task = None  # same, for _festival_watch_scrape_loop
+
+# Public, unauthenticated read-only festival map page (/map, /api/public/*) -
+# see handle_public_index. Data is all local (no Untappd quota behind any of
+# it), so the only protections needed are a short cache and a per-IP limit.
+PUBLIC_MAP_RATE_LIMIT_PER_MIN = int(os.environ.get("PUBLIC_MAP_RATE_LIMIT_PER_MIN", "180"))
+PUBLIC_MAP_SEARCH_RATE_LIMIT_PER_MIN = int(os.environ.get("PUBLIC_MAP_SEARCH_RATE_LIMIT_PER_MIN", "60"))
+_public_cache = public_map_util.TTLCache(ttl_seconds=30)
+_public_limiter = public_map_util.RateLimiter()
 
 # Full-badge-list sync loop (see _badge_index_sync_loop) - replaces
 # badge_index.py's original "scavenge from whichever check-ins happen to
@@ -1068,6 +1077,127 @@ async def handle_index(request: web.Request) -> web.Response:
     return web.Response(text=html, content_type="text/html")
 
 
+def _public_client_ip(request: web.Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    return forwarded or request.remote or "?"
+
+
+def _public_rate_limited(request: web.Request, *, search: bool = False) -> web.Response | None:
+    ip = _public_client_ip(request)
+    if not _public_limiter.allow(f"all:{ip}", PUBLIC_MAP_RATE_LIMIT_PER_MIN) or (
+        search and not _public_limiter.allow(f"search:{ip}", PUBLIC_MAP_SEARCH_RATE_LIMIT_PER_MIN)
+    ):
+        return _json_error("rate_limited", 429)
+    return None
+
+
+async def _public_body(request: web.Request) -> dict:
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, ValueError):
+        return {}
+    return body if isinstance(body, dict) else {}
+
+
+def _public_festival_key(body: dict) -> str | None:
+    """`fest` must be a real festivals.json key, otherwise the default
+    festival - never trust a free-form value into a dataset lookup."""
+    fest = body.get("fest")
+    if isinstance(fest, str) and any(f.get("key") == fest for f in _load_festivals_registry()):
+        return fest
+    return None
+
+
+async def handle_public_index(request: web.Request) -> web.Response:
+    """The festival map as a public, read-only web page (no Telegram, no
+    login): the same index.html/app.js, flagged with window.PUBLIC_MAP so
+    app.js shows only the map + brewery lists + a festival-database search
+    (with Untappd links), talks to /api/public/* instead of the
+    initData-authenticated endpoints, and hides everything personal (queue,
+    check-ins, wishlist, settings). Optional ?fest=<festivals.json key>,
+    ?mapZone=&mapBrewery= deep link."""
+    if _public_rate_limited(request):
+        return web.Response(status=429, text="Too many requests")
+    with open(os.path.join(WEBAPP_DIR, "index.html"), encoding="utf-8") as f:
+        page = f.read()
+    page = page.replace("/static/checkin/app.js", f"/static/checkin/app.js?v={_BUILD_VERSION}")
+    page = page.replace("/static/checkin/style.css", f"/static/checkin/style.css?v={_BUILD_VERSION}")
+    page = page.replace("<body", '<body class="public-map"', 1)
+    page = page.replace("</head>", '<meta name="robots" content="noindex">\n<script>window.PUBLIC_MAP = true;</script>\n</head>', 1)
+    return web.Response(text=page, content_type="text/html")
+
+
+async def handle_public_i18n(request: web.Request) -> web.Response:
+    if (limited := _public_rate_limited(request)):
+        return limited
+    body = await _public_body(request)
+    code = body.get("lang") if isinstance(body.get("lang"), str) else request.headers.get("Accept-Language", "en")
+    return web.json_response({"lang": (code or "en")[:2].lower(), "strings": i18n.app_strings(code)})
+
+
+async def handle_public_meta(request: web.Request) -> web.Response:
+    if (limited := _public_rate_limited(request)):
+        return limited
+    return web.json_response({
+        "sessions": [{"session": s, "color": _session_colors.get(s, "yellow")} for s in _session_order],
+    })
+
+
+async def handle_public_map_get(request: web.Request) -> web.Response:
+    if (limited := _public_rate_limited(request)):
+        return limited
+    festival_key = _public_festival_key(await _public_body(request))
+    payload = _public_cache.get(("map", festival_key))
+    if payload is None:
+        payload = await _festival_map_payload(festival_key)
+        _public_cache.set(("map", festival_key), payload)
+    return web.json_response(payload)
+
+
+async def handle_public_brewery(request: web.Request) -> web.Response:
+    if (limited := _public_rate_limited(request)):
+        return limited
+    body = await _public_body(request)
+    brewery = (body.get("brewery") or "").strip() if isinstance(body.get("brewery"), str) else ""
+    if not brewery:
+        return _json_error("invalid_brewery")
+    festival_key = _public_festival_key(body)
+    cache_key = ("brewery", festival_key, brewery)
+    beers = _public_cache.get(cache_key)
+    if beers is None:
+        beers = _stand_beers(festival_key, brewery)
+        _public_cache.set(cache_key, beers)
+    return web.json_response({"brewery": brewery, "beers": beers})
+
+
+async def handle_public_search(request: web.Request) -> web.Response:
+    """Search over the loaded festival beer list only (local fuzzy match,
+    zero Untappd quota) - each hit carries the stand/zone it's poured at so
+    the page can jump to it on the map, plus the beerId for the Untappd
+    link."""
+    if (limited := _public_rate_limited(request, search=True)):
+        return limited
+    body = await _public_body(request)
+    query = (body.get("query") or "").strip() if isinstance(body.get("query"), str) else ""
+    if len(query) < 2 or len(query) > 80:
+        return web.json_response({"results": []})
+    festival_key = _public_festival_key(body)
+    festival_beers, sessions_raw = _festival_data_for(festival_key)
+    beer_sessions, _, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
+    hits = _search_festival_beers(query, festival_beers, beer_sessions, session_order, limit=25)
+    by_id = {_int_beer_id(b): b for b in festival_beers}
+    zone_hint = _festival_brewery_zone_map(festival_beers)
+    results = []
+    for hit in hits:
+        raw = by_id.get(hit["beerId"]) or {}
+        stand = _stand_brewery(raw) or hit["brewery"]
+        results.append({
+            "beerId": hit["beerId"], "name": hit["name"], "brewery": hit["brewery"],
+            "style": hit["style"], "stand": stand, "zone": zone_hint.get(stand),
+        })
+    return web.json_response({"results": results})
+
+
 async def handle_search(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
@@ -1546,6 +1676,32 @@ async def handle_festival_meta(request: web.Request) -> web.Response:
     })
 
 
+def _stand_beers(festival_key: str | None, brewery: str) -> list[dict]:
+    festival_beers, sessions_raw = _festival_data_for(festival_key)
+    beer_sessions, _, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
+
+    # Match by STAND, not the beer's own credited brewery - a map pill is
+    # always a stand (see _stand_brewery's own docstring), and a pure stand
+    # name like a collab host that holds no beers credited to itself
+    # directly (e.g. WFP's "OneMoreBeer") would otherwise match nothing at
+    # all, even though it visibly has beers on the map.
+    beers = []
+    for b in festival_beers:
+        if _stand_brewery(b) != brewery:
+            continue
+        bid = _int_beer_id(b)
+        if bid is None:
+            continue
+        beers.append({
+            "beerId": bid,
+            "name": b.get("name"),
+            "brewery": b.get("brewery"),
+            "style": b.get("style"),
+            "sessions": _sessions_for(b.get("id"), beer_sessions, session_order),
+        })
+    return beers
+
+
 async def handle_festival_brewery(request: web.Request) -> web.Response:
     """Full beer list for one brewery, personally annotated with had-it -
     the "drill in" view opened by tapping a brewery pill on the festival
@@ -1569,28 +1725,7 @@ async def handle_festival_brewery(request: web.Request) -> web.Response:
         return _json_error("invalid_brewery")
 
     festival_key = await _resolve_festival_key(user_id)
-    festival_beers, sessions_raw = _festival_data_for(festival_key)
-    beer_sessions, _, session_order, _ = _derive_session_data(festival_beers, sessions_raw)
-
-    # Match by STAND, not the beer's own credited brewery - a map pill is
-    # always a stand (see _stand_brewery's own docstring), and a pure stand
-    # name like a collab host that holds no beers credited to itself
-    # directly (e.g. WFP's "OneMoreBeer") would otherwise match nothing at
-    # all, even though it visibly has beers on the map.
-    candidates = [b for b in festival_beers if _stand_brewery(b) == brewery]
-
-    beers = []
-    for b in candidates:
-        bid = _int_beer_id(b)
-        if bid is None:
-            continue
-        beers.append({
-            "beerId": bid,
-            "name": b.get("name"),
-            "brewery": b.get("brewery"),
-            "style": b.get("style"),
-            "sessions": _sessions_for(b.get("id"), beer_sessions, session_order),
-        })
+    beers = _stand_beers(festival_key, brewery)
 
     for beer in beers:
         result = await had_it_index.lookup_had_it(user_id, beer["beerId"])
@@ -2172,6 +2307,10 @@ async def handle_festival_map_get(request: web.Request) -> web.Response:
     user_id = tg_user.get("id")
 
     festival_key = await _resolve_festival_key(user_id)
+    return web.json_response(await _festival_map_payload(festival_key))
+
+
+async def _festival_map_payload(festival_key: str | None) -> dict:
     beers, _ = _festival_data_for(festival_key)
     map_key = festival_key or _active_festival_key
 
@@ -2179,13 +2318,13 @@ async def handle_festival_map_get(request: web.Request) -> web.Response:
     zone_hint = _festival_brewery_zone_map(beers)
     known_breweries = list(zone_hint.keys())
     zones = await festival_map.get_layout(map_key, known_breweries, zone_hint, zone_names)
-    return web.json_response({
+    return {
         "zones": zones,
         "zoneOrder": zone_names,
         "zoneLabels": _zone_labels_for(map_key),
         "bonusCategories": _festival_bonus_categories(beers),
         "breweryAliases": _festival_brewery_aliases(beers),
-    })
+    }
 
 
 async def handle_festival_map_move(request: web.Request) -> web.Response:
@@ -2794,6 +2933,12 @@ async def handle_festival_watch_set_notify_listed(request: web.Request) -> web.R
 def _build_app() -> web.Application:
     app = web.Application(middlewares=[_no_cache_middleware])
     app.router.add_get("/checkin", handle_index)
+    app.router.add_get("/map", handle_public_index)
+    app.router.add_post("/api/public/i18n", handle_public_i18n)
+    app.router.add_post("/api/public/festival/meta", handle_public_meta)
+    app.router.add_post("/api/public/festival_map/get", handle_public_map_get)
+    app.router.add_post("/api/public/festival/brewery", handle_public_brewery)
+    app.router.add_post("/api/public/search", handle_public_search)
     app.router.add_static("/static/checkin/", path=WEBAPP_DIR, name="checkin_static")
     app.router.add_post("/api/checkin/search", handle_search)
     app.router.add_post("/api/checkin/venues", handle_venues)

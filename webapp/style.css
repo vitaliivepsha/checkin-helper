@@ -1375,3 +1375,14 @@ body.map-edit-mode #festival-map-search-results { display: none; }
   font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text);
 }
 .maintenance-message { font-size: 14px; color: var(--hint); line-height: 1.5; }
+
+/* Public read-only map page (/map, body.public-map - see app.js's PUBLIC_MODE):
+   hide everything personal/interactive that has no meaning without a login. */
+body.public-map .bottom-nav,
+body.public-map #festival-map-edit-btn,
+body.public-map #screen-festival-map > .back-btn,
+body.public-map .add-queue-btn,
+body.public-map .row-menu-btn { display: none !important; }
+.public-beer-result { display: flex; align-items: center; gap: 8px; }
+.public-beer-result-text { flex: 1; min-width: 0; }
+body.public-map .brewery-session-stats { display: none; }

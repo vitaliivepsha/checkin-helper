@@ -25,6 +25,21 @@
   }
   const initData = tg ? tg.initData : "";
 
+  // Public, read-only festival map page (/map - see webapp_server.py's
+  // handle_public_index): same file, no Telegram login. Only the map, its
+  // brewery lists and a festival-database search work; everything personal
+  // (queue, check-ins, wishlist, settings...) is cut off at apiPost below,
+  // so the many startup calls those features make just quietly no-op.
+  const PUBLIC_MODE = window.PUBLIC_MAP === true;
+  const PUBLIC_FEST = new URLSearchParams(window.location.search).get("fest");
+  const PUBLIC_API_PATHS = {
+    "/api/checkin/i18n": "/api/public/i18n",
+    "/api/checkin/festival_map/get": "/api/public/festival_map/get",
+    "/api/checkin/festival/brewery": "/api/public/festival/brewery",
+    "/api/checkin/festival/meta": "/api/public/festival/meta",
+    "/api/public/search": "/api/public/search",
+  };
+
   const DEFAULT_LABEL_URL = "https://assets.untappd.com/site/assets/images/temp/badge-beer-default.png";
 
   // Flat-design icon set (inline SVG, currentColor-driven - see style.css's
@@ -420,11 +435,17 @@
   });
 
   async function apiPost(path, body) {
+    if (PUBLIC_MODE) {
+      const publicPath = PUBLIC_API_PATHS[path];
+      if (!publicPath) return { ok: false, status: 403, data: {} };
+      path = publicPath;
+      body = Object.assign({}, body, { fest: PUBLIC_FEST, lang: navigator.language });
+    }
     const resp = await fetch(path, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData,
+        "X-Telegram-Init-Data": PUBLIC_MODE ? "" : initData,
       },
       body: JSON.stringify(body || {}),
     });
@@ -469,6 +490,10 @@
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = T(el.dataset.i18nPlaceholder); });
     document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = T(el.dataset.i18nTitle); });
     document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", T(el.dataset.i18nAria)); });
+    if (PUBLIC_MODE) {
+      $("festival-map-search-input").placeholder = T("app_public_search_ph");
+      document.title = T("app_map_title");
+    }
   }
   const i18nReady = loadI18n();
 
@@ -1619,18 +1644,21 @@
         ${metaChips(b)}
       </div>
       <div class="row-actions">
-        <button class="add-queue-btn" title="${escapeHtml(T("app_add_to_queue_title"))}">+</button>
+        ${PUBLIC_MODE ? "" : `<button class="add-queue-btn" title="${escapeHtml(T("app_add_to_queue_title"))}">+</button>`}
         <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>
       </div>`;
     row.addEventListener("click", (e) => {
       if (e.target.closest(".add-queue-btn") || e.target.closest(".untappd-link-btn") || e.target.closest(".queue-status-corner")) return;
+      if (PUBLIC_MODE) { openUntappdBeer(b.beerId); return; }
       selectBeer(b, { origin: "brewery-beers" });
     });
     const addBtn = row.querySelector(".add-queue-btn");
-    addBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      addToQueue(b, addBtn);
-    });
+    if (addBtn) {
+      addBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        addToQueue(b, addBtn);
+      });
+    }
     row.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(b.beerId, e));
     bindQueueStatusCorner(row);
     return row;
@@ -3289,6 +3317,36 @@
     }
   }
 
+  // Public page only: beers of the festival database matching the typed
+  // text (server-side local search - see handle_public_search), appended
+  // under the brewery matches. A result opens its stand on the map; the
+  // link button goes to the beer on Untappd.
+  let publicSearchTimer = null;
+  let publicSearchSeq = 0;
+  function schedulePublicBeerSearch(rawQuery) {
+    if (!PUBLIC_MODE) return;
+    clearTimeout(publicSearchTimer);
+    const seq = ++publicSearchSeq;
+    const query = rawQuery.trim();
+    if (query.length < 2) return;
+    publicSearchTimer = setTimeout(async () => {
+      const { ok, data } = await apiPost("/api/public/search", { query });
+      if (!ok || seq !== publicSearchSeq) return;
+      const resultsEl = $("festival-map-search-results");
+      (data.results || []).forEach((r) => {
+        const item = document.createElement("div");
+        item.className = "venue-item public-beer-result";
+        const place = r.zone ? zoneDisplayLabel(r.zone) : "";
+        item.innerHTML = `<span class="public-beer-result-text">${escapeHtml(r.name || "")} — ${escapeHtml(r.brewery || "")}${place ? ` · ${escapeHtml(place)}` : ""}</span>
+          <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>`;
+        item.querySelector(".untappd-link-btn").addEventListener("click", (e) => openUntappdBeer(r.beerId, e));
+        item.addEventListener("click", () => selectFestivalMapSearchResult({ brewery: r.stand, zone: r.zone }));
+        resultsEl.appendChild(item);
+      });
+      resultsEl.classList.toggle("hidden", resultsEl.children.length === 0);
+    }, 300);
+  }
+
   $("festival-map-search-input").addEventListener("input", (e) => {
     // Folded (diacritic-stripped, lowercased) so "Stu Mostow" finds the
     // real "Browar Stu Mostów" and vice versa, regardless of which form
@@ -3297,6 +3355,7 @@
     const q = foldDiacritics(e.target.value.trim().toLowerCase());
     const resultsEl = $("festival-map-search-results");
     resultsEl.innerHTML = "";
+    schedulePublicBeerSearch(e.target.value);
     if (!q) {
       resultsEl.classList.add("hidden");
       return;
@@ -3918,5 +3977,7 @@
   if (deepLinkZone && deepLinkBrewery) {
     showScreen("festival-map");
     fetchFestivalMap().then(() => openFestivalMapDetail(deepLinkZone, deepLinkBrewery));
+  } else if (PUBLIC_MODE) {
+    showScreen("festival-map");
   }
 })();
