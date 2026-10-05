@@ -3360,12 +3360,18 @@
       resultsEl.classList.add("hidden");
       return;
     }
-    const matches = allMapBreweries()
-      .filter((it) => {
-        const alias = BREWERY_DISPLAY_ALIASES[it.brewery];
-        return foldDiacritics(it.brewery.toLowerCase()).includes(q)
-          || (alias && foldDiacritics(alias.toLowerCase()).includes(q));
-      })
+    const rawMatches = allMapBreweries().filter((it) => {
+      const alias = BREWERY_DISPLAY_ALIASES[it.brewery];
+      return foldDiacritics(it.brewery.toLowerCase()).includes(q)
+        || (alias && foldDiacritics(alias.toLowerCase()).includes(q));
+    });
+    // A collab-credit alias (realBrewery set - see allMapBreweries) whose
+    // real stand already matched on its own would just list the same stand
+    // twice ("Browar Monsters" next to "Browar Monsters / Sick Boy Brewing"),
+    // so only keep aliases that reach a stand that isn't already a result.
+    const matchedStands = new Set(rawMatches.filter((it) => !it.realBrewery).map((it) => it.brewery));
+    const matches = rawMatches
+      .filter((it) => !it.realBrewery || !matchedStands.has(it.realBrewery))
       .slice(0, 20);
     matches.forEach((match) => {
       const item = document.createElement("div");
