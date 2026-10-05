@@ -47,6 +47,20 @@ def test_hopincraftbier_keeps_only_brewery_dash_beer_titles():
     assert not any("Gift card" in it["name"] or "clip" in it["name"].lower() for it in items)
 
 
+def test_onemorebeer_cleans_packaging_and_takes_the_producer_as_brewery():
+    items = shop_crawl.parse_onemorebeer(json.loads(text("onemorebeer.json")))
+    assert {"brewery": "PINTA", "name": "PINTA HOPZZ_ IMPACT"} in items  # "PUSZKA 0,5 L KAUCJA" stripped
+    assert {"brewery": "Zakładowy", "name": "ZAKŁADOWY POLSKIE WAKACJE"} in items  # "BUT. 0,5 L" stripped
+
+
+def test_onemorebeer_skips_bundles_and_falls_back_to_the_manufacturer_record():
+    payload = {"items": [
+        {"name": "ZESTAW PIW MIX", "characteristics": [], "manufacturer": {"name": "X"}},
+        {"name": "ATAK CHMIELU BUT. 0,5 L", "characteristics": [], "manufacturer": {"name": "PINTA"}},
+    ]}
+    assert shop_crawl.parse_onemorebeer(payload) == [{"brewery": "PINTA", "name": "ATAK CHMIELU"}]
+
+
 def test_hoptimaal_uses_vendor_and_skips_merch():
     payload = json.loads(text("hoptimaal.json"))
     payload["products"].append({"title": "Hop T-shirt", "vendor": "Hoptimaal", "product_type": "Merch"})
@@ -66,20 +80,28 @@ async def test_crawl_paginates_and_isolates_a_failing_shop(monkeypatch):
             return text("hopincraftbier.html")
         return text("piwnemosty.html")
 
-    async def get_json(url):
+    seen_headers = []
+
+    async def get_json(url, headers=None):
+        if "onecommerce" in url:
+            seen_headers.append(headers)
+            page = int(url.rsplit("pageNumber=", 1)[1])
+            return {**json.loads(text("onemorebeer.json")), "pageNumber": page, "totalPages": 2}
         page = int(url.rsplit("page=", 1)[1])
         return json.loads(text("hoptimaal.json")) if page <= 2 else {"products": []}
 
     async def no_sleep(_):
         return None
 
-    monkeypatch.setattr(shop_crawl, "MAX_PAGES", {"piwnemosty": 4, "hoptimaal": 20})
+    monkeypatch.setattr(shop_crawl, "MAX_PAGES", {"piwnemosty": 4, "hoptimaal": 20, "onemorebeer": 40})
     crawl = await shop_crawl.crawl_shops(get_text, get_json, sleep=no_sleep, gap=0)
 
     assert crawl["ontap"]["items"] == [] and "boom" in crawl["ontap"]["error"]
     assert crawl["piwnemosty"]["error"] is None and crawl["piwnemosty"]["pages"] == 4  # capped
     assert crawl["hoptimaal"]["pages"] == 3 and len(crawl["hoptimaal"]["items"]) == 12  # 2 full pages, then empty
     assert crawl["hopincraftbier"]["pages"] == 2
+    assert crawl["onemorebeer"]["pages"] == 2 and len(crawl["onemorebeer"]["items"]) == 12  # stops at totalPages
+    assert seen_headers == [{"one-tenant": "pinta"}] * 2
     assert all(it["shop"] == "hoptimaal" for it in crawl["hoptimaal"]["items"])
     summary = shop_crawl.summarize(crawl)
     assert summary["ontap"]["items"] == 0 and summary["piwnemosty"]["items"] > 0

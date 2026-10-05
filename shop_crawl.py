@@ -15,8 +15,12 @@ which /api/lens/report shows).
 
 Deliberately polite: default httpx User-Agent (a spoofed browser UA gets a
 Cloudflare challenge - see venue_scrape.py), a pause between requests, one
-run a day, page caps. onemorebeer.pl is NOT crawled: its listing is rendered
-client-side from a minified Nuxt state, so it needs a real browser.
+run a day, page caps.
+
+onemorebeer.pl renders its listing client-side, but the page itself calls a
+public JSON API (api-prod.onecommerce.shop, products/search/items) with the
+site's own tenant key in a "one-tenant" header - the same anonymous call every
+visitor's browser makes - so it is crawled through that, 100 products a page.
 """
 
 import asyncio
@@ -30,7 +34,12 @@ from bs4 import BeautifulSoup
 
 PAGE_GAP_SECONDS = float(os.environ.get("SHOP_CRAWL_PAGE_GAP_SECONDS", "2"))
 ONTAP_VENUES = [v.strip() for v in os.environ.get("SHOP_CRAWL_ONTAP_VENUES", "pinta-wroclaw").split(",") if v.strip()]
-MAX_PAGES = {"piwnemosty": 80, "hoptimaal": 20}
+MAX_PAGES = {"piwnemosty": 80, "hoptimaal": 20, "onemorebeer": 40}
+ONEMOREBEER_TENANT = os.environ.get("SHOP_CRAWL_ONEMOREBEER_TENANT", "pinta")
+ONEMOREBEER_API = (
+    "https://api-prod.onecommerce.shop/api/v1/catalog/app/auth-optional/products/search/items"
+    "?category=Piwa&sortCriteria=RANK_DESC&q=%2A&pageSize=100&pageNumber={page}"
+)
 
 _BUNDLE_RE = re.compile(
     r"\b(fan box|zestaw|gift box|mixed pack|box of \d+|set|assortment|bundle|pakket|proefpakket|cadeau|geschenk)\b", re.I
@@ -147,6 +156,33 @@ def parse_hoptimaal(payload: dict) -> list[dict]:
     return items
 
 
+def parse_onemorebeer(payload: dict) -> list[dict]:
+    """products/search/items: `name` is the shop title (same cleanup as the
+    userscript's onemorebeer adapter), the brewery is the "Producent"
+    characteristic (falling back to the manufacturer record)."""
+    items = []
+    for p in payload.get("items") or []:
+        text = p.get("name") or ""
+        if not text.strip() or _BUNDLE_RE.search(text):
+            continue
+        text = re.sub(r"\b(BUT\.?|BUTELKA|PUSZKA|KEG)\s*[\d.,]+\s*L\b", " ", text, flags=re.I)  # "BUT. 0,5 L", "PUSZKA 0,44 L", "KEG 30 L"
+        text = re.sub(r"\bKAUCJA\b", " ", text, flags=re.I)  # bottle/can deposit note
+        text = re.sub(r"\b(?:B\.?)?ZW\b\.?", " ", text, flags=re.I)  # returnable/non-returnable bottle marker
+        text = re.sub(r"\(\s*gazetka\s*\)", " ", text, flags=re.I)  # "featured in this week's flyer"
+        text = re.sub(r"\bdata\s+wa[żz]no[śs]ci\s+\d{1,2}[./]\d{1,2}[./]\d{2,4}\b", " ", text, flags=re.I)
+        text = re.sub(r"[\d.,]+\s*°", " ", text)  # leaked Plato degrees
+        text = _clean_spaces(text)
+        if not text:
+            continue
+        brewery = next(
+            (_clean_spaces(c.get("value") or "") for c in p.get("characteristics") or []
+             if (c.get("characteristicName") or "").startswith("Producent")),
+            "",
+        ) or _clean_spaces((p.get("manufacturer") or {}).get("name") or "")
+        items.append({"brewery": brewery, "name": text})
+    return items
+
+
 # ---- crawl (network injected) -----------------------------------------------
 
 async def _crawl_piwnemosty(get_text, sleep, gap) -> tuple[list[dict], int]:
@@ -176,6 +212,22 @@ async def _crawl_hoptimaal(get_json, sleep, gap) -> tuple[list[dict], int]:
     return items, pages
 
 
+async def _crawl_onemorebeer(get_json, sleep, gap) -> tuple[list[dict], int]:
+    headers = {"one-tenant": ONEMOREBEER_TENANT}
+    items, pages = [], 0
+    for page in range(1, MAX_PAGES["onemorebeer"] + 1):
+        if page > 1:
+            await sleep(gap)
+        payload = await get_json(ONEMOREBEER_API.format(page=page), headers)
+        pages += 1
+        if not payload.get("items"):
+            break
+        items.extend(parse_onemorebeer(payload))
+        if page >= (payload.get("totalPages") or 0):
+            break
+    return items, pages
+
+
 async def _crawl_hopincraftbier(get_text, sleep, gap) -> tuple[list[dict], int]:
     items = parse_hopincraftbier(await get_text("https://hopincraftbier.be/products"))
     await sleep(gap)
@@ -200,6 +252,7 @@ async def crawl_shops(get_text, get_json, sleep=asyncio.sleep, gap: float = PAGE
         "hoptimaal": lambda: _crawl_hoptimaal(get_json, sleep, gap),
         "hopincraftbier": lambda: _crawl_hopincraftbier(get_text, sleep, gap),
         "ontap": lambda: _crawl_ontap(get_text, sleep, gap),
+        "onemorebeer": lambda: _crawl_onemorebeer(get_json, sleep, gap),
     }
     out = {}
     for shop, job in jobs.items():
@@ -219,8 +272,8 @@ def make_http_getters(client: httpx.AsyncClient):
             raise ShopError(f"HTTP {r.status_code} for {url}")
         return r.content.decode("utf-8", "replace")
 
-    async def get_json(url: str) -> dict:
-        r = await client.get(url)
+    async def get_json(url: str, headers: dict | None = None) -> dict:
+        r = await client.get(url, headers=headers)
         if r.status_code != 200:
             raise ShopError(f"HTTP {r.status_code} for {url}")
         return r.json()

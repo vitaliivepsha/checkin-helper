@@ -1,0 +1,127 @@
+{
+ "items": [
+  {
+   "name": "ZAKŁADOWY POLSKIE WAKACJE BUT. 0,5 L",
+   "characteristics": [
+    {
+     "characteristicName": "Producent",
+     "value": "Zakładowy"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Nowość"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Promocja"
+    }
+   ],
+   "manufacturer": {
+    "name": "Zakładowy"
+   }
+  },
+  {
+   "name": "ZAKŁADOWY PITCA NA GRUBYM BUT. 0,5 L",
+   "characteristics": [
+    {
+     "characteristicName": "Producent",
+     "value": "Zakładowy"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Nowość"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Promocja"
+    }
+   ],
+   "manufacturer": {
+    "name": "Zakładowy"
+   }
+  },
+  {
+   "name": "ZAKŁADOWY PILS BEZALKOHOLOWY BUT. 0,5 L",
+   "characteristics": [
+    {
+     "characteristicName": "Producent",
+     "value": "Zakładowy"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Nowość"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Promocja"
+    }
+   ],
+   "manufacturer": {
+    "name": "Zakładowy"
+   }
+  },
+  {
+   "name": "PINTA HOPZZ_ IMPACT PUSZKA 0,5 L KAUCJA",
+   "characteristics": [
+    {
+     "characteristicName": "Producent",
+     "value": "PINTA"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Nowość"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Promocja"
+    }
+   ],
+   "manufacturer": {
+    "name": "PINTA"
+   }
+  },
+  {
+   "name": "PINTA HOPZZ_ FORWARD PUSZKA 0,5 L KAUCJA",
+   "characteristics": [
+    {
+     "characteristicName": "Producent",
+     "value": "PINTA"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Nowość"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Promocja"
+    }
+   ],
+   "manufacturer": {
+    "name": "PINTA"
+   }
+  },
+  {
+   "name": "TRZECH KUMPLI FULL MOTUEKA PUSZKA 0,5 L",
+   "characteristics": [
+    {
+     "characteristicName": "Producent",
+     "value": "Trzech Kumpli"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Nowość"
+    },
+    {
+     "characteristicName": "Status",
+     "value": "Promocja"
+    }
+   ],
+   "manufacturer": {
+    "name": "Trzech Kumpli"
+   }
+  }
+ ],
+ "totalItems": 1723,
+ "pageNumber": 1,
+ "totalPages": 18
+}
