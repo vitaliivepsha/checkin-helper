@@ -120,7 +120,24 @@ def scan_norm(text: str) -> str:
       stripped as punctuation, but the literal word "and" is not) and miss
       what should count as the same name."""
     canonicalized = _NON_ALCO_RE.sub("bezalko", text or "")
-    return " ".join(w for w in _simple_norm(canonicalized).split() if w != "and")
+    words: list[str] = []
+    for w in _simple_norm(canonicalized).split():
+        if w == "and":
+            continue
+        if w == "ba":
+            # "BA" = "barrel-aged": a shop writes the abbreviation where
+            # Untappd's catalog spells it out ("BA Speedway Stout 2023" vs
+            # "Barrel-Aged Speedway Stout (2023)"), so the two never
+            # compared equal and - worse - the only candidate whose own name
+            # literally says "BA" ("BA Speedway Stout: Mexican Hot Chocolate
+            # Edition (2023)") then won as the sole superset match: a WRONG
+            # beer shown with full confidence. Expanding on both sides
+            # keeps a catalog entry that literally says "BA" comparing equal
+            # to its own spelled-out form too.
+            words.extend(("barrel", "aged"))
+            continue
+        words.append(w)
+    return " ".join(words)
 
 
 def _token_set(text: str) -> frozenset:
@@ -862,7 +879,11 @@ def _brewery_prefix_stripped_variant(beer_name: str, brewery_core: str) -> str |
     name_words = (beer_name or "").split()
     if not core_words or len(name_words) <= len(core_words):
         return None
-    if [w.lower() for w in name_words[: len(core_words)]] != [w.lower() for w in core_words]:
+    # A "Brewery: Beer name" title leaves the separator glued to the last
+    # brewery word ("AleSmith: BA Speedway Stout") - without ignoring it that
+    # never compared equal to the bare brewery name, so the duplicated
+    # brewery stayed in the query (and in the superset comparison).
+    if [w.lower().rstrip(":,;") for w in name_words[: len(core_words)]] != [w.lower() for w in core_words]:
         return None
     return " ".join(name_words[len(core_words):]).strip() or None
 
