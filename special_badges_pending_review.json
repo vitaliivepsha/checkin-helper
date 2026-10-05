@@ -13,5 +13,10 @@
     "url": "https://untappd.com/blog/new-badges-nc-beer-month-passport-sweepstakes/1957",
     "note": "NC Beer Month Passport (Oct 1-31, 2026): four separate badges (Welcome + Level 1/2/3) requiring check-ins at 1/5/10/15 distinct North Carolina breweries respectively - a venue-location (state) + distinct-brewery-count match, not a style or country match, so special_badges.json's reader (kind: style/country only) can't compute this.",
     "foundAt": "2026-10-02"
+  },
+  {
+    "url": "https://untappd.com/blog/new-badge-barrel-aged-beer-day-2026/1956",
+    "note": "Barrel-Aged Beer Day 2026 (Oct 2-11, 2026): criteria is 'check-in (1) beer from any of the styles commonly involved in barrel-aging' - the post lists a long, loosely-worded set of styles (Altbier, Barleywine, Belgian Dubbel/Tripel/Quad, Bock variations, Brown Ale, Brett Beer, Farmhouse Ale, Lambic varieties, Porter, multiple Stout types, Sour beers, Wild Ale, and more) explicitly qualified as styles that 'can, but may not always, be barrel-aged' - not a precise, exact set of Untappd taxonomy leaf names, so too ambiguous to encode confidently as kind: style without risking wrong matches.",
+    "foundAt": "2026-10-05"
   }
 ]

@@ -1,26 +1,6 @@
 {
-  "_source": "Manually curated from https://untappd.com/blog's 'New Badge: X' posts - these are Untappd's own time-limited promotional badges, never in the permanent badges.untappd.com catalog (badge_beer_categories.json/badge_venue_categories.json), so they have to be read and re-catalogued by hand whenever a new one is announced. Checked live 2026-10-02 - entries are ACTIVE-or-UPCOMING as of that date (activeUntil >= today); anything already past its activeUntil at cataloguing time was skipped rather than included pre-expired. New posts whose criteria this schema can't compute (brewery-specific, venue-location, or otherwise ambiguous) are logged in special_badges_pending_review.json instead of guessed here. Re-check the blog periodically (no feed/API for this - it's a real page read each time) and prune entries whose activeUntil has passed, same way this list was built.",
+  "_source": "Manually curated from https://untappd.com/blog's 'New Badge: X' posts - these are Untappd's own time-limited promotional badges, never in the permanent badges.untappd.com catalog (badge_beer_categories.json/badge_venue_categories.json), so they have to be read and re-catalogued by hand whenever a new one is announced. Checked live 2026-10-05 - entries are ACTIVE-or-UPCOMING as of that date (activeUntil >= today); anything already past its activeUntil at cataloguing time was skipped rather than included pre-expired. New posts whose criteria this schema can't compute (brewery-specific, venue-location, or otherwise ambiguous) are logged in special_badges_pending_review.json instead of guessed here. Re-check the blog periodically (no feed/API for this - it's a real page read each time) and prune entries whose activeUntil has passed, same way this list was built.",
   "special_badges": [
-    {
-      "badge": "Celebrate Oktoberfest (2026)",
-      "kind": "style",
-      "styles": ["=Märzen", "=Festbier"],
-      "icon": "https://assets.untappd.com/promo/3b31d14cd3_UTC-Oktoberfest-Badge-2026_1080x1440.png",
-      "activeFrom": "2026-09-04",
-      "activeUntil": "2026-10-04",
-      "note": "Global, no venue restriction - check in any one (1) beer styled Märzen or Festbier in the window.",
-      "sourceUrl": "https://untappd.com/blog/new-badge-celebrate-oktoberfest-2026/1952"
-    },
-    {
-      "badge": "Saucer Oktoberfest '26",
-      "kind": "style",
-      "styles": ["=Märzen", "=Festbier"],
-      "venueChain": "The Flying Saucer",
-      "activeFrom": "2026-09-19",
-      "activeUntil": "2026-10-04",
-      "note": "Same two styles as the global Celebrate Oktoberfest badge above, but ONLY counts at a Flying Saucer location - venueChain is informational only for now, nothing in this codebase currently verifies venue-chain membership automatically.",
-      "sourceUrl": "https://untappd.com/blog/new-badge-saucer-oktoberfest-26/1955"
-    },
     {
       "badge": "Canadian Beer Day 2026",
       "kind": "country",
