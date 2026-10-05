@@ -25,7 +25,6 @@
   }
   const initData = tg ? tg.initData : "";
 
-  const NOT_CONNECTED_MSG = "Спершу підключіть свій Untappd — напишіть /connect_untappd боту в приваті.";
   const DEFAULT_LABEL_URL = "https://assets.untappd.com/site/assets/images/temp/badge-beer-default.png";
 
   // Flat-design icon set (inline SVG, currentColor-driven - see style.css's
@@ -48,7 +47,7 @@
   const ICON_AWARD = '<svg class="icon"><use href="#icon-award"/></svg>';
   const ICON_REFRESH = '<svg class="icon"><use href="#icon-refresh"/></svg>';
   // Maxed-out badge marker, in front of its name (replaces the old trophy emoji).
-  const DONE_MARK = `<span class="badge-done-mark" title="Максимальний рівень">${ICON_TROPHY}</span>`;
+  const doneMark = () => `<span class="badge-done-mark" title="${escapeHtml(T("app_badge_max_level"))}">${ICON_TROPHY}</span>`;
 
   // Telegram's own WebView doesn't reliably handle a plain <a target="_blank">
   // - tg.openLink is the documented way to hand a URL off to the system
@@ -100,7 +99,7 @@
     venues: null,
     selectedVenue: null,
     lastVenue: null,     // remembered from the previous check-in - festival venue doesn't change mid-day
-    lastKnownLocation: null, // cached after a successful "Локації поруч" tap - reused to geo-bias text search
+    lastKnownLocation: null, // cached after a successful nearby-venues tap - reused to geo-bias text search
     lastVenueSearch: null,   // {type:"nearby",lat,lng} | {type:"query",query} - replayed when a filter checkbox toggles
     queue: [],          // shared, server-backed - everyone in the group sees the same list
     wishlist: [],       // personal - own items merged server-side with the user's Google Sheet rows
@@ -153,7 +152,7 @@
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
     clearBtn.className = "search-clear-btn hidden";
-    clearBtn.setAttribute("aria-label", "Очистити");
+    clearBtn.dataset.i18nAria = "app_clear";
     clearBtn.innerHTML = ICON_CLOSE;
     wrap.appendChild(clearBtn);
 
@@ -276,7 +275,7 @@
   };
 
   // Rule for every screen dispatched below that fetches a list/grid: clear
-  // that list's own container (and set a "Завантажую…" status, if it has
+  // that list's own container (and set a loading status, if it has
   // one) BEFORE the fetch starts, never only after it resolves - a fetch
   // function that clears at the END (or not at all) leaves whatever was
   // last rendered there (a previous visit's data, a different festival's,
@@ -439,6 +438,7 @@
   // this file; add a key to i18n.py for every language instead. Static HTML
   // text uses data-i18n / data-i18n-placeholder, filled in by loadI18n.
   let I18N = {};
+  let I18N_LANG = "en";
   function T(key, params) {
     let text = I18N[key] != null ? I18N[key] : key;
     if (params) {
@@ -446,11 +446,29 @@
     }
     return text;
   }
+  // Plural forms: keys base_one / base_few / base_many (uk) or base_one /
+  // base_other (everything else), each with {n} in the text.
+  function TP(base, n, params) {
+    const m10 = n % 10, m100 = n % 100;
+    let cat;
+    if (I18N_LANG === "uk" || I18N_LANG === "ru") {
+      cat = (m10 === 1 && m100 !== 11) ? "one"
+        : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) ? "few" : "many";
+    } else {
+      cat = n === 1 ? "one" : "other";
+    }
+    return T(`${base}_${cat}`, Object.assign({ n }, params));
+  }
   async function loadI18n() {
     const { ok, data } = await apiPost("/api/checkin/i18n", {});
-    if (ok && data.strings) I18N = data.strings;
+    if (ok && data.strings) { I18N = data.strings; I18N_LANG = data.lang || "en"; }
+    document.documentElement.lang = I18N_LANG;
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = T(el.dataset.i18n); });
+    // Only for trusted, static strings from i18n.py that carry markup.
+    document.querySelectorAll("[data-i18n-html]").forEach((el) => { el.innerHTML = T(el.dataset.i18nHtml); });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = T(el.dataset.i18nPlaceholder); });
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = T(el.dataset.i18nTitle); });
+    document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", T(el.dataset.i18nAria)); });
   }
   const i18nReady = loadI18n();
 
@@ -495,7 +513,7 @@
     if (!el) return;
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      notify("В черзі (або вже було в черзі)");
+      notify(T("app_in_queue_tip"));
     });
   }
 
@@ -518,9 +536,9 @@
       // until someone runs /join_group, so this gets its own message rather
       // than falling into the generic failure text below.
       if (data && data.error === "no_active_group") {
-        notify("Спершу приєднайтесь до групи: напишіть /join_group у Telegram-групі фестивалю.");
+        notify(T("app_queue_join_group"));
       } else {
-        notify("Не вдалося додати у чергу. Спробуйте ще раз.");
+        notify(T("app_queue_add_failed"));
       }
       return;
     }
@@ -530,13 +548,13 @@
     // user's own queue view) so they still get the success flash below, just
     // with an explanation of why it wasn't a fresh add.
     if (data.status === "already_active") {
-      notify("Це пиво вже в черзі.");
+      notify(T("app_queue_already"));
       return;
     }
     if (data.status === "revived_from_completed") {
-      notify("Ви вже пили це пиво на цьому фестивалі. Додано в чергу знову.");
+      notify(T("app_queue_had_it_festival"));
     } else if (data.status === "revived_from_hidden") {
-      notify("Ви вже видаляли це пиво з черги. Додано знову.");
+      notify(T("app_queue_removed_before"));
     }
     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
     if (btn) {
@@ -583,20 +601,13 @@
   }
 
   // Ukrainian plural form: 1 пиво, 2-4 пива, 5+ пив (11-14 always "many").
-  function pluralUk(n, one, few, many) {
-    const m10 = n % 10, m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return one;
-    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-    return many;
-  }
-
   function renderQueueList() {
     const listEl = $("queue-list");
     listEl.innerHTML = "";
     listEl.classList.toggle("selection-mode", queueSelectionMode);
     $("queue-header-normal").classList.toggle("hidden", queueSelectionMode);
     $("queue-selection-bar").classList.toggle("hidden", !queueSelectionMode);
-    $("queue-selection-count").textContent = `${queueSelectedIds.size} обрано`;
+    $("queue-selection-count").textContent = T("app_selected_count", { n: queueSelectedIds.size });
     $("queue-count").textContent = String(state.queue.length);
     // "4 пива · 2 учасники" under the title - participants are the distinct
     // people who added what's currently visible in this viewer's queue.
@@ -605,17 +616,17 @@
     const people = new Set(state.queue.map((b) => (b.addedBy && (b.addedBy.userId ?? b.addedBy.name)) || "?"));
     const groupPrefix = state.queueGroupTitle ? `${state.queueGroupTitle} · ` : "";
     $("queue-subtitle").textContent = state.queue.length
-      ? `${groupPrefix}${state.queue.length} ${pluralUk(state.queue.length, "пиво", "пива", "пив")} · ${people.size} ${pluralUk(people.size, "учасник", "учасники", "учасників")}`
+      ? `${groupPrefix}${TP("app_beers", state.queue.length)} · ${TP("app_participants", people.size)}`
       : "";
     $("queue-select-hint").classList.toggle("hidden", state.queue.length < 2 || queueSelectionMode);
     $("queue-bar-btn").classList.toggle("hidden", (state.queueTotal || 0) === 0);
     $("queue-status").textContent = state.queue.length
       ? ""
       : (state.queueNoGroup
-        ? "Ви ще не приєднались до групи. Напишіть /join_group у Telegram-групі фестивалю."
+        ? T("app_queue_not_joined")
         : (state.queueTotal
-          ? "Усе, що зараз у черзі, ви вже відмітили як випите."
-          : "Черга порожня — додайте пиво кнопкою «+» у результатах пошуку."));
+          ? T("app_queue_all_done")
+          : T("app_queue_empty")));
     state.queue.forEach((beer, idx) => {
       const row = document.createElement("div");
       const checked = queueSelectedIds.has(beer.id);
@@ -628,15 +639,15 @@
       if (idx === 1 && !queueSelectionMode) {
         const label = document.createElement("div");
         label.className = "queue-section-label";
-        label.textContent = "Далі в черзі";
+        label.textContent = T("app_queue_later");
         listEl.appendChild(label);
       }
       row.className = "result-row queue-row" + (featured ? " queue-next" : "") + (beer.hadIt ? " had-it" : "");
       if (featured) {
         row.innerHTML = `
         <div class="queue-next-head">
-          <span class="queue-next-label">Наступне</span>
-          <span class="queue-next-by">додав(-ла) ${escapeHtml(addedBy)}</span>
+          <span class="queue-next-label">${escapeHtml(T("app_queue_next"))}</span>
+          <span class="queue-next-by">${escapeHtml(T("app_added_by", { name: addedBy }))}</span>
         </div>
         <div class="queue-next-body">
           <div class="thumb"><img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
@@ -646,11 +657,11 @@
             ${metaChips(beer)}
           </div>
           <div class="row-actions">
-            <button class="queue-remove-btn" data-id="${beer.id}" aria-label="Прибрати з черги">${ICON_CLOSE}</button>
-            <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
+            <button class="queue-remove-btn" data-id="${beer.id}" aria-label="${escapeHtml(T("app_queue_remove_aria"))}">${ICON_CLOSE}</button>
+            <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>
           </div>
         </div>
-        <button class="primary-btn queue-next-btn">${ICON_CHECK} Оцінити і зачекінити</button>`;
+        <button class="primary-btn queue-next-btn">${ICON_CHECK} ${escapeHtml(T("app_rate_and_checkin"))}</button>`;
       } else row.innerHTML = `
         <span class="row-checkbox${checked ? " checked" : ""}">${checked ? ICON_CHECK : ""}</span>
         <div class="queue-number">${idx + 1}</div>
@@ -659,11 +670,11 @@
           <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}${pendingForMeBadgeHtml(beer)}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
           ${metaLine(beer.brewery)}
           ${metaChips(beer)}
-          <div class="result-meta">додав(-ла) ${escapeHtml(addedBy)}</div>
+          <div class="result-meta">${escapeHtml(T("app_added_by", { name: addedBy }))}</div>
         </div>
         <div class="row-actions">
           <button class="queue-remove-btn" data-id="${beer.id}">${ICON_CLOSE}</button>
-          <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
+          <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>
         </div>`;
       row.addEventListener("click", (e) => {
         if (queueSelectionMode) { toggleQueueSelected(beer.id); return; }
@@ -703,8 +714,8 @@
     // the host's UI instead of a browser-native prompt); plain confirm() as
     // a fallback for local/non-Telegram testing.
     if (tg && tg.showConfirm) {
-      tg.showConfirm("Очистити всю чергу?", (confirmed) => { if (confirmed) doClear(); });
-    } else if (confirm("Очистити всю чергу?")) {
+      tg.showConfirm(T("app_queue_clear_confirm"), (confirmed) => { if (confirmed) doClear(); });
+    } else if (confirm(T("app_queue_clear_confirm"))) {
       doClear();
     }
   });
@@ -739,7 +750,7 @@
     // "clear first, fetch after" rule applies to every list-rendering
     // fetch* function - see showScreen's own note for the polled ones.
     $("wishlist-list").innerHTML = "";
-    $("wishlist-status").textContent = "Завантажую…";
+    $("wishlist-status").textContent = T("app_loading");
     const { ok, data } = await apiPost("/api/checkin/wishlist/list", {});
     state.wishlist = ok ? (data.items || []) : [];
     renderWishlistList();
@@ -748,11 +759,11 @@
   function setWishlistBtnState(btn, itemId) {
     if (itemId) {
       btn.dataset.itemId = itemId;
-      btn.innerHTML = `${ICON_CHECK} У списку`;
+      btn.innerHTML = `${ICON_CHECK} ${escapeHtml(T("app_wishlist_in_list"))}`;
       btn.classList.add("active");
     } else {
       delete btn.dataset.itemId;
-      btn.innerHTML = `${ICON_CLIPBOARD} Додати у список`;
+      btn.innerHTML = `${ICON_CLIPBOARD} ${escapeHtml(T("app_wishlist_add"))}`;
       btn.classList.remove("active");
     }
   }
@@ -782,7 +793,7 @@
       ? await apiPost("/api/checkin/wishlist/remove", { id: currentItemId })
       : await apiPost("/api/checkin/wishlist/add", beer);
     if (!ok || !data.ok) {
-      alert(removing ? "Не вдалося видалити зі списку. Спробуйте ще раз." : "Не вдалося додати у список. Спробуйте ще раз.");
+      alert(T(removing ? "app_wishlist_remove_failed" : "app_wishlist_add_failed"));
       return;
     }
     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
@@ -850,11 +861,11 @@
     listEl.classList.toggle("selection-mode", wishlistSelectionMode);
     $("wishlist-header-normal").classList.toggle("hidden", wishlistSelectionMode);
     $("wishlist-selection-bar").classList.toggle("hidden", !wishlistSelectionMode);
-    $("wishlist-selection-count").textContent = `${wishlistSelectedIds.size} обрано`;
+    $("wishlist-selection-count").textContent = T("app_selected_count", { n: wishlistSelectedIds.size });
     if (!state.wishlist.length) {
-      $("wishlist-status").textContent = "Список порожній — додайте пиво через меню «⋯» у результатах пошуку.";
+      $("wishlist-status").textContent = T("app_wishlist_empty");
     } else {
-      $("wishlist-status").textContent = items.length ? "" : "Нічого не знайдено.";
+      $("wishlist-status").textContent = items.length ? "" : T("app_nothing_found");
     }
     items.forEach((beer) => {
       const row = document.createElement("div");
@@ -876,8 +887,8 @@
         <div class="row-actions">
           ${isNative
             ? `<button class="wishlist-remove-btn" data-id="${beer.id}" data-beer-id="${beer.beerId}" data-name="${escapeHtml(beer.name || "")}">${ICON_CLOSE}</button>`
-            : `<span class="wishlist-sheet-tag" title="Додано через Google Sheet — видаліть рядок у таблиці">з таблиці</span>`}
-          <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
+            : `<span class="wishlist-sheet-tag" title="${escapeHtml(T("app_wishlist_sheet_tag_title"))}">${escapeHtml(T("app_wishlist_sheet_tag"))}</span>`}
+          <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>
         </div>`;
       row.addEventListener("click", (e) => {
         if (wishlistSelectionMode) { if (isNative) toggleWishlistSelected(beer.id); return; }
@@ -1040,12 +1051,14 @@
   // sessionLabel() below. The backend no longer forces sessions into these
   // 4 buckets (a 5th+ session just reuses a color cosmetically), so this
   // list only ever needs entries for names worth localizing.
-  const SESSION_NAMES = { yellow: "Жовта", blue: "Синя", red: "Червона", green: "Зелена" };
+  const SESSION_NAME_KEYS = {
+    yellow: "app_session_yellow", blue: "app_session_blue", red: "app_session_red", green: "app_session_green",
+  };
 
   function sessionLabel(session) {
-    if (SESSION_NAMES[session]) return `${SESSION_NAMES[session]} сесія`;
+    if (SESSION_NAME_KEYS[session]) return T(SESSION_NAME_KEYS[session]);
     const name = String(session || "");
-    return `Сесія «${name.charAt(0).toUpperCase()}${name.slice(1)}»`;
+    return T("app_session_named", { name: `${name.charAt(0).toUpperCase()}${name.slice(1)}` });
   }
 
   $("stats-bar-btn").addEventListener("click", () => showScreen("stats"));
@@ -1053,11 +1066,11 @@
   async function fetchFestivalStats() {
     const { ok, data } = await apiPost("/api/checkin/festival/stats", {});
     if (!ok) {
-      $("stats-summary").textContent = "Не вдалося завантажити прогрес.";
+      $("stats-summary").textContent = T("app_stats_load_failed");
       return;
     }
     const pct = data.total ? Math.round((100 * data.checked) / data.total) : 0;
-    $("stats-summary").textContent = `${data.checked} / ${data.total} спробувано (${pct}%)`;
+    $("stats-summary").textContent = T("app_stats_summary", { checked: data.checked, total: data.total, pct });
     const listEl = $("stats-sessions");
     listEl.innerHTML = "";
     (data.sessions || []).forEach((s) => {
@@ -1080,10 +1093,10 @@
   $("festival-map-bar-btn").addEventListener("click", () => showScreen("festival-map"));
 
   async function fetchBadgeStats() {
-    $("badges-status").textContent = "Завантажую…";
+    $("badges-status").textContent = T("app_loading");
     const { ok, data } = await apiPost("/api/checkin/badges/get", {});
     if (!ok) {
-      $("badges-status").textContent = "Не вдалося завантажити прогрес бейджів.";
+      $("badges-status").textContent = T("app_badges_load_failed");
       return;
     }
     state.badgesRaw = data.badges || [];
@@ -1123,22 +1136,22 @@
       const expanded = specialBadgesExpanded.has(b.badge);
       const urgent = b.daysRemaining <= 0;
       const daysText = urgent
-        ? "останній день!"
-        : `ще ${b.daysRemaining} ${pluralUk(b.daysRemaining, "день", "дні", "днів")}`;
+        ? T("app_badge_last_day")
+        : TP("app_badge_days_left", b.daysRemaining);
       const iconHtml = b.icon
         ? `<img class="special-badge-icon" src="${b.icon}" alt="">`
         : `<svg class="icon special-badge-icon-fallback"><use href="#icon-sparkle"/></svg>`;
       let detailsHtml = "";
       if (expanded) {
-        const criteriaLabel = b.kind === "style" ? "Стилі" : "Країни";
+        const criteriaLabel = T(b.kind === "style" ? "app_badge_criteria_styles" : "app_badge_criteria_countries");
         const criteriaValue = b.kind === "style"
           ? b.styles.map(escapeHtml).join(", ")
           : (b.countries || []).map(escapeHtml).join(", ");
         const chainNote = b.venueChain
-          ? `<div class="special-badge-chain"><svg class="icon"><use href="#icon-pin"/></svg>Лише в мережі "${escapeHtml(b.venueChain)}"</div>`
+          ? `<div class="special-badge-chain"><svg class="icon"><use href="#icon-pin"/></svg>${escapeHtml(T("app_badge_chain_only", { chain: b.venueChain }))}</div>`
           : "";
         const examples = b.matchingKnownBeers.length
-          ? `<div class="special-badge-examples"><svg class="icon"><use href="#icon-sparkle"/></svg>Наприклад: ${b.matchingKnownBeers.slice(0, 3).map((m) => escapeHtml(m.name)).join(", ")}</div>`
+          ? `<div class="special-badge-examples"><svg class="icon"><use href="#icon-sparkle"/></svg>${escapeHtml(T("app_badge_examples"))} ${b.matchingKnownBeers.slice(0, 3).map((m) => escapeHtml(m.name)).join(", ")}</div>`
           : "";
         detailsHtml = `
           <div class="special-badge-details">
@@ -1146,8 +1159,8 @@
             ${chainNote}
             ${examples}
             <div class="special-badge-footer">
-              <a href="${b.sourceUrl}" target="_blank" rel="noopener" class="special-badge-link">Джерело <svg class="icon"><use href="#icon-external-link"/></svg></a>
-              <button class="special-badge-dismiss-btn" data-badge="${escapeHtml(b.badge)}">Вже отримав</button>
+              <a href="${b.sourceUrl}" target="_blank" rel="noopener" class="special-badge-link">${escapeHtml(T("app_source"))} <svg class="icon"><use href="#icon-external-link"/></svg></a>
+              <button class="special-badge-dismiss-btn" data-badge="${escapeHtml(b.badge)}">${escapeHtml(T("app_badge_got_it"))}</button>
             </div>
           </div>`;
       }
@@ -1191,9 +1204,9 @@
   // distinct-count badges like Wheel of Styles/Brewery Pioneer) last per
   // explicit user feedback on the first cut of this feature.
   const BADGE_KIND_ORDER = ["style", "venue", "country", "range", "distinct"];
-  const BADGE_KIND_GROUP_LABEL = {
-    style: "Стилі", country: "Країни", distinct: "Різне",
-    range: "ABV / IBU", venue: "Локації",
+  const BADGE_KIND_GROUP_LABEL_KEY = {
+    style: "app_badge_group_style", country: "app_badge_group_country", distinct: "app_badge_group_distinct",
+    range: "app_badge_group_range", venue: "app_badge_group_venue",
   };
   // Per-kind collapse state for the "За типом" grouping - a plain Set (not
   // state.*, this is transient view state that doesn't need to survive a
@@ -1241,7 +1254,7 @@
     const open = state.badgesRaw.filter((b) => !b.done);
     const close = open.filter((b) => b.pct >= BADGE_CLOSE_PCT).length;
     $("badges-subtitle").textContent = state.badgesRaw.length
-      ? `${open.length} у процесі · ${close} майже ${pluralUk(close, "готовий", "готові", "готових")}`
+      ? `${T("app_badges_in_progress", { n: open.length })} · ${TP("app_badges_almost", close)}`
       : "";
   }
 
@@ -1250,9 +1263,9 @@
     const query = $("badges-search-input").value.trim().toLowerCase();
     const badges = sortedBadges().filter((b) => badgeMatchesQuery(b, query));
     if (!state.badgesRaw.length) {
-      $("badges-status").textContent = "Дані ще накопичуються — почни випивати щось нове.";
+      $("badges-status").textContent = T("app_badges_accumulating");
     } else {
-      $("badges-status").textContent = badges.length ? "" : "Нічого не знайдено.";
+      $("badges-status").textContent = badges.length ? "" : T("app_nothing_found");
     }
     const listEl = $("badges-list");
     listEl.innerHTML = "";
@@ -1269,7 +1282,7 @@
         const header = document.createElement("div");
         header.className = "badges-group-header" + (groupCollapsed ? " collapsed" : "");
         header.innerHTML =
-          `${escapeHtml(BADGE_KIND_GROUP_LABEL[b.kind] || b.kind)} ` +
+          `${escapeHtml(BADGE_KIND_GROUP_LABEL_KEY[b.kind] ? T(BADGE_KIND_GROUP_LABEL_KEY[b.kind]) : b.kind)} ` +
           `<span class="badges-group-header-count">(${count})</span>` +
           `<svg class="icon"><use href="#icon-chevron-right"/></svg>`;
         header.addEventListener("click", () => {
@@ -1297,16 +1310,16 @@
             </svg>
             <img src="${b.icon || DEFAULT_LABEL_URL}" alt="">
           </div>
-          <div class="badge-card-title">${b.done ? DONE_MARK : ""}${escapeHtml(b.name || "")}</div>
-          ${b.levelLabel ? `<div class="badge-card-level">${escapeHtml(b.levelLabel)}</div>` : ""}
+          <div class="badge-card-title">${b.done ? doneMark() : ""}${escapeHtml(b.name || "")}</div>
+          ${b.level ? `<div class="badge-card-level">${escapeHtml(T("app_badge_level", { n: b.level }))}</div>` : ""}
           <div class="badge-card-count"><span>${b.current}</span> / ${target}</div>`;
       } else {
         row.className = "venue-item badge-row" + (b.done ? " done" : "");
         row.innerHTML = `
           <img class="badge-row-icon" src="${b.icon || DEFAULT_LABEL_URL}" alt="">
           <div class="badge-row-main">
-            <div class="badge-row-title">${b.done ? DONE_MARK : ""}${escapeHtml(b.name || "")}</div>
-            <div class="badge-row-progress">${b.current} / ${target}${b.levelLabel ? " · " + escapeHtml(b.levelLabel) : ""}</div>
+            <div class="badge-row-title">${b.done ? doneMark() : ""}${escapeHtml(b.name || "")}</div>
+            <div class="badge-row-progress">${b.current} / ${target}${b.level ? " · " + escapeHtml(T("app_badge_level", { n: b.level })) : ""}</div>
             <div class="stats-bar"><div class="stats-bar-fill" style="width:${pct}%"></div></div>
           </div>`;
       }
@@ -1325,7 +1338,7 @@
     const grid = state.badgesView === "grid";
     // The button shows the view you'd switch TO, not the current one.
     $("badges-view-toggle-icon").querySelector("use").setAttribute("href", grid ? "#icon-list" : "#icon-grid");
-    $("badges-view-toggle").setAttribute("aria-label", grid ? "Показати списком" : "Показати сіткою");
+    $("badges-view-toggle").setAttribute("aria-label", T(grid ? "app_badges_view_list" : "app_badges_view_grid"));
   }
   syncBadgesViewToggle();
 
@@ -1348,7 +1361,10 @@
 
   // ---- Badge detail drill-down ----
 
-  const BADGE_KIND_LABEL = { style: "стилю", country: "країни", venue: "категорії локації", distinct: "різних варіантів", range: "ABV/IBU-діапазону" };
+  const BADGE_KIND_LABEL_KEY = {
+    style: "app_badge_kind_style", country: "app_badge_kind_country", venue: "app_badge_kind_venue",
+    distinct: "app_badge_kind_distinct", range: "app_badge_kind_range",
+  };
 
   function openBadgeDetail(b) {
     state.selectedBadge = b;
@@ -1361,14 +1377,14 @@
     const target = b.nextThreshold ?? b.current;
     const pct = Math.max(0, Math.min(100, b.pct));
     $("badge-detail-icon").src = b.icon || DEFAULT_LABEL_URL;
-    $("badge-detail-name").innerHTML = (b.done ? DONE_MARK : "") + escapeHtml(b.name || "");
+    $("badge-detail-name").innerHTML = (b.done ? doneMark() : "") + escapeHtml(b.name || "");
     $("badge-detail-progress").textContent =
-      `${b.current} / ${target}${b.levelLabel ? " · " + b.levelLabel : ""}`;
+      `${b.current} / ${target}${b.level ? " · " + T("app_badge_level", { n: b.level }) : ""}`;
     $("badge-detail-bar").style.width = pct + "%";
-    const kindLabel = BADGE_KIND_LABEL[b.kind] || "тегу";
+    const kindLabel = T(BADGE_KIND_LABEL_KEY[b.kind] || "app_badge_kind_tag");
     $("badge-detail-howto").textContent = b.done
-      ? `Максимальний рівень досягнуто (${b.current} кваліфікуючих позицій).`
-      : `Щоб піднятись на рівень: ще ${target - b.current} із ${b.countPerLevel} за ${kindLabel}, перелічені нижче.`;
+      ? T("app_badge_max_reached", { n: b.current })
+      : T("app_badge_level_up", { need: target - b.current, per: b.countPerLevel, kind: kindLabel });
     const tagsEl = $("badge-detail-tags");
     tagsEl.innerHTML = "";
     (b.tags || []).forEach((tag) => {
@@ -1408,7 +1424,7 @@
     // number than what's already displayed above.
     const staleHint = $("badge-detail-stale-hint");
     if (b.personalUrlStaleLevel != null) {
-      staleHint.textContent = `Посилання веде на знімок рівня ${b.personalUrlStaleLevel} - останнього, який Untappd позначив явно. Показаний вище прогрес новіший.`;
+      staleHint.textContent = T("app_badge_stale_hint", { level: b.personalUrlStaleLevel });
       staleHint.classList.remove("hidden");
     } else {
       staleHint.classList.add("hidden");
@@ -1432,21 +1448,21 @@
     const style = state.selectedStyle;
     if (!style) return;
     $("style-info-title").textContent = style;
-    $("style-info-status").textContent = "Завантажую…";
+    $("style-info-status").textContent = T("app_loading");
     $("style-info-body").innerHTML = "";
     const bjcpLink = $("style-info-bjcp-link");
     bjcpLink.classList.add("hidden");
 
     const { ok, data } = await apiPost("/api/checkin/style_info", { style });
     if (!ok) {
-      $("style-info-status").textContent = "Не вдалося завантажити опис.";
+      $("style-info-status").textContent = T("app_style_load_failed");
       return;
     }
 
     if (!data.matched) {
       $("style-info-status").textContent =
-        "Точного відповідника BJCP немає — це, схоже, сучасна/неформальна категорія Untappd, якої немає в офіційних гайдлайнах.";
-      $("style-info-bjcp-link-text").textContent = "Відкрити гайдлайни стилів BJCP";
+        T("app_style_no_bjcp");
+      $("style-info-bjcp-link-text").textContent = T("app_bjcp_guidelines_link");
       bjcpLink.onclick = () => openExternalLink(data.guideUrl);
       bjcpLink.classList.remove("hidden");
       return;
@@ -1463,16 +1479,16 @@
     if (data.approximate) {
       $("style-info-status").textContent = data.note
         ? `${data.note} ${data.styleId ? data.styleId + ". " : ""}${data.name}`
-        : `Неофіційне наближення (BJCP не має такого стилю): ${data.styleId ? data.styleId + ". " : ""}${data.name}`;
+        : T("app_style_approx", { style: `${data.styleId ? data.styleId + ". " : ""}${data.name}` });
     } else {
-      $("style-info-status").textContent = `Найближчий стиль за BJCP: ${data.styleId ? data.styleId + ". " : ""}${data.name}`;
+      $("style-info-status").textContent = T("app_style_closest", { style: `${data.styleId ? data.styleId + ". " : ""}${data.name}` });
     }
     const sections = [
-      ["Загальне враження", data.overallImpression],
-      ["Аромат", data.aroma],
-      ["Зовнішній вигляд", data.appearance],
-      ["Смак", data.flavor],
-      ["Відчуття в роті", data.mouthfeel],
+      [T("app_style_overall"), data.overallImpression],
+      [T("app_style_aroma"), data.aroma],
+      [T("app_style_appearance"), data.appearance],
+      [T("app_style_flavor"), data.flavor],
+      [T("app_style_mouthfeel"), data.mouthfeel],
     ];
     let bodyHtml = sections
       .filter(([, text]) => text)
@@ -1484,7 +1500,7 @@
     // links rather than silently hidden.
     if (data.alternates && data.alternates.length) {
       bodyHtml += `<div class="style-info-section style-info-alternates">
-        <h3>Також могло б підійти</h3>
+        <h3>${escapeHtml(T("app_style_also_fits"))}</h3>
         ${data.alternates
           .map(
             (a) =>
@@ -1497,7 +1513,7 @@
     $("style-info-body").querySelectorAll(".style-info-alt-btn").forEach((btn) => {
       btn.addEventListener("click", () => openExternalLink(btn.dataset.url));
     });
-    $("style-info-bjcp-link-text").textContent = "Відкрити на BJCP";
+    $("style-info-bjcp-link-text").textContent = T("app_bjcp_open");
     bjcpLink.onclick = () => openExternalLink(data.url);
     bjcpLink.classList.remove("hidden");
   }
@@ -1518,16 +1534,16 @@
     // the PREVIOUS session's (or a stale search's) rows stay visible for
     // the whole round-trip instead of a loading state.
     $("session-beers-list").innerHTML = "";
-    $("session-beers-status").textContent = "Завантажую…";
+    $("session-beers-status").textContent = T("app_loading");
     const { ok, data } = await apiPost("/api/checkin/festival/session", {
       session: state.currentSession, query,
     });
     if (!ok) {
-      $("session-beers-status").textContent = "Не вдалося завантажити список.";
+      $("session-beers-status").textContent = T("app_list_load_failed");
       return;
     }
     const beers = data.beers || [];
-    $("session-beers-status").textContent = beers.length ? "" : "Нічого не знайдено.";
+    $("session-beers-status").textContent = beers.length ? "" : T("app_nothing_found");
     const listEl = $("session-beers-list");
     beers.forEach((b) => {
       const row = document.createElement("div");
@@ -1544,7 +1560,7 @@
           ${metaChips(b)}
         </div>
         <div class="row-actions">
-          <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
+          <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>
         </div>`;
       row.addEventListener("click", (e) => {
         if (e.target.closest(".untappd-link-btn") || e.target.closest(".queue-status-corner")) return;
@@ -1578,14 +1594,14 @@
     // Cleared BEFORE the await (see fetchWishlist's own note) - otherwise
     // the PREVIOUS brewery's rows stay visible for the whole round-trip.
     $("brewery-beers-list").innerHTML = "";
-    $("brewery-beers-status").textContent = "Завантажую…";
+    $("brewery-beers-status").textContent = T("app_loading");
     const { ok, data } = await apiPost("/api/checkin/festival/brewery", { brewery: currentBreweryBeers });
     if (!ok) {
-      $("brewery-beers-status").textContent = "Не вдалося завантажити список.";
+      $("brewery-beers-status").textContent = T("app_list_load_failed");
       return;
     }
     const beers = data.beers || [];
-    $("brewery-beers-status").textContent = beers.length ? "" : "Пива не знайдено.";
+    $("brewery-beers-status").textContent = beers.length ? "" : T("app_breweries_no_beers");
     renderBreweryBeers(beers);
   }
 
@@ -1603,8 +1619,8 @@
         ${metaChips(b)}
       </div>
       <div class="row-actions">
-        <button class="add-queue-btn" title="Додати у чергу">+</button>
-        <button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>
+        <button class="add-queue-btn" title="${escapeHtml(T("app_add_to_queue_title"))}">+</button>
+        <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>
       </div>`;
     row.addEventListener("click", (e) => {
       if (e.target.closest(".add-queue-btn") || e.target.closest(".untappd-link-btn") || e.target.closest(".queue-status-corner")) return;
@@ -1640,12 +1656,12 @@
       const header = document.createElement("div");
       header.className = "brewery-session-header";
       if (session) header.innerHTML = `${sessionDot(color)} ${escapeHtml(sessionLabel(session))}`;
-      else header.textContent = "Інше";
+      else header.textContent = T("app_group_other");
       listEl.appendChild(header);
       const tried = groupBeers.filter((b) => b.hadIt).length;
       const stats = document.createElement("div");
       stats.className = "hint brewery-session-stats";
-      stats.textContent = `Спробувано ${tried} з ${groupBeers.length}`;
+      stats.textContent = T("app_tried_of", { tried, total: groupBeers.length });
       listEl.appendChild(stats);
       groupBeers.forEach((b) => listEl.appendChild(breweryBeerRow(b)));
     });
@@ -1683,7 +1699,7 @@
       return;
     }
     $("home-hero").classList.add("hidden");
-    setSearchStatus("Шукаю…");
+    setSearchStatus(T("app_searching"));
     searchDebounce = setTimeout(() => runSearch(q), 350);
   });
 
@@ -1703,17 +1719,17 @@
     if (requestId !== searchRequestId) return; // superseded by a newer search - discard
     if (!ok) {
       setSearchStatus(status === 429
-        ? "Untappd тимчасово обмежив запити — спробуйте за хвилину."
-        : "Помилка пошуку.");
+        ? T("app_rate_limited_retry")
+        : T("app_search_error"));
       return;
     }
     const beers = data.beers || [];
     if (beers.length) {
       const el = $("search-status");
       el.classList.add("results-heading");
-      el.innerHTML = `<span class="results-heading-label">Результати</span><span>${beers.length} знайдено</span>`;
+      el.innerHTML = `<span class="results-heading-label">${escapeHtml(T("app_results"))}</span><span>${escapeHtml(T("app_found_count", { n: beers.length }))}</span>`;
     } else {
-      setSearchStatus("Нічого не знайдено.");
+      setSearchStatus(T("app_nothing_found"));
     }
     closeAllRowMenus(); // about to remove whatever row it was anchored to
     $("results").innerHTML = "";
@@ -1732,8 +1748,8 @@
           ${metaChips(b)}
         </div>
         <div class="row-actions" data-beer-id="${b.beerId}" data-wishlist-item-id="${b.wishlistItemId || ""}">
-          <button class="add-queue-btn" title="Додати у чергу">+</button>
-          <button class="row-menu-btn${b.wishlistItemId ? " has-wishlist-item" : ""}" title="Ще">⋯</button>
+          <button class="add-queue-btn" title="${escapeHtml(T("app_add_to_queue_title"))}">+</button>
+          <button class="row-menu-btn${b.wishlistItemId ? " has-wishlist-item" : ""}" title="${escapeHtml(T("app_row_more_title"))}">⋯</button>
         </div>`;
       const actionsEl = row.querySelector(".row-actions");
       row.addEventListener("click", (e) => {
@@ -1756,7 +1772,7 @@
 
   function ratingBadge(b) {
     if (!b.hadIt || typeof b.userRating !== "number") return "";
-    return ` <span class="badge had-it-badge" title="Твоя оцінка">${ICON_STAR}${b.userRating.toFixed(2)}</span>`;
+    return ` <span class="badge had-it-badge" title="${escapeHtml(T("app_your_rating"))}">${ICON_STAR}${b.userRating.toFixed(2)}</span>`;
   }
 
   // Session color -> a small CSS dot (see style.css's .session-dot); an
@@ -1777,7 +1793,7 @@
       return `<span class="badge session-dots">${dots}</span> `;
     }
     if (b.source === "wishlist") {
-      return `<span class="badge wishlist-mark" title="З вішліста">${ICON_HEART}</span> `;
+      return `<span class="badge wishlist-mark" title="${escapeHtml(T("app_from_wishlist"))}">${ICON_HEART}</span> `;
     }
     return "";
   }
@@ -1966,15 +1982,15 @@
       return;
     }
     if (state.venues === null) {
-      $("venue-toggle-btn").innerHTML = `${ICON_PIN} Завантажую…`;
+      $("venue-toggle-btn").innerHTML = `${ICON_PIN} ${escapeHtml(T("app_loading"))}`;
       const { ok, data } = await apiPost("/api/checkin/venues", {});
       if (!ok && data.error === "not_connected") {
-        alert(NOT_CONNECTED_MSG);
-        $("venue-toggle-btn").innerHTML = `${ICON_PIN} Мої локації`;
+        alert(T("app_not_connected"));
+        $("venue-toggle-btn").innerHTML = `${ICON_PIN} ${escapeHtml(T("app_my_venues"))}`;
         return;
       }
       state.venues = ok ? (data.venues || []) : [];
-      $("venue-toggle-btn").innerHTML = `${ICON_PIN} Мої локації`;
+      $("venue-toggle-btn").innerHTML = `${ICON_PIN} ${escapeHtml(T("app_my_venues"))}`;
     }
     renderVenueList(state.venues);
   });
@@ -1986,23 +2002,23 @@
       return;
     }
     if (!tg || !tg.LocationManager) {
-      alert("Геолокація недоступна на цьому пристрої/версії Telegram — додай локацію зі списку своїх.");
+      alert(T("app_geo_unavailable_add"));
       return;
     }
     const btn = $("venue-nearby-btn");
     btn.disabled = true;
-    btn.innerHTML = `${ICON_COMPASS} Шукаю…`;
+    btn.innerHTML = `${ICON_COMPASS} ${escapeHtml(T("app_searching"))}`;
 
     // Safety net: if getLocation's callback never fires for any reason
     // (a stuck permission prompt, a Telegram client quirk), don't leave
     // the button stuck on "Шукаю…" forever - reset after a timeout.
     let settled = false;
-    const resetBtn = () => { btn.disabled = false; btn.innerHTML = `${ICON_COMPASS} Локації поруч`; };
+    const resetBtn = () => { btn.disabled = false; btn.innerHTML = `${ICON_COMPASS} ${escapeHtml(T("app_nearby_venues"))}`; };
     const timeoutId = setTimeout(() => {
       if (settled) return;
       settled = true;
       resetBtn();
-      alert("Не вдалося отримати геолокацію (тайм-аут) — спробуйте ще раз.");
+      alert(T("app_geo_timeout"));
     }, 12000);
 
     const lm = await ensureLocationManager();
@@ -2011,7 +2027,7 @@
       settled = true;
       clearTimeout(timeoutId);
       resetBtn();
-      alert("Геолокація недоступна на цьому пристрої/версії Telegram — додай локацію зі списку своїх.");
+      alert(T("app_geo_unavailable_add"));
       return;
     }
     lm.getLocation(async (location) => {
@@ -2020,7 +2036,7 @@
       clearTimeout(timeoutId);
       resetBtn();
       if (!location) {
-        alert("Не вдалося отримати геолокацію — перевір дозволи в налаштуваннях.");
+        alert(T("app_geo_denied"));
         return;
       }
       state.lastKnownLocation = { lat: location.latitude, lng: location.longitude };
@@ -2070,8 +2086,8 @@
     });
     if (!ok) {
       alert(data.error === "rate_limited"
-        ? "Foursquare тимчасово обмежив запити — спробуйте за хвилину."
-        : "Не вдалося знайти локації.");
+        ? T("app_foursquare_rate_limited")
+        : T("app_venues_failed"));
       return;
     }
     renderVenueList(data.venues || []);
@@ -2082,7 +2098,7 @@
   $("to-confirm-btn").addEventListener("click", async () => {
     const btn = $("to-confirm-btn");
     btn.disabled = true;
-    btn.textContent = "Надсилаю…";
+    btn.textContent = T("app_sending");
     $("submit-status").textContent = "";
 
     const venue = state.selectedVenue;
@@ -2129,10 +2145,10 @@
         // waiting for a reload/refetch of /api/checkin/usage.
         state.lastVenue = venue;
       }
-      btn.innerHTML = data.dryRun ? `${ICON_CHECK} (dry-run) Готово` : `${ICON_CHECK} Зачекінено!`;
+      btn.innerHTML = data.dryRun ? `${ICON_CHECK} ${escapeHtml(T("app_done_dry"))}` : `${ICON_CHECK} ${escapeHtml(T("app_checked_in"))}`;
       $("submit-status").textContent = data.dryRun
-        ? "Тестовий режим: реальний чекін не надіслано."
-        : "Готово!";
+        ? T("app_dry_run_status")
+        : T("app_done");
 
       setTimeout(() => {
         if (state.origin === "search") {
@@ -2143,13 +2159,13 @@
       }, state.origin === "queue" ? 1200 : 1500);
     } else {
       btn.disabled = false;
-      btn.innerHTML = `${ICON_CHECK} Чекінити`;
+      btn.innerHTML = `${ICON_CHECK} ${escapeHtml(T("app_checkin_btn"))}`;
       if (data.error === "not_connected") {
-        $("submit-status").textContent = NOT_CONNECTED_MSG;
+        $("submit-status").textContent = T("app_not_connected");
       } else {
         $("submit-status").textContent = status === 429
-          ? "Untappd тимчасово обмежив запити — спробуйте за хвилину."
-          : "Помилка. Спробуйте ще раз.";
+          ? T("app_rate_limited_retry")
+          : T("app_error_retry");
       }
     }
   });
@@ -2173,19 +2189,19 @@
   });
 
   async function fetchAutoToastFriends() {
-    $("autotoast-status").textContent = "Завантажую…";
+    $("autotoast-status").textContent = T("app_loading");
     $("autotoast-friends-list").innerHTML = "";
     const { ok, data } = await apiPost("/api/checkin/autotoast/friends", {});
     if (!ok) {
       $("autotoast-status").textContent = (data && data.error === "not_connected")
-        ? NOT_CONNECTED_MSG
-        : "Не вдалося завантажити список друзів.";
+        ? T("app_not_connected")
+        : T("app_autotoast_load_failed");
       autoToastFriends = [];
       return;
     }
     autoToastFriends = data.friends || [];
     $("autotoast-enabled-toggle").checked = !!data.enabled;
-    $("autotoast-status").textContent = autoToastFriends.length ? "" : "Друзів не знайдено.";
+    $("autotoast-status").textContent = autoToastFriends.length ? "" : T("app_autotoast_empty");
     renderAutoToastFriends();
   }
 
@@ -2253,15 +2269,15 @@
   async function fetchFestivalWatch() {
     const { ok, data } = await apiPost("/api/checkin/festival_watch/get", {});
     if (!ok) {
-      $("festival-watch-status").textContent = "Не вдалося завантажити.";
+      $("festival-watch-status").textContent = T("app_load_failed");
       return;
     }
     $("festival-watch-enabled-toggle").checked = !!data.enabled;
     $("festival-watch-notify-listed-toggle").checked = !!data.notifyListedBeers;
     $("festival-watch-radius-input").value = data.radiusMeters || 500;
     $("festival-watch-status").textContent = data.lat != null
-      ? `Точка: ${data.label || `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`}`
-      : "Точку стеження ще не встановлено — обери нижче.";
+      ? T("app_watch_point", { label: data.label || `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}` })
+      : T("app_watch_no_point");
     // venueId set = the watch point resolved to a real Untappd venue, so
     // everyone checking in THERE is seen; the radius still matters because
     // the friends-only radius check keeps running alongside it (catches a
@@ -2323,13 +2339,13 @@
 
   $("festival-watch-here-btn").addEventListener("click", async () => {
     if (!tg || !tg.LocationManager) {
-      alert("Геолокація недоступна на цьому пристрої/версії Telegram.");
+      alert(T("app_geo_unavailable"));
       return;
     }
     const btn = $("festival-watch-here-btn");
     const originalHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = `${ICON_COMPASS} Шукаю…`;
+    btn.innerHTML = `${ICON_COMPASS} ${escapeHtml(T("app_searching"))}`;
 
     let settled = false;
     const reset = () => { btn.disabled = false; btn.innerHTML = originalHtml; };
@@ -2337,7 +2353,7 @@
       if (settled) return;
       settled = true;
       reset();
-      alert("Не вдалося отримати геолокацію (тайм-аут) — спробуйте ще раз.");
+      alert(T("app_geo_timeout"));
     }, 12000);
 
     const lm = await ensureLocationManager();
@@ -2346,7 +2362,7 @@
       settled = true;
       clearTimeout(timeoutId);
       reset();
-      alert("Геолокація недоступна на цьому пристрої/версії Telegram.");
+      alert(T("app_geo_unavailable"));
       return;
     }
     lm.getLocation(async (location) => {
@@ -2355,7 +2371,7 @@
       clearTimeout(timeoutId);
       reset();
       if (!location) {
-        alert("Не вдалося отримати геолокацію — перевір дозволи в налаштуваннях.");
+        alert(T("app_geo_denied"));
         return;
       }
       // Also seeds state.lastKnownLocation - same shared spot "Локації
@@ -2363,7 +2379,7 @@
       // location-biased search this session) gets a real geo bias too,
       // not just this one saved watch point.
       state.lastKnownLocation = { lat: location.latitude, lng: location.longitude };
-      await setFestivalWatchLocation(location.latitude, location.longitude, "Моя локація");
+      await setFestivalWatchLocation(location.latitude, location.longitude, T("app_watch_my_location"));
     });
   });
 
@@ -2483,11 +2499,11 @@
   });
 
   async function fetchFestivalList() {
-    $("festival-switch-status").textContent = "Завантажую…";
+    $("festival-switch-status").textContent = T("app_loading");
     $("festival-switch-list").innerHTML = "";
     const { ok, data } = await apiPost("/api/checkin/festival/list", {});
     if (!ok || !data.available) {
-      $("festival-switch-status").textContent = "Не вдалося завантажити список фестивалів.";
+      $("festival-switch-status").textContent = T("app_fest_list_failed");
       return;
     }
     state.festivals = data.festivals || [];
@@ -2507,7 +2523,7 @@
   function renderFestivalSwitchList() {
     const el = $("festival-switch-list");
     if (!state.festivals.length) {
-      el.innerHTML = `<div class="festival-switch-empty">Немає доступних фестивалів.</div>`;
+      el.innerHTML = `<div class="festival-switch-empty">${escapeHtml(T("app_fest_none"))}</div>`;
       return;
     }
     el.innerHTML = state.festivals.map((f) => {
@@ -2530,17 +2546,17 @@
         if (key === state.activeFestivalKey) return;
         const label = state.festivals.find((f) => f.key === key)?.label || key;
         const doSwitch = async () => {
-          $("festival-switch-status").textContent = "Перемикаю…";
+          $("festival-switch-status").textContent = T("app_fest_switching");
           const { ok, data } = await apiPost("/api/checkin/festival/switch", { key });
           if (!ok) {
-            $("festival-switch-status").textContent = "Не вдалося перемкнути фестиваль.";
+            $("festival-switch-status").textContent = T("app_fest_switch_failed");
             return;
           }
           state.activeFestivalKey = data.activeKey;
           renderFestivalSwitchList();
-          $("festival-switch-status").textContent = `Готово: ${data.beerCount} пив.`;
+          $("festival-switch-status").textContent = T("app_fest_done", { n: data.beerCount });
         };
-        const msg = `Перемкнути типовий фестиваль на "${label}"? (тільки для тих, хто не в групі зі своїм)`;
+        const msg = T("app_fest_switch_confirm", { label });
         if (tg && tg.showConfirm) {
           tg.showConfirm(msg, (confirmed) => { if (confirmed) doSwitch(); });
         } else if (confirm(msg)) {
@@ -2551,11 +2567,11 @@
   }
 
   async function fetchMyFestivalList() {
-    $("my-festival-status").textContent = "Завантажую…";
+    $("my-festival-status").textContent = T("app_loading");
     $("my-festival-list").innerHTML = "";
     const { ok, data } = await apiPost("/api/checkin/festival/my/get", {});
     if (!ok) {
-      $("my-festival-status").textContent = "Не вдалося завантажити список фестивалів.";
+      $("my-festival-status").textContent = T("app_fest_list_failed");
       return;
     }
     state.myFestivals = data.festivals || [];
@@ -2568,7 +2584,7 @@
   function renderMyFestivalList() {
     const el = $("my-festival-list");
     if (!state.myFestivals.length) {
-      el.innerHTML = `<div class="festival-switch-empty">Немає доступних фестивалів.</div>`;
+      el.innerHTML = `<div class="festival-switch-empty">${escapeHtml(T("app_fest_none"))}</div>`;
       return;
     }
     // "Автоматично" is always first - represents "no personal override",
@@ -2579,7 +2595,7 @@
     const autoTile = `<button type="button" class="festival-tile${autoActive ? " festival-tile-active" : ""}"
                     data-festival-key=""${autoActive ? ' aria-current="true"' : ""}>
       <span class="festival-tile-art"><svg class="festival-tile-auto-mark" viewBox="0 0 512 512"><use href="#app-mark"/></svg><span class="festival-tile-check"><svg class="icon"><use href="#icon-check"/></svg></span></span>
-      <span class="festival-tile-label">Автоматично</span>
+      <span class="festival-tile-label">${escapeHtml(T("app_fest_auto"))}</span>
     </button>`;
     const festivalTiles = state.myFestivals.map((f) => {
       const active = f.key === state.myPersonalKey;
@@ -2597,10 +2613,10 @@
       row.addEventListener("click", async () => {
         const key = row.dataset.festivalKey || null;
         if (key === state.myPersonalKey) return;
-        $("my-festival-status").textContent = "Зберігаю…";
+        $("my-festival-status").textContent = T("app_saving");
         const { ok, data } = await apiPost("/api/checkin/festival/my/set", { key });
         if (!ok) {
-          $("my-festival-status").textContent = "Не вдалося зберегти вибір.";
+          $("my-festival-status").textContent = T("app_fest_save_failed");
           return;
         }
         state.myPersonalKey = data.personalKey;
@@ -2611,11 +2627,11 @@
   }
 
   async function fetchCommandFlags() {
-    $("command-flags-status").textContent = "Завантажую…";
+    $("command-flags-status").textContent = T("app_loading");
     $("command-flags-list").innerHTML = "";
     const { ok, data } = await apiPost("/api/checkin/command_flags/get", {});
     if (!ok || !data.available) {
-      $("command-flags-status").textContent = "Не вдалося завантажити список команд.";
+      $("command-flags-status").textContent = T("app_flags_load_failed");
       return;
     }
     state.commandFlags = data.commands || [];
@@ -2647,8 +2663,8 @@
   function renderCommandFlags() {
     const el = $("command-flags-list");
     const photoRow = commandFlagRowHtml(
-      "command-flag-photo", "Фото в чат",
-      "Розпізнавання пива з фото, надісланого напряму в чат (без команди)",
+      "command-flag-photo", T("app_flag_photo_label"),
+      T("app_flag_photo_desc"),
       state.photoRecognitionEnabled, null,
     );
     const commandRows = state.commandFlags.map((c) =>
@@ -2809,7 +2825,7 @@
     if (mapDragActive) return; // don't yank a pill mid-gesture on an incoming poll tick
     const { ok, data } = await apiPost("/api/checkin/festival_map/get", {});
     if (!ok) {
-      $("festival-map-status").textContent = "Не вдалося завантажити карту.";
+      $("festival-map-status").textContent = T("app_map_load_failed");
       return;
     }
     $("festival-map-status").textContent = "";
@@ -2919,6 +2935,7 @@
     "Browar Kingpin": "Kingpin",
     "Browar Monsters": "Monsters",
     "Sick Boy Brewing": "Sick Boy",
+    "Browar Monsters / Sick Boy Brewing": "Monsters / Sick Boy",
   };
 
   function makeBreweryPill(brewery, draggable) {
@@ -3125,7 +3142,7 @@
     Object.entries(state.festivalMap.bonusCategories).forEach(([name, breweries]) => {
       const section = document.createElement("div");
       section.className = "festival-map-lagerland";
-      section.innerHTML = `<div class="map-zone-label">${ICON_BEER} ${escapeHtml(name)} <span class="hint">— ця зона не редагується</span></div>`;
+      section.innerHTML = `<div class="map-zone-label">${ICON_BEER} ${escapeHtml(name)} <span class="hint">${escapeHtml(T("app_map_zone_readonly"))}</span></div>`;
       const pillsEl = document.createElement("div");
       pillsEl.className = "lagerland-pills";
       breweries.forEach((brewery) => pillsEl.appendChild(makeBreweryPill(brewery, false)));
@@ -3296,7 +3313,7 @@
       item.className = "venue-item";
       const place = match.zone ? zoneDisplayLabel(match.zone) : match.category;
       item.textContent = match.realBrewery
-        ? `${match.brewery} — ${place} (на стенді ${match.realBrewery})`
+        ? T("app_map_match_at_stand", { brewery: match.brewery, place, stand: match.realBrewery })
         : `${match.brewery} — ${place}`;
       item.addEventListener("click", () => selectFestivalMapSearchResult(match));
       resultsEl.appendChild(item);
@@ -3314,7 +3331,7 @@
     btn.innerHTML = festivalMapEditMode
       ? '<svg class="icon"><use href="#icon-check"/></svg>'
       : '<svg class="icon"><use href="#icon-edit"/></svg>';
-    btn.setAttribute("aria-label", festivalMapEditMode ? "Зберегти" : "Редагувати");
+    btn.setAttribute("aria-label", T(festivalMapEditMode ? "app_save" : "app_edit"));
   }
 
   $("festival-map-edit-btn").addEventListener("click", () => {
@@ -3613,7 +3630,7 @@
   $("settings-bar-btn").addEventListener("click", () => showScreen("settings"));
 
   async function fetchSettingsStatus() {
-    $("settings-status").textContent = "Завантажую…";
+    $("settings-status").textContent = T("app_loading");
     const [autotoast, festivalWatch, commentWatch, festivalMode, festivalList, commandFlags] = await Promise.all([
       apiPost("/api/checkin/autotoast/status", {}),
       apiPost("/api/checkin/festival_watch/get", {}),
@@ -3665,17 +3682,17 @@
     const doReset = async () => {
       const { ok, data } = await apiPost("/api/checkin/queue/reset_personal", {});
       if (!ok || !data.ok) {
-        notify("Не вдалося скинути позначки. Спробуйте ще раз.");
+        notify(T("app_reset_failed"));
         return;
       }
       if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
       notify(data.reset > 0
-        ? `Забуто тестові чекіни на ${data.reset} пивах - у чергу вони не повернулись.`
-        : "Нічого забувати - тестових чекінів через чергу немає.");
+        ? T("app_reset_done", { n: data.reset })
+        : T("app_reset_none"));
     };
     if (tg && tg.showConfirm) {
-      tg.showConfirm("Забути твої тестові чекіни в черзі? У чергу пива не повернуться.", (confirmed) => { if (confirmed) doReset(); });
-    } else if (confirm("Забути твої тестові чекіни в черзі? У чергу пива не повернуться.")) {
+      tg.showConfirm(T("app_reset_confirm"), (confirmed) => { if (confirmed) doReset(); });
+    } else if (confirm(T("app_reset_confirm"))) {
       doReset();
     }
   });
@@ -3688,11 +3705,11 @@
 
   function timeAgo(unixSeconds) {
     const mins = Math.max(0, Math.round((Date.now() / 1000 - unixSeconds) / 60));
-    if (mins < 1) return "щойно";
-    if (mins < 60) return `${mins} хв тому`;
+    if (mins < 1) return T("app_time_just_now");
+    if (mins < 60) return T("app_time_min_ago", { n: mins });
     const hours = Math.round(mins / 60);
-    if (hours < 24) return `${hours} год тому`;
-    return `${Math.round(hours / 24)} дн тому`;
+    if (hours < 24) return T("app_time_hours_ago", { n: hours });
+    return T("app_time_days_ago", { n: Math.round(hours / 24) });
   }
 
   // Event rows get an SVG icon per kind (see event_log.py's add_event). Older
@@ -3708,15 +3725,15 @@
   }
 
   async function fetchEvents() {
-    $("events-status").textContent = "Завантажую…";
+    $("events-status").textContent = T("app_loading");
     $("events-list").innerHTML = "";
     const { ok, data } = await apiPost("/api/checkin/events/get", {});
     if (!ok) {
-      $("events-status").textContent = "Не вдалося завантажити.";
+      $("events-status").textContent = T("app_load_failed");
       return;
     }
     const events = data.events || [];
-    $("events-status").textContent = events.length ? "" : "Поки що нічого не сталось.";
+    $("events-status").textContent = events.length ? "" : T("app_events_empty");
     const listEl = $("events-list");
     events.forEach((ev) => {
       const row = document.createElement("div");
@@ -3729,8 +3746,8 @@
           <div class="event-row-time">${timeAgo(ev.at)}</div>
         </div>
         <div class="row-actions">
-          ${ev.beerId ? `<button class="untappd-link-btn" title="Відкрити в Untappd">${ICON_LINK}</button>` : ""}
-          ${ev.kind === "comment" && ev.checkinId ? `<button class="event-reply-toggle-btn" title="Відповісти">${ICON_CHAT}</button>` : ""}
+          ${ev.beerId ? `<button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>` : ""}
+          ${ev.kind === "comment" && ev.checkinId ? `<button class="event-reply-toggle-btn" title="${escapeHtml(T("app_reply"))}">${ICON_CHAT}</button>` : ""}
         </div>
       `;
       if (ev.beerId) {
@@ -3743,7 +3760,7 @@
         replyBox.className = "event-reply-box hidden";
         replyBox.innerHTML = `
           <input type="text" class="event-reply-input" placeholder="@${escapeHtml(ev.username || "")}, …" maxlength="140">
-          <button class="primary-btn event-reply-send-btn">Надіслати</button>
+          <button class="primary-btn event-reply-send-btn">${escapeHtml(T("app_send"))}</button>
         `;
         row.appendChild(replyBox);
 
@@ -3769,7 +3786,7 @@
             input.value = "";
             replyBox.classList.add("hidden");
           } else {
-            alert(replyData && replyData.error === "not_connected" ? NOT_CONNECTED_MSG : "Не вдалося надіслати відповідь.");
+            alert(replyData && replyData.error === "not_connected" ? T("app_not_connected") : T("app_reply_failed"));
           }
         };
         replyBox.querySelector(".event-reply-send-btn").addEventListener("click", sendReply);

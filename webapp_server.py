@@ -1732,7 +1732,6 @@ async def handle_badges_get(request: web.Request) -> web.Response:
                     row["countPerLevel"], row["levels"], confirmed_level, row["firstLevelCount"],
                 )
                 row["level"] = confirmed_level
-                row["levelLabel"] = f"рівень {confirmed_level}"
                 row["current"] = level_start
                 row["nextThreshold"] = next_threshold
                 # pct=0 ("don't fabricate a fraction we can't support" - see
@@ -1860,6 +1859,9 @@ async def handle_style_info(request: web.Request) -> web.Response:
     match = bjcp_styles.find_style(style)
     if not match:
         return web.json_response({"matched": False, "guideUrl": BJCP_GENERAL_GUIDE_URL})
+    if match.get("note"):
+        lang_code = (init_data.get("user") or {}).get("language_code") or "en"
+        match = {**match, "note": i18n.t(lang_code, match["note"])}
     return web.json_response({"matched": True, **match})
 
 
@@ -3954,10 +3956,8 @@ async def _notify_new_comment(owner_id: int, checkin_item: dict, comment: dict) 
     # escaped (not linked - it's free text, not a name).
     profile_link = _html_link(f"https://untappd.com/user/{html.escape(commenter)}", f"@{commenter}")
     beer_link = _html_link(f"https://untappd.com/beer/{bid}", beer_name) if bid is not None else html.escape(beer_name)
-    text = (
-        f"💬 {profile_link} прокоментував(-ла) твій чекін {beer_link}:\n"
-        f"“{html.escape(comment_text)}”"
-    )
+    lang = await user_tokens.get_language(owner_id) or "uk"
+    text = i18n.t(lang, "cmt_notify", profile=profile_link, beer=beer_link, text=html.escape(comment_text))
     # callback_data is capped at 64 bytes by Telegram - a username could
     # easily push "commentreply:<id>:<username>" over that, so the
     # commenter goes in bot_data instead (same f"beer:{bid}" caching
@@ -3965,7 +3965,7 @@ async def _notify_new_comment(owner_id: int, checkin_item: dict, comment: dict) 
     if _ptb_app is not None:
         _ptb_app.bot_data[f"comment_reply_to:{checkin_id}"] = commenter
     keyboard = InlineKeyboardMarkup([[
-        InlineKeyboardButton("💬 Відповісти", callback_data=f"commentreply:{checkin_id}")
+        InlineKeyboardButton(i18n.t(lang, "cmt_reply_btn"), callback_data=f"commentreply:{checkin_id}")
     ]])
     await event_log.add_event(
         owner_id, "comment", f"{commenter}: {beer_name}",

@@ -501,7 +501,6 @@ def _row(badge: dict, current: int, kind: str, tags: list[str]) -> dict:
         "nextThreshold": next_threshold,
         "pct": pct,
         "level": level,
-        "levelLabel": f"рівень {level}" if level else None,
         "done": next_threshold is None,
         # For the detail screen's search-by-tag and "how to earn it" text -
         # kind says which of tags/countPerLevel means ("N distinct beers of

@@ -88,8 +88,8 @@
 <div id="maintenance-overlay" class="maintenance-overlay hidden">
   <div class="maintenance-card">
     <div class="maintenance-icon"><svg class="icon"><use href="#icon-refresh"/></svg></div>
-    <div class="maintenance-title">Технічні роботи</div>
-    <div class="maintenance-message" id="maintenance-message">Ми ненадовго відлучились щось покращити. Спробуй за кілька хвилин.</div>
+    <div class="maintenance-title" data-i18n="app_maint_title"></div>
+    <div class="maintenance-message" id="maintenance-message" data-i18n="app_maint_msg"></div>
   </div>
 </div>
 
@@ -97,7 +97,7 @@
   <div class="topbar">
     <div class="topbar-top-row">
       <div class="topbar-title">
-        <div class="app-title">Чекін</div>
+        <div class="app-title" data-i18n="app_title"></div>
         <!-- Filled in by app.js once /api/checkin/usage answers; stays
              empty (and collapses) until then. -->
         <div class="usage-badge hidden" id="usage-wrap">
@@ -117,22 +117,22 @@
           <span id="direct-usage-badge"></span>
         </div>
       </div>
-      <button id="events-bar-btn" class="icon-btn" title="Останні події" aria-label="Останні події">
+      <button id="events-bar-btn" class="icon-btn" data-i18n-title="app_events_title" data-i18n-aria="app_events_title">
         <svg class="icon"><use href="#icon-bell"/></svg>
       </button>
-      <button id="settings-bar-btn" class="icon-btn" title="Налаштування" aria-label="Налаштування">
+      <button id="settings-bar-btn" class="icon-btn" data-i18n-title="app_settings" data-i18n-aria="app_settings">
         <svg class="icon"><use href="#icon-settings"/></svg>
       </button>
     </div>
   </div>
   <input id="search-input" type="text" inputmode="search"
-         placeholder="Пиво або броварня…" autocomplete="off">
+         data-i18n-placeholder="app_search_placeholder" autocomplete="off">
   <div class="search-filters">
     <label class="checkbox-label hidden" id="festival-priority-label">
-      <input type="checkbox" id="festival-priority-checkbox" checked> Фестивальний список
+      <input type="checkbox" id="festival-priority-checkbox" checked> <span data-i18n="app_festival_list"></span>
     </label>
     <label class="checkbox-label">
-      <input type="checkbox" id="wishlist-priority-checkbox"> Вішліст
+      <input type="checkbox" id="wishlist-priority-checkbox"> <span data-i18n="app_wishlist_word"></span>
     </label>
   </div>
   <div id="search-status" class="hint"></div>
@@ -173,62 +173,62 @@
 </div>
 
 <div id="screen-queue" class="screen">
-  <button class="back-btn" data-back="search">Назад</button>
+  <button class="back-btn" data-back="search" data-i18n="app_back"></button>
   <!-- Shown only while festival mode is on (CSS keys off
        body.festival-mode-active) - same reminder as the settings row. -->
   <div class="festival-banner">
     <span class="festival-banner-icon"><svg class="icon"><use href="#icon-tent"/></svg></span>
     <div>
       <div class="festival-banner-title">Festival mode</div>
-      <div class="festival-banner-text">Фонова синхронізація на паузі — квота для чекінів</div>
+      <div class="festival-banner-text" data-i18n="app_festival_banner"></div>
     </div>
   </div>
   <div class="queue-header" id="queue-header-normal">
     <div>
-      <h2>Спільна черга</h2>
+      <h2 data-i18n="app_queue_title"></h2>
       <div class="screen-subtitle" id="queue-subtitle"></div>
     </div>
     <button id="queue-clear-btn" class="queue-clear-btn">
       <svg class="icon"><use href="#icon-trash"/></svg>
-      Очистити
+      <span data-i18n="app_clear"></span>
     </button>
   </div>
   <div class="queue-header selection-bar hidden" id="queue-selection-bar">
-    <span id="queue-selection-count">0 обрано</span>
+    <span id="queue-selection-count"></span>
     <div class="selection-bar-actions">
       <button id="queue-selection-delete-btn" class="queue-clear-btn">
         <svg class="icon"><use href="#icon-trash"/></svg>
-        Видалити
+        <span data-i18n="app_delete"></span>
       </button>
-      <button id="queue-selection-cancel-btn" class="queue-clear-btn">Скасувати</button>
+      <button id="queue-selection-cancel-btn" class="queue-clear-btn" data-i18n="app_cancel"></button>
     </div>
   </div>
   <div id="queue-status" class="hint"></div>
   <div id="queue-list" class="results"></div>
-  <div class="hint queue-select-hint hidden" id="queue-select-hint">Утримуй рядок, щоб обрати кілька</div>
+  <div class="hint queue-select-hint hidden" id="queue-select-hint" data-i18n="app_queue_hold_hint"></div>
 </div>
 
 <div id="screen-wishlist" class="screen">
-  <button class="back-btn" data-back="search">Назад</button>
+  <button class="back-btn" data-back="search" data-i18n="app_back"></button>
   <div class="queue-header" id="wishlist-header-normal">
-    <h2>Мій список</h2>
+    <h2 data-i18n="app_wishlist_title"></h2>
   </div>
   <div class="queue-header selection-bar hidden" id="wishlist-selection-bar">
-    <span id="wishlist-selection-count">0 обрано</span>
+    <span id="wishlist-selection-count"></span>
     <div class="selection-bar-actions">
       <button id="wishlist-selection-delete-btn" class="queue-clear-btn">
         <svg class="icon"><use href="#icon-trash"/></svg>
-        Видалити
+        <span data-i18n="app_delete"></span>
       </button>
-      <button id="wishlist-selection-cancel-btn" class="queue-clear-btn">Скасувати</button>
+      <button id="wishlist-selection-cancel-btn" class="queue-clear-btn" data-i18n="app_cancel"></button>
     </div>
   </div>
   <input id="wishlist-search-input" type="text" inputmode="search"
-         placeholder="Пошук у списку…" autocomplete="off">
+         data-i18n-placeholder="app_wishlist_search_ph" autocomplete="off">
   <div class="pills" id="wishlist-sort-pills">
-    <button class="pill active" data-sort="date">Дата додавання</button>
-    <button class="pill" data-sort="alpha">Назва</button>
-    <button class="pill" data-sort="brewery">Пивоварня</button>
+    <button class="pill active" data-sort="date" data-i18n="app_sort_date"></button>
+    <button class="pill" data-sort="alpha" data-i18n="app_sort_name"></button>
+    <button class="pill" data-sort="brewery" data-i18n="app_sort_brewery"></button>
     <button class="pill" data-sort="abv">ABV</button>
   </div>
   <div id="wishlist-status" class="hint"></div>
@@ -243,40 +243,40 @@
 </div>
 
 <div id="screen-stats" class="screen">
-  <button class="back-btn" data-back="search">Назад</button>
-  <h2>Прогрес фестивалю</h2>
+  <button class="back-btn" data-back="search" data-i18n="app_back"></button>
+  <h2 data-i18n="app_progress_title"></h2>
   <div id="stats-summary" class="stats-summary hint"></div>
   <div id="stats-sessions" class="results"></div>
 </div>
 
 <div id="screen-session-beers" class="screen">
-  <button class="back-btn" data-back="stats">Назад</button>
-  <h2 id="session-beers-title">Сесія</h2>
+  <button class="back-btn" data-back="stats" data-i18n="app_back"></button>
+  <h2 id="session-beers-title" data-i18n="app_session_word"></h2>
   <input id="session-search-input" type="text" inputmode="search"
-         placeholder="Пошук у сесії…" autocomplete="off">
+         data-i18n-placeholder="app_session_search_ph" autocomplete="off">
   <div id="session-beers-status" class="hint"></div>
   <div id="session-beers-list" class="results"></div>
 </div>
 
 <div id="screen-autotoast" class="screen">
-  <button class="back-btn" data-back="settings">Назад</button>
+  <button class="back-btn" data-back="settings" data-i18n="app_back"></button>
   <div class="queue-header">
-    <h2>Авто-тост</h2>
+    <h2 data-i18n="app_autotoast_title"></h2>
     <label class="toggle-switch">
       <input type="checkbox" id="autotoast-enabled-toggle">
       <span class="toggle-slider"></span>
     </label>
   </div>
   <input id="autotoast-search-input" type="text" inputmode="search"
-         placeholder="Пошук серед друзів…" autocomplete="off">
+         data-i18n-placeholder="app_autotoast_search_ph" autocomplete="off">
   <div id="autotoast-status" class="hint"></div>
   <div id="autotoast-friends-list" class="results"></div>
 </div>
 
 <div id="screen-festival-watch" class="screen">
-  <button class="back-btn" data-back="settings">Назад</button>
+  <button class="back-btn" data-back="settings" data-i18n="app_back"></button>
   <div class="queue-header">
-    <h2>Стеження за новинками</h2>
+    <h2 data-i18n="app_watch_title"></h2>
     <label class="toggle-switch">
       <input type="checkbox" id="festival-watch-enabled-toggle">
       <span class="toggle-slider"></span>
@@ -286,12 +286,12 @@
   <div id="festival-watch-venue-hint" class="hint hidden"></div>
   <button id="festival-watch-here-btn" class="secondary-btn">
     <svg class="icon"><use href="#icon-compass"/></svg>
-    Встановити мою поточну локацію
+    <span data-i18n="app_watch_here_btn"></span>
   </button>
-  <input id="festival-watch-search-input" type="text" placeholder="Або знайти локацію за назвою…" autocomplete="off">
+  <input id="festival-watch-search-input" type="text" data-i18n-placeholder="app_watch_search_ph" autocomplete="off">
   <div id="festival-watch-search-results" class="venue-list hidden"></div>
   <div id="festival-watch-radius-row">
-    <label class="checkbox-label festival-watch-radius-label">Радіус сповіщень (метри)</label>
+    <label class="checkbox-label festival-watch-radius-label" data-i18n="app_watch_radius_label"></label>
     <input id="festival-watch-radius-input" type="number" min="50" max="5000" step="50" value="500">
   </div>
   <div id="festival-watch-extra-block">
@@ -301,22 +301,22 @@
     <div id="festival-watch-extra-search-results" class="venue-list hidden"></div>
   </div>
   <label class="checkbox-label">
-    <input type="checkbox" id="festival-watch-notify-listed-toggle"> Сповіщати і про пиво зі списку фестивалю, яке ще не в черзі
+    <input type="checkbox" id="festival-watch-notify-listed-toggle"> <span data-i18n="app_watch_notify_listed"></span>
   </label>
 </div>
 
 <div id="screen-festival-map" class="screen">
-  <button class="back-btn" data-back="settings">Назад</button>
+  <button class="back-btn" data-back="settings" data-i18n="app_back"></button>
   <div class="queue-header">
-    <h2>Карта фестивалю</h2>
-    <button id="festival-map-edit-btn" class="icon-btn" aria-label="Редагувати">
+    <h2 data-i18n="app_map_title"></h2>
+    <button id="festival-map-edit-btn" class="icon-btn" data-i18n-aria="app_edit">
       <svg class="icon"><use href="#icon-edit"/></svg>
     </button>
   </div>
   <div id="festival-map-status" class="hint"></div>
   <div id="festival-map-overview">
     <input id="festival-map-search-input" type="text" inputmode="search"
-           placeholder="Пошук пивоварні…" autocomplete="off">
+           data-i18n-placeholder="app_map_search_ph" autocomplete="off">
     <div id="festival-map-search-results" class="venue-list hidden"></div>
     <!-- Zone cards (however many the current festival defines) and any
          read-only bonus categories are built at runtime by app.js's
@@ -326,7 +326,7 @@
     <div id="festival-map-bonus-categories"></div>
   </div>
   <div id="festival-map-detail" class="hidden">
-    <button class="secondary-btn back-arrow-btn" id="festival-map-detail-back">Усі зони</button>
+    <button class="secondary-btn back-arrow-btn" id="festival-map-detail-back" data-i18n="app_map_all_zones"></button>
     <div class="map-zone-header">
       <span class="map-zone-label" id="festival-map-detail-label"></span>
       <span class="map-zone-count" id="festival-map-detail-count"></span>
@@ -345,38 +345,38 @@
 </div>
 
 <div id="screen-brewery-beers" class="screen">
-  <button class="back-btn" data-back="festival-map">Назад</button>
+  <button class="back-btn" data-back="festival-map" data-i18n="app_back"></button>
   <h2 id="brewery-beers-title"></h2>
   <div id="brewery-beers-status" class="hint"></div>
   <div id="brewery-beers-list" class="results"></div>
 </div>
 
 <div id="screen-badges" class="screen">
-  <button class="back-btn" data-back="search">Назад</button>
+  <button class="back-btn" data-back="search" data-i18n="app_back"></button>
   <div class="queue-header">
     <div>
-      <h2>Бейджі</h2>
+      <h2 data-i18n="app_badges_title"></h2>
       <div class="screen-subtitle" id="badges-subtitle"></div>
     </div>
-    <button id="badges-view-toggle" class="icon-btn" aria-label="Показати списком">
+    <button id="badges-view-toggle" class="icon-btn" data-i18n-aria="app_badges_view_list">
       <svg class="icon" id="badges-view-toggle-icon"><use href="#icon-list"/></svg>
     </button>
   </div>
   <div id="special-badges-list"></div>
   <input id="badges-search-input" type="text" inputmode="search"
-         placeholder="Пошук за назвою або тегом…" autocomplete="off">
+         data-i18n-placeholder="app_badges_search_ph" autocomplete="off">
   <div class="pills" id="badges-sort-pills">
-    <button class="pill active" data-sort="closest">Майже готові</button>
-    <button class="pill" data-sort="level_desc">Рівень</button>
-    <button class="pill" data-sort="alpha">А–Я</button>
-    <button class="pill" data-sort="kind">За типом</button>
+    <button class="pill active" data-sort="closest" data-i18n="app_sort_closest"></button>
+    <button class="pill" data-sort="level_desc" data-i18n="app_sort_level"></button>
+    <button class="pill" data-sort="alpha" data-i18n="app_sort_alpha"></button>
+    <button class="pill" data-sort="kind" data-i18n="app_sort_kind"></button>
   </div>
   <div id="badges-status" class="hint"></div>
   <div id="badges-list" class="results"></div>
 </div>
 
 <div id="screen-badge-detail" class="screen">
-  <button class="back-btn" data-back="badges">Назад</button>
+  <button class="back-btn" data-back="badges" data-i18n="app_back"></button>
   <div class="beer-card" id="badge-detail-card">
     <img id="badge-detail-icon" class="badge-detail-icon" src="" alt="">
     <div class="name" id="badge-detail-name"></div>
@@ -387,32 +387,32 @@
   <div class="venue-badges" id="badge-detail-tags"></div>
   <button id="badge-detail-untappd-btn" class="secondary-btn hidden">
     <svg class="icon"><use href="#icon-external-link"/></svg>
-    Відкрити бейдж на Untappd
+    <span data-i18n="app_badge_open_untappd"></span>
   </button>
   <div class="hint hidden" id="badge-detail-stale-hint"></div>
 </div>
 
 <div id="screen-style-info" class="screen">
-  <button class="back-btn" data-back="badge-detail">Назад</button>
+  <button class="back-btn" data-back="badge-detail" data-i18n="app_back"></button>
   <h2 id="style-info-title"></h2>
   <div id="style-info-status" class="hint"></div>
   <div id="style-info-body"></div>
   <button id="style-info-bjcp-link" class="secondary-btn hidden">
     <svg class="icon"><use href="#icon-external-link"/></svg>
-    <span id="style-info-bjcp-link-text">Відкрити на BJCP</span>
+    <span id="style-info-bjcp-link-text" data-i18n="app_bjcp_open"></span>
   </button>
 </div>
 
 <div id="screen-settings" class="screen">
-  <button class="back-btn" data-back="search">Назад</button>
-  <h2>Налаштування сповіщень</h2>
+  <button class="back-btn" data-back="search" data-i18n="app_back"></button>
+  <h2 data-i18n="app_settings_title"></h2>
   <div class="settings-row">
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon"><use href="#icon-chat"/></svg>
-        Коментарі
+        <span data-i18n="app_row_comments"></span>
       </div>
-      <div class="settings-row-hint">Сповіщати про нові коментарі на твоїх чекінах</div>
+      <div class="settings-row-hint" data-i18n="app_row_comments_hint"></div>
     </div>
     <label class="toggle-switch">
       <input type="checkbox" id="settings-commentwatch-toggle">
@@ -425,7 +425,7 @@
         <svg class="icon"><use href="#icon-tent"/></svg>
         Festival mode
       </div>
-      <div class="settings-row-hint">Призупиняє фонову синхронізацію та авто-тост, щоб зберегти квоту для чекінів</div>
+      <div class="settings-row-hint" data-i18n="app_row_festmode_hint"></div>
     </div>
     <label class="toggle-switch">
       <input type="checkbox" id="settings-festivalmode-toggle">
@@ -436,9 +436,9 @@
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon icon-filled"><use href="#icon-sparkle"/></svg>
-        Новинки фестивалю
+        <span data-i18n="app_row_novelty"></span>
       </div>
-      <div class="settings-row-hint">Сповіщати про пиво не з бази поруч із точкою стеження</div>
+      <div class="settings-row-hint" data-i18n="app_row_novelty_hint"></div>
     </div>
     <label class="toggle-switch">
       <input type="checkbox" id="settings-festivalwatch-toggle">
@@ -450,9 +450,9 @@
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon"><use href="#icon-cheers"/></svg>
-        Авто-тост
+        <span data-i18n="app_autotoast_title"></span>
       </div>
-      <div class="settings-row-hint">Автоматично тостити чекіни друзів зі списку</div>
+      <div class="settings-row-hint" data-i18n="app_row_autotoast_hint"></div>
     </div>
     <label class="toggle-switch">
       <input type="checkbox" id="settings-autotoast-toggle">
@@ -464,9 +464,9 @@
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon"><use href="#icon-user-check"/></svg>
-        Мій фестиваль
+        <span data-i18n="app_my_festival"></span>
       </div>
-      <div class="settings-row-hint">Твій особистий вибір — не залежить від групи</div>
+      <div class="settings-row-hint" data-i18n="app_row_myfest_hint"></div>
     </div>
     <svg class="icon settings-row-arrow"><use href="#icon-chevron-right"/></svg>
   </div>
@@ -474,9 +474,9 @@
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon"><use href="#icon-globe"/></svg>
-        Активний фестиваль
+        <span data-i18n="app_active_festival"></span>
       </div>
-      <div class="settings-row-hint">Який список пив бачать усі користувачі</div>
+      <div class="settings-row-hint" data-i18n="app_row_activefest_hint"></div>
     </div>
     <svg class="icon settings-row-arrow"><use href="#icon-chevron-right"/></svg>
   </div>
@@ -484,9 +484,9 @@
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon"><use href="#icon-list"/></svg>
-        Керування функціями
+        <span data-i18n="app_flags_title"></span>
       </div>
-      <div class="settings-row-hint">Які команди доступні решті користувачів</div>
+      <div class="settings-row-hint" data-i18n="app_row_flags_hint"></div>
     </div>
     <svg class="icon settings-row-arrow"><use href="#icon-chevron-right"/></svg>
   </div>
@@ -494,9 +494,9 @@
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon"><use href="#icon-pin"/></svg>
-        Карта фестивалю
+        <span data-i18n="app_map_title"></span>
       </div>
-      <div class="settings-row-hint">Розташування пивоварень по зонах фестивалю</div>
+      <div class="settings-row-hint" data-i18n="app_row_map_hint"></div>
     </div>
     <svg class="icon settings-row-arrow"><use href="#icon-chevron-right"/></svg>
   </div>
@@ -504,56 +504,56 @@
     <div class="settings-row-label">
       <div class="settings-row-title">
         <svg class="icon"><use href="#icon-refresh"/></svg>
-        Забути чекіни в черзі
+        <span data-i18n="app_row_forget"></span>
       </div>
-      <div class="settings-row-hint">Пива, зачекінені через чергу до фестивалю, більше не рахуватимуться як "вже випите на фестивалі" - у чергу вони не повернуться</div>
+      <div class="settings-row-hint" data-i18n="app_row_forget_hint"></div>
     </div>
   </div>
   <div id="settings-status" class="hint"></div>
 </div>
 
 <div id="screen-my-festival" class="screen">
-  <button class="back-btn" data-back="settings">Назад</button>
-  <h2>Мій фестиваль</h2>
+  <button class="back-btn" data-back="settings" data-i18n="app_back"></button>
+  <h2 data-i18n="app_my_festival"></h2>
   <div class="festival-info-note">
     <svg class="icon"><use href="#icon-compass"/></svg>
-    <span>Змінює список пив і карту лише для тебе — не впливає на інших</span>
+    <span data-i18n="app_my_fest_note"></span>
   </div>
   <div id="my-festival-list"></div>
   <div id="my-festival-status" class="hint"></div>
 </div>
 
 <div id="screen-festival-switch" class="screen">
-  <button class="back-btn" data-back="settings">Назад</button>
-  <h2>Активний фестиваль</h2>
+  <button class="back-btn" data-back="settings" data-i18n="app_back"></button>
+  <h2 data-i18n="app_active_festival"></h2>
   <div class="festival-switch-warning">
     <svg class="icon"><use href="#icon-alert-triangle"/></svg>
-    <span>Змінює <strong>типовий</strong> фестиваль — для тих, хто не в групі зі своїм (див. /set_festival)</span>
+    <span data-i18n-html="app_fest_default_note"></span>
   </div>
   <div id="festival-switch-list"></div>
   <div id="festival-switch-status" class="hint"></div>
 </div>
 
 <div id="screen-command-flags" class="screen">
-  <button class="back-btn" data-back="settings">Назад</button>
-  <h2>Керування функціями</h2>
+  <button class="back-btn" data-back="settings" data-i18n="app_back"></button>
+  <h2 data-i18n="app_flags_title"></h2>
   <div class="festival-info-note">
     <svg class="icon"><use href="#icon-list"/></svg>
-    <span>Вимикає команду чи функцію для всіх, крім тебе</span>
+    <span data-i18n="app_flags_note"></span>
   </div>
   <div id="command-flags-list"></div>
   <div id="command-flags-status" class="hint"></div>
 </div>
 
 <div id="screen-events" class="screen">
-  <button class="back-btn" data-back="search">Назад</button>
-  <h2>Останні події</h2>
+  <button class="back-btn" data-back="search" data-i18n="app_back"></button>
+  <h2 data-i18n="app_events_title"></h2>
   <div id="events-status" class="hint"></div>
   <div id="events-list" class="results"></div>
 </div>
 
 <div id="screen-rate" class="screen">
-  <button class="back-btn" id="rate-back-btn">Назад</button>
+  <button class="back-btn" id="rate-back-btn" data-i18n="app_back"></button>
   <div id="rate-beer-card" class="beer-card"></div>
 
   <div class="rating-block">
@@ -562,32 +562,32 @@
     <div class="pills" id="rating-pills"></div>
   </div>
 
-  <input id="shout-input" type="text" maxlength="140" placeholder="Коментар (необов'язково)">
+  <input id="shout-input" type="text" maxlength="140" data-i18n-placeholder="app_comment_ph">
 
   <div id="venue-selected" class="venue-selected-card hidden"></div>
 
   <button id="venue-toggle-btn" class="secondary-btn">
     <svg class="icon"><use href="#icon-pin"/></svg>
-    Мої локації
+    <span data-i18n="app_my_venues"></span>
   </button>
   <button id="venue-nearby-btn" class="secondary-btn">
     <svg class="icon"><use href="#icon-compass"/></svg>
-    Локації поруч
+    <span data-i18n="app_nearby_venues"></span>
   </button>
-  <input id="venue-search-input" type="text" placeholder="Пошук локації за назвою…">
+  <input id="venue-search-input" type="text" data-i18n-placeholder="app_venue_search_ph">
   <label class="checkbox-label">
-    <input type="checkbox" id="unique-venue-checkbox"> Лише нові (де ще не був)
+    <input type="checkbox" id="unique-venue-checkbox"> <span data-i18n="app_venue_unique_only"></span>
   </label>
   <label class="checkbox-label">
     <input type="checkbox" id="badge-venue-checkbox">
     <svg class="icon"><use href="#icon-award"/></svg>
-    Лише для бейджа
+    <span data-i18n="app_venue_badge_only"></span>
   </label>
   <div id="venue-list" class="venue-list hidden"></div>
 
   <button id="to-confirm-btn" class="primary-btn">
     <svg class="icon"><use href="#icon-check"/></svg>
-    Чекінити
+    <span data-i18n="app_checkin_btn"></span>
   </button>
   <div id="submit-status" class="hint"></div>
 </div>
@@ -602,7 +602,7 @@
   <button id="shared-row-menu-wishlist" class="row-menu-item"></button>
   <button id="shared-row-menu-link" class="row-menu-item">
     <svg class="icon"><use href="#icon-external-link"/></svg>
-    Відкрити в Untappd
+    <span data-i18n="app_open_in_untappd"></span>
   </button>
 </div>
 
@@ -617,22 +617,22 @@
 <nav class="bottom-nav">
   <button id="home-bar-btn" class="nav-tab active">
     <svg class="icon"><use href="#icon-search"/></svg>
-    <span class="nav-label">Пошук</span>
+    <span class="nav-label" data-i18n="app_nav_search"></span>
   </button>
   <button id="queue-bar-btn" class="nav-tab hidden">
     <span class="nav-icon-wrap">
       <svg class="icon"><use href="#icon-coffee"/></svg>
       <span class="nav-badge" id="queue-count">0</span>
     </span>
-    <span class="nav-label">Черга</span>
+    <span class="nav-label" data-i18n="app_nav_queue"></span>
   </button>
   <button id="stats-bar-btn" class="nav-tab hidden">
     <svg class="icon icon-filled"><use href="#icon-bar-chart"/></svg>
-    <span class="nav-label">Прогрес</span>
+    <span class="nav-label" data-i18n="app_nav_progress"></span>
   </button>
   <button id="wishlist-bar-btn" class="nav-tab">
     <svg class="icon"><use href="#icon-clipboard-list"/></svg>
-    <span class="nav-label">Мій список</span>
+    <span class="nav-label" data-i18n="app_wishlist_title"></span>
   </button>
   <button id="pending-checkins-bar-btn" class="nav-tab hidden">
     <span class="nav-icon-wrap">
@@ -643,11 +643,11 @@
   </button>
   <button id="badges-bar-btn" class="nav-tab">
     <svg class="icon"><use href="#icon-award"/></svg>
-    <span class="nav-label">Бейджі</span>
+    <span class="nav-label" data-i18n="app_badges_title"></span>
   </button>
   <button id="festival-map-bar-btn" class="nav-tab hidden">
     <svg class="icon"><use href="#icon-pin"/></svg>
-    <span class="nav-label">Карта</span>
+    <span class="nav-label" data-i18n="app_nav_map"></span>
   </button>
 </nav>
 

@@ -78,14 +78,11 @@ INFORMAL_STYLE_APPROXIMATIONS = {
     "stout - pastry": "16A",  # Sweet Stout - closest in overall sweetness/richness, no strength implied either way
 }
 
-BEST_EFFORT_NOTE = (
-    "⚠️ Орієнтовний найближчий стиль лише за частковим збігом ключових слів — "
-    "BJCP не підтверджує це як точну відповідність."
-)
-MIXED_STYLE_NOTE = (
-    "⚠️ Жоден стиль BJCP не має нічого спільного з цим тегом за ключовими словами — "
-    "показано загальну категорію BJCP для змішаних/нестандартних стилів."
-)
+# i18n.py keys, not text - webapp_server.handle_style_info translates them
+# into the viewer's language before replying.
+BEST_EFFORT_NOTE = "bjcp_note_best_effort"
+MIXED_STYLE_NOTE = "bjcp_note_mixed"
+FRUIT_BEER_NOTE = "bjcp_note_fruit"
 
 
 def _fold_diacritics(text: str) -> str:
@@ -252,8 +249,7 @@ def find_style(untappd_style: str) -> dict | None:
     if "fruited" in query_tokens and "29A" in _STYLE_BY_ID:
         return _format(
             _STYLE_BY_ID["29A"], approximate=True,
-            note="За правилами BJCP, додавання фрукту до будь-якого базового стилю класифікується "
-                 "окремою категорією Fruit Beer, а не власним підстилем цього базового стилю.",
+            note=FRUIT_BEER_NOTE,
         )
 
     # Last-resort best-effort guess - added after the user pointed out the
