@@ -67,3 +67,17 @@ def test_scan_norm_expands_ba_only_as_a_standalone_word():
     assert beer_match.scan_norm("BA Imperial Stout") == "barrel aged imperial stout"
     assert beer_match.scan_norm("Barrel-Aged Stout") == "barrel aged stout"
     assert beer_match.scan_norm("Bałtycki Banana") == "baltycki banana"  # "ba" fragments don't count
+
+
+def test_trailing_ba_is_never_dropped_into_a_non_barrel_aged_variant():
+    # The lens crawl log showed "Imperial Baltic Porter BA" matching the plain
+    # "Imperial Baltic Porter" (a different beer) via a shortened variant.
+    cores, original, clean = beer_match._query_context("Imperial Baltic Porter BA - butelka 330 ml", "Infinitum")
+    for variant in beer_match._query_name_variants(clean, original):
+        assert "ba" in variant.lower().split(), variant
+
+
+def test_other_trailing_words_are_still_dropped():
+    assert list(beer_match._drop_trailing_words("Hazy Morning Coconut Cream")) == ["Hazy Morning Coconut", "Hazy Morning"]
+    assert list(beer_match._drop_trailing_words("Hazy Porter Nitro")) == []
+    assert list(beer_match._drop_trailing_words("Hazy Porter Nitro 2025")) == ["Hazy Porter Nitro"]

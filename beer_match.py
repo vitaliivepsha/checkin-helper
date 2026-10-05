@@ -948,6 +948,11 @@ def _non_alco_variants(beer_name: str) -> list[str]:
     ]
 
 
+# Trailing words that distinguish a different product rather than add noise
+# (see _drop_trailing_words): barrel ageing and nitro serves are separate beers.
+_NEVER_DROP_WORDS = frozenset({"ba", "barrel", "aged", "barrel-aged", "nitro"})
+
+
 def _drop_trailing_words(text: str, max_drop: int = 2):
     """Yields `text` with its last 1..max_drop words progressively removed.
     A shop's own product title sometimes carries one or two extra trailing
@@ -961,6 +966,13 @@ def _drop_trailing_words(text: str, max_drop: int = 2):
     words = text.split()
     for n in range(1, max_drop + 1):
         if len(words) - n < 1:
+            break
+        # A word that changes WHICH beer this is must never be dropped: with
+        # "BA" gone, "Imperial Baltic Porter BA" exactly matched the plain
+        # (non-barrel-aged) "Imperial Baltic Porter" - a different beer, found
+        # in the lens crawl's outcome log. Dropping a larger tail only
+        # includes the same word again, so stop here.
+        if any(re.sub(r"[^\w-]", "", w).lower() in _NEVER_DROP_WORDS for w in words[len(words) - n:]):
             break
         yield " ".join(words[: len(words) - n])
 
