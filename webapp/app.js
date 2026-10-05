@@ -2963,7 +2963,7 @@
     "Browar Kingpin": "Kingpin",
     "Browar Monsters": "Monsters",
     "Sick Boy Brewing": "Sick Boy",
-    "Browar Monsters / Sick Boy Brewing": "Monsters / Sick Boy",
+    "Browar Monsters / Sick Boy Brewing": "Monsters/Sick Boy",
   };
 
   function makeBreweryPill(brewery, draggable) {
