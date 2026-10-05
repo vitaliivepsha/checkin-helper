@@ -458,6 +458,97 @@ for _lang, _values in EXTRA_STRINGS.items():
     STRINGS.setdefault(_lang, {}).update(_values)
 
 
+# Mini App (webapp/app.js, index.html) strings, keys prefixed "app_" - served
+# to the client by webapp_server.handle_i18n_get in the viewer's own
+# language. Also the server-pushed novelty notifications (nov_*), rendered in
+# the receiving owner's last-seen language (user_tokens.get_language).
+# Only strings added since the Mini App got this mechanism live here; older
+# hardcoded ones in app.js/index.html are still to be migrated.
+APP_STRINGS = {
+    "en": {
+        "app_back": "Back",
+        "app_remove": "Remove",
+        "app_loading": "Loading…",
+        "app_pending_title": "Pending check-ins",
+        "app_pending_nav": "Pending",
+        "app_pending_badge_title": "Already saved in Pending",
+        "app_pending_empty": "No pending check-ins.",
+        "app_pending_reason_rate_limited": "Untappd has temporarily rate-limited requests",
+        "app_pending_reason_checkin_failed": "Couldn't reach Untappd",
+        "app_pending_reason_default": "Check-in failed",
+        "app_pending_retry": "Retry",
+        "app_pending_retrying": "Checking in…",
+        "app_pending_retry_failed": "Failed — try again later.",
+        "app_pending_remove_confirm": "Remove \"{name}\" from pending check-ins?",
+        "app_wishlist_remove_confirm": "Remove \"{name}\" from the list?",
+        "app_checkin_btn": "Check in",
+        "app_saved": "Saved",
+        "app_submit_pending_status": "Untappd is unavailable right now — check-in saved, retry it later from “Pending”.",
+        "app_watch_venue_hint": "Linked to \"{venue}\" on Untappd — sees everyone checking in there. Friends within the radius are caught separately, even at another venue.",
+        "app_watch_this_venue": "this venue",
+        "app_watch_extra_hint": "Extra venues (e.g. neighbouring addresses) — checked every few minutes",
+        "app_watch_extra_placeholder": "Add a venue by name…",
+        "app_watch_extra_not_found": "This venue isn't on Untappd yet — not added.",
+        "app_watch_extra_duplicate": "This venue is already listed (or the list is full).",
+        "app_watch_extra_failed": "Couldn't add the venue — try again later.",
+        "app_map_add_island": "+ Island",
+        "app_usage_api": "API requests",
+        "app_usage_direct": "direct requests",
+        "nov_listed": "📋 👤 {profile} just checked in 🍺 {beer} ({brewery}) at 📍 {venue} — this beer is in the festival list, but not in the queue yet!",
+        "nov_new": "🆕 👤 {profile} just checked in 🍺 {beer} ({brewery}) at 📍 {venue} — this beer isn't in the festival list!{had}",
+        "nov_had_yes": " ✅ (you've had this one)",
+        "nov_had_no": " ❌ (not had yet)",
+        "nov_event_listed": "{user}: {beer} at {venue} (in the list, not queued)",
+        "nov_event_new": "{user}: {beer} at {venue}",
+        "nov_event_had_suffix": " (already had)",
+        "nov_venue_fallback": "the venue",
+        "nov_open_on_map": "📍 Open on map",
+    },
+    "uk": {
+        "app_back": "Назад",
+        "app_remove": "Прибрати",
+        "app_loading": "Завантажую…",
+        "app_pending_title": "Відкладені чекіни",
+        "app_pending_nav": "Відкладені",
+        "app_pending_badge_title": "Вже збережено у Відкладені",
+        "app_pending_empty": "Немає відкладених чекінів.",
+        "app_pending_reason_rate_limited": "Untappd тимчасово обмежив запити",
+        "app_pending_reason_checkin_failed": "Не вдалося з'єднатися з Untappd",
+        "app_pending_reason_default": "Не вдалося зачекінити",
+        "app_pending_retry": "Ще раз",
+        "app_pending_retrying": "Чекіню…",
+        "app_pending_retry_failed": "Не вдалося — спробуй пізніше.",
+        "app_pending_remove_confirm": "Прибрати \"{name}\" з відкладених чекінів?",
+        "app_wishlist_remove_confirm": "Прибрати \"{name}\" зі списку?",
+        "app_checkin_btn": "Чекінити",
+        "app_saved": "Збережено",
+        "app_submit_pending_status": "Untappd зараз недоступний — зберіг чекін, спробуєш пізніше у «Відкладені».",
+        "app_watch_venue_hint": "Прив'язано до \"{venue}\" на Untappd — бачить усіх, хто там чекіниться. Друзі в межах радіуса ловляться окремо, навіть в іншій локації.",
+        "app_watch_this_venue": "цієї локації",
+        "app_watch_extra_hint": "Додаткові локації (напр. сусідні адреси) — перевіряються раз на кілька хвилин",
+        "app_watch_extra_placeholder": "Додати локацію за назвою…",
+        "app_watch_extra_not_found": "Цієї локації ще немає в Untappd — не додано.",
+        "app_watch_extra_duplicate": "Ця локація вже в списку (або список заповнений).",
+        "app_watch_extra_failed": "Не вдалося додати локацію — спробуй пізніше.",
+        "app_map_add_island": "+ Острівець",
+        "app_usage_api": "запитів API",
+        "app_usage_direct": "прямих запитів",
+        "nov_listed": "📋 👤 {profile} щойно зачекінив(-ла) 🍺 {beer} ({brewery}) на 📍 {venue} — це пиво є в базі фестивалю, але ще не в черзі!",
+        "nov_new": "🆕 👤 {profile} щойно зачекінив(-ла) 🍺 {beer} ({brewery}) на 📍 {venue} — цього пива нема в базі фестивалю!{had}",
+        "nov_had_yes": " ✅ (ти вже це пив)",
+        "nov_had_no": " ❌ (ще не пив)",
+        "nov_event_listed": "{user}: {beer} на {venue} (у базі, не в черзі)",
+        "nov_event_new": "{user}: {beer} на {venue}",
+        "nov_event_had_suffix": " (вже пив)",
+        "nov_venue_fallback": "локації",
+        "nov_open_on_map": "📍 Відкрити на карті",
+    },
+}
+
+for _lang, _values in APP_STRINGS.items():
+    STRINGS.setdefault(_lang, {}).update(_values)
+
+
 STRINGS["ru"] = STRINGS["uk"]
 
 
@@ -467,3 +558,11 @@ def t(lang_code: str, key: str, **kwargs) -> str:
     strings = STRINGS.get(lang, STRINGS["en"])
     template = strings.get(key, STRINGS["en"].get(key, key))
     return template.format(**kwargs) if kwargs else template
+
+
+def app_strings(lang_code: str | None) -> dict:
+    """Every "app_" string for the Mini App in `lang_code`, English filling
+    any gap - the whole table is sent once per Mini App open."""
+    lang = lang_code[:2].lower() if lang_code else "en"
+    merged = {**STRINGS["en"], **STRINGS.get(lang, {})}
+    return {k: v for k, v in merged.items() if k.startswith("app_")}

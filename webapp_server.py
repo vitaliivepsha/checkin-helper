@@ -37,6 +37,7 @@ import festival_map
 import festival_mode
 import maintenance_mode
 import festival_watch
+import i18n
 import foursquare
 import feature_flags
 import group_festivals
@@ -2627,6 +2628,20 @@ async def handle_autotoast_remove_target(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "removed": removed})
 
 
+async def handle_i18n_get(request: web.Request) -> web.Response:
+    """The Mini App's translation table in the viewer's own language (their
+    Telegram client's language_code - the one signal that's per-user rather
+    than per-deployment). Also remembers it for server-pushed messages."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    tg_user = init_data.get("user") or {}
+    code = tg_user.get("language_code")
+    if tg_user.get("id") and code:
+        await user_tokens.set_language(tg_user["id"], code[:2].lower())
+    return web.json_response({"lang": (code or "en")[:2].lower(), "strings": i18n.app_strings(code)})
+
+
 async def handle_festival_watch_get(request: web.Request) -> web.Response:
     """Current festival-watch config for the "🆕 Новинки" screen - never
     needs an Untappd token, festival_watch.py never calls Untappd itself."""
@@ -2808,6 +2823,7 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/autotoast/toggle", handle_autotoast_toggle)
     app.router.add_post("/api/checkin/autotoast/set_targets", handle_autotoast_set_targets)
     app.router.add_post("/api/checkin/autotoast/remove_target", handle_autotoast_remove_target)
+    app.router.add_post("/api/checkin/i18n", handle_i18n_get)
     app.router.add_post("/api/checkin/festival_watch/get", handle_festival_watch_get)
     app.router.add_post("/api/checkin/festival_watch/set_location", handle_festival_watch_set_location)
     app.router.add_post("/api/checkin/festival_watch/add_extra_venue", handle_festival_watch_add_extra_venue)
@@ -3592,10 +3608,10 @@ async def _check_festival_novelty(owner_id: int, items: list[dict]) -> None:
         if not festival_watch.is_within(lat, lng, watch["lat"], watch["lng"], watch["radiusMeters"]):
             continue
         candidates.append(item)
-    await _notify_festival_novelty(owner_id, candidates, watch.get("label") or "локації")
+    await _notify_festival_novelty(owner_id, candidates, watch.get("label"))
 
 
-async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label_fallback: str) -> None:
+async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label_fallback: str | None) -> None:
     """Shared tail for both novelty sources (_check_festival_novelty's
     friends-only/radius path and _festival_watch_venue_loop's venue-checkins
     path) - `items` must already be exactly the candidates worth notifying
@@ -3620,6 +3636,10 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
         return
     known_beer_ids = _all_festival_beer_ids()
     notify_listed = (await festival_watch.get_config(owner_id))["notifyListedBeers"]
+    # The owner's last-seen language (set when they open the Mini App);
+    # "uk" until they ever have, which is what these messages always were.
+    lang = await user_tokens.get_language(owner_id) or "uk"
+    venue_label_fallback = venue_label_fallback or i18n.t(lang, "nov_venue_fallback")
     for item in items:
         if not _festival_novelty_first_sight(owner_id, item.get("checkin_id")):
             continue  # already handled via the other novelty source
@@ -3664,11 +3684,11 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
             if not notify_listed:
                 continue  # opted out of "on the list, not queued yet" pings (see set_notify_listed)
             # rule 2: known festival beer, just not queued yet.
-            text = (
-                f"📋 👤 {profile_link} щойно зачекінив(-ла) 🍺 {beer_link} ({brewery_link}) "
-                f"на 📍 {venue_link} — це пиво є в базі фестивалю, але ще не в черзі!"
+            text = i18n.t(
+                lang, "nov_listed",
+                profile=profile_link, beer=beer_link, brewery=brewery_link, venue=venue_link,
             )
-            event_text = f"{username}: {beer_name} на {venue_name} (у базі, не в черзі)"
+            event_text = i18n.t(lang, "nov_event_listed", user=username, beer=beer_name, venue=venue_name)
         else:
             # rule 3: genuine novelty, off the static list entirely - note
             # when the OWNER (the one receiving this DM) has already had
@@ -3677,12 +3697,14 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
             if bid is not None:
                 had = await had_it_index.lookup_had_it(owner_id, bid)
                 already_had = bool(had and had.get("hadIt"))
-            had_note = " ✅ (ти вже це пив)" if already_had else " ❌ (ще не пив)"
-            text = (
-                f"🆕 👤 {profile_link} щойно зачекінив(-ла) 🍺 {beer_link} ({brewery_link}) "
-                f"на 📍 {venue_link} — цього пива нема в базі фестивалю!{had_note}"
+            had_note = i18n.t(lang, "nov_had_yes" if already_had else "nov_had_no")
+            text = i18n.t(
+                lang, "nov_new",
+                profile=profile_link, beer=beer_link, brewery=brewery_link, venue=venue_link, had=had_note,
             )
-            event_text = f"{username}: {beer_name} на {venue_name}" + (" (вже пив)" if already_had else "")
+            event_text = i18n.t(lang, "nov_event_new", user=username, beer=beer_name, venue=venue_name) + (
+                i18n.t(lang, "nov_event_had_suffix") if already_had else ""
+            )
 
             # Even though THIS beer isn't in the festival's list, its credited
             # brewery (or whichever real stand it aliases to - see
@@ -3701,7 +3723,7 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
                         f"?mapZone={quote(zone)}&mapBrewery={quote(stand_brewery)}"
                     )
                     reply_markup = InlineKeyboardMarkup(
-                        [[InlineKeyboardButton("📍 Відкрити на карті", web_app=WebAppInfo(url=map_url))]]
+                        [[InlineKeyboardButton(i18n.t(lang, "nov_open_on_map"), web_app=WebAppInfo(url=map_url))]]
                     )
 
         await event_log.add_event(
@@ -4200,7 +4222,7 @@ async def _festival_watch_venue_loop() -> None:
                         it for it in items
                         if ((it.get("user") or {}).get("user_name") or "").lower() != own_username_lower
                     ]
-                    await _notify_festival_novelty(owner_id, candidates, target["venueName"] or "локації")
+                    await _notify_festival_novelty(owner_id, candidates, target["venueName"])
                     await festival_watch.record_venue_tick(owner_id, newest_id)
                 except untappd_mcp.UntappdRateLimited:
                     break  # this tick's shared DIRECT_TOKEN quota is spent - skip remaining targets, retry next tick
@@ -4295,7 +4317,7 @@ async def _scrape_extra_venue(job: dict, fetched: dict[int, list[dict]]) -> None
             it for it in items
             if it["checkin_id"] > cursor and it["user"]["user_name"].lower() != own_username_lower
         ]
-        await _notify_festival_novelty(owner_id, candidates, job["venueName"] or "локації")
+        await _notify_festival_novelty(owner_id, candidates, job["venueName"])
     await festival_watch.record_extra_venue_tick(owner_id, venue_id, max(newest_id, cursor or 0))
 
 

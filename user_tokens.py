@@ -95,3 +95,21 @@ async def set_last_venue(user_id: int, venue: dict) -> None:
             return  # no registered profile to attach this to
         entry["last_venue"] = venue
         _save(data)
+
+
+async def set_language(user_id: int, lang: str) -> None:
+    """Last language the user's Telegram client reported (Mini App open) -
+    so server-pushed messages (webapp_server._notify_festival_novelty) reach
+    them in their own language. Only for registered profiles."""
+    async with _lock:
+        data = _load()
+        entry = data.get(str(user_id))
+        if entry is None or entry.get("lang") == lang:
+            return
+        entry["lang"] = lang
+        _save(data)
+
+
+async def get_language(user_id: int) -> str | None:
+    profile = await get_profile(user_id)
+    return (profile or {}).get("lang")

@@ -236,8 +236,8 @@
 </div>
 
 <div id="screen-pending-checkins" class="screen">
-  <button class="back-btn" data-back="search">Назад</button>
-  <h2>Відкладені чекіни</h2>
+  <button class="back-btn" data-back="search" data-i18n="app_back"></button>
+  <h2 data-i18n="app_pending_title"></h2>
   <div id="pending-checkins-status" class="hint"></div>
   <div id="pending-checkins-list" class="results"></div>
 </div>
@@ -295,9 +295,9 @@
     <input id="festival-watch-radius-input" type="number" min="50" max="5000" step="50" value="500">
   </div>
   <div id="festival-watch-extra-block">
-    <div class="hint">Додаткові локації (напр. сусідні адреси) — перевіряються раз на кілька хвилин</div>
+    <div class="hint" data-i18n="app_watch_extra_hint"></div>
     <div id="festival-watch-extra-list"></div>
-    <input id="festival-watch-extra-search-input" type="text" placeholder="Додати локацію за назвою…" autocomplete="off">
+    <input id="festival-watch-extra-search-input" type="text" data-i18n-placeholder="app_watch_extra_placeholder" autocomplete="off">
     <div id="festival-watch-extra-search-results" class="venue-list hidden"></div>
   </div>
   <label class="checkbox-label">
@@ -639,7 +639,7 @@
       <svg class="icon"><use href="#icon-refresh"/></svg>
       <span class="nav-badge" id="pending-checkins-count">0</span>
     </span>
-    <span class="nav-label">Відкладені</span>
+    <span class="nav-label" data-i18n="app_pending_nav"></span>
   </button>
   <button id="badges-bar-btn" class="nav-tab">
     <svg class="icon"><use href="#icon-award"/></svg>

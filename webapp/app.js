@@ -433,6 +433,27 @@
     return { ok: resp.ok, status: resp.status, data };
   }
 
+  // ---- UI strings in the viewer's own language ----
+  // The table comes from the server (i18n.py's "app_" keys, picked by this
+  // Telegram client's language_code) - never hardcode user-facing text in
+  // this file; add a key to i18n.py for every language instead. Static HTML
+  // text uses data-i18n / data-i18n-placeholder, filled in by loadI18n.
+  let I18N = {};
+  function T(key, params) {
+    let text = I18N[key] != null ? I18N[key] : key;
+    if (params) {
+      Object.keys(params).forEach((k) => { text = text.split(`{${k}}`).join(params[k]); });
+    }
+    return text;
+  }
+  async function loadI18n() {
+    const { ok, data } = await apiPost("/api/checkin/i18n", {});
+    if (ok && data.strings) I18N = data.strings;
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = T(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = T(el.dataset.i18nPlaceholder); });
+  }
+  const i18nReady = loadI18n();
+
   // ---- Shared queue (solves "which beer is in which glass / who brought what") ----
   // Server-backed so the whole group sees the same list on every phone.
 
@@ -486,7 +507,7 @@
   // just waiting on a manual retry. Tapping it jumps straight there.
   function pendingForMeBadgeHtml(beer) {
     return beer.pendingForMe
-      ? `<span class="badge badge-pending" title="Вже збережено у Відкладені">${ICON_REFRESH}</span>`
+      ? `<span class="badge badge-pending" title="${escapeHtml(T("app_pending_badge_title"))}">${ICON_REFRESH}</span>`
       : "";
   }
 
@@ -882,7 +903,7 @@
         // the queue's own "Очистити всю чергу?" - this one-tap "x" has no
         // selection step in front of it (unlike the bulk selection-delete
         // flow below), so it's the one most prone to an accidental tap.
-        const msg = `Прибрати "${btn.dataset.name}" зі списку?`;
+        const msg = T("app_wishlist_remove_confirm", { name: btn.dataset.name });
         if (tg && tg.showConfirm) {
           tg.showConfirm(msg, (confirmed) => { if (confirmed) doRemove(); });
         } else if (confirm(msg)) {
@@ -929,7 +950,7 @@
 
   async function fetchPendingCheckins() {
     $("pending-checkins-list").innerHTML = "";
-    $("pending-checkins-status").textContent = "Завантажую…";
+    $("pending-checkins-status").textContent = T("app_loading");
     const { ok, data } = await apiPost("/api/checkin/pending/list", {});
     state.pendingCheckins = ok ? (data.items || []) : [];
     renderPendingCheckinsList();
@@ -942,16 +963,16 @@
     $("pending-checkins-bar-btn").classList.toggle("hidden", items.length === 0);
   }
 
-  const PENDING_FAIL_REASON_LABEL = {
-    rate_limited: "Untappd тимчасово обмежив запити",
-    checkin_failed: "Не вдалося з'єднатися з Untappd",
+  const PENDING_FAIL_REASON_KEY = {
+    rate_limited: "app_pending_reason_rate_limited",
+    checkin_failed: "app_pending_reason_checkin_failed",
   };
 
   function renderPendingCheckinsList() {
     const listEl = $("pending-checkins-list");
     listEl.innerHTML = "";
     $("pending-checkins-status").textContent = state.pendingCheckins.length
-      ? "" : "Немає відкладених чекінів.";
+      ? "" : T("app_pending_empty");
     state.pendingCheckins.forEach((item) => {
       const row = document.createElement("div");
       row.className = "result-row";
@@ -963,16 +984,16 @@
           <div class="hint">
             ${item.rating ? `★ ${item.rating}` : ""}${item.venueName ? ` · 📍 ${escapeHtml(item.venueName)}` : ""}
           </div>
-          <div class="hint pending-fail-reason">${escapeHtml(PENDING_FAIL_REASON_LABEL[item.failReason] || "Не вдалося зачекінити")}</div>
+          <div class="hint pending-fail-reason">${escapeHtml(T(PENDING_FAIL_REASON_KEY[item.failReason] || "app_pending_reason_default"))}</div>
         </div>
         <div class="row-actions pending-checkin-actions">
-          <button class="pending-retry-btn" data-id="${item.id}">${ICON_REFRESH} Ще раз</button>
+          <button class="pending-retry-btn" data-id="${item.id}">${ICON_REFRESH} ${escapeHtml(T("app_pending_retry"))}</button>
           <button class="wishlist-remove-btn" data-id="${item.id}" data-name="${escapeHtml(item.beerName || "")}">${ICON_CLOSE}</button>
         </div>`;
       row.querySelector(".pending-retry-btn").addEventListener("click", async (e) => {
         const btn = e.currentTarget;
         btn.disabled = true;
-        btn.textContent = "Чекіню…";
+        btn.textContent = T("app_pending_retrying");
         const { ok, data } = await apiPost("/api/checkin/pending/retry", { id: item.id });
         if (ok && data.ok) {
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
@@ -981,8 +1002,8 @@
           updatePendingCheckinsCountOnly();
         } else {
           btn.disabled = false;
-          btn.innerHTML = `${ICON_REFRESH} Ще раз`;
-          row.querySelector(".pending-fail-reason").textContent = "Не вдалося — спробуй пізніше.";
+          btn.innerHTML = `${ICON_REFRESH} ${escapeHtml(T("app_pending_retry"))}`;
+          row.querySelector(".pending-fail-reason").textContent = T("app_pending_retry_failed");
         }
       });
       row.querySelector(".wishlist-remove-btn").addEventListener("click", (e) => {
@@ -993,7 +1014,7 @@
           renderPendingCheckinsList();
           updatePendingCheckinsCountOnly();
         };
-        const msg = `Прибрати "${item.beerName}" з відкладених чекінів?`;
+        const msg = T("app_pending_remove_confirm", { name: item.beerName });
         if (tg && tg.showConfirm) {
           tg.showConfirm(msg, (confirmed) => { if (confirmed) doRemove(); });
         } else if (confirm(msg)) {
@@ -1851,7 +1872,7 @@
     // until the next submit.
     const confirmBtn = $("to-confirm-btn");
     confirmBtn.disabled = false;
-    confirmBtn.innerHTML = `${ICON_CHECK} Чекінити`;
+    confirmBtn.innerHTML = `${ICON_CHECK} ${escapeHtml(T("app_checkin_btn"))}`;
     $("submit-status").textContent = "";
     showScreen("rate");
   }
@@ -2090,8 +2111,8 @@
       // data.ok branch below - handle_submit sets data.ok=true on this
       // response too (the HTTP round-trip itself succeeded), so pending
       // must win the check or it's indistinguishable from a real check-in.
-      btn.innerHTML = `${ICON_REFRESH} Збережено`;
-      $("submit-status").textContent = "Untappd зараз недоступний — зберіг чекін, спробуєш пізніше у «Відкладені».";
+      btn.innerHTML = `${ICON_REFRESH} ${escapeHtml(T("app_saved"))}`;
+      $("submit-status").textContent = T("app_submit_pending_status");
       updatePendingCheckinsCountOnly();
 
       setTimeout(() => {
@@ -2250,7 +2271,7 @@
     const hintEl = $("festival-watch-venue-hint");
     hintEl.classList.toggle("hidden", !venueMode);
     if (venueMode) {
-      hintEl.innerHTML = `<svg class="icon"><use href="#icon-pin"/></svg> Прив'язано до "${escapeHtml(data.venueName || "цієї локації")}" на Untappd — бачить усіх, хто там чекіниться. Друзі в межах радіуса ловляться окремо, навіть в іншій локації.`;
+      hintEl.innerHTML = `<svg class="icon"><use href="#icon-pin"/></svg> ${escapeHtml(T("app_watch_venue_hint", { venue: data.venueName || T("app_watch_this_venue") }))}`;
     }
     const extrasEl = $("festival-watch-extra-list");
     extrasEl.innerHTML = "";
@@ -2258,7 +2279,7 @@
       const card = document.createElement("div");
       card.className = "venue-selected-card";
       card.innerHTML = `${ICON_PIN} <span>${escapeHtml(v.venueName || String(v.venueId))}</span>
-        <button class="queue-remove-btn" aria-label="Прибрати">${ICON_CLOSE}</button>`;
+        <button class="queue-remove-btn" aria-label="${escapeHtml(T("app_remove"))}">${ICON_CLOSE}</button>`;
       card.querySelector("button").addEventListener("click", async () => {
         await apiPost("/api/checkin/festival_watch/remove_extra_venue", { venueId: v.venueId });
         await fetchFestivalWatch();
@@ -2410,11 +2431,11 @@
           });
           if (!res.ok) {
             const err = res.data && res.data.error;
-            alert(err === "venue_not_found"
-              ? "Цієї локації ще немає в Untappd — не додано."
+            alert(T(err === "venue_not_found"
+              ? "app_watch_extra_not_found"
               : err === "already_listed_or_full"
-                ? "Ця локація вже в списку (або список заповнений)."
-                : "Не вдалося додати локацію — спробуй пізніше.");
+                ? "app_watch_extra_duplicate"
+                : "app_watch_extra_failed"));
             return;
           }
           listEl.classList.add("hidden");
@@ -2828,7 +2849,7 @@
         <div class="perimeter-left"></div>
         <div class="perimeter-mid">
           <div class="map-islands"></div>
-          <button type="button" class="map-island-add-btn">+ Острівець</button>
+          <button type="button" class="map-island-add-btn">${escapeHtml(T("app_map_add_island"))}</button>
           ${ICON_BEER}
         </div>
         <div class="perimeter-right"></div>
@@ -2888,6 +2909,16 @@
     "Spyglass Brewing Company": "Spyglass",
     "TankBusters.Co": "TankBusters",
     "Calderona Lagers by Sáez & Son": "Sáez & Son",
+    "Browar Bednary": "Bednary",
+    "Browar Sulewski": "Sulewski",
+    "Browar Wielka Sowa": "Wielka Sowa",
+    "Browar Brokreacja": "Brokreacja",
+    "Browar Nieczajna": "Nieczajna",
+    "Browar Warszawski": "Warszawski",
+    "Browar Bałtów": "Bałtów",
+    "Browar Kingpin": "Kingpin",
+    "Browar Monsters": "Monsters",
+    "Sick Boy Brewing": "Sick Boy",
   };
 
   function makeBreweryPill(brewery, draggable) {
@@ -3820,16 +3851,16 @@
     $(wrapId).classList.remove("hidden");
   }
 
-  apiPost("/api/checkin/usage", {}).then(({ ok, data }) => {
+  Promise.all([apiPost("/api/checkin/usage", {}), i18nReady]).then(([{ ok, data }]) => {
     if (ok && data.remaining != null) {
-      renderUsageBadge("usage-wrap", "usage-badge", "usage-ring-fill", data.remaining, data.limit, "запитів API");
+      renderUsageBadge("usage-wrap", "usage-badge", "usage-ring-fill", data.remaining, data.limit, T("app_usage_api"));
     }
     // Owner-only (see handle_usage) - the separate direct-Untappd-API quota
     // background sync loops fall back to, absent for every other viewer.
     if (ok && data.directUsage && data.directUsage.remaining != null) {
       renderUsageBadge(
         "direct-usage-wrap", "direct-usage-badge", "direct-usage-ring-fill",
-        data.directUsage.remaining, data.directUsage.limit, "прямих запитів",
+        data.directUsage.remaining, data.directUsage.limit, T("app_usage_direct"),
       );
     }
     if (ok && data.lastVenue) {
