@@ -32,6 +32,25 @@ Telegram бот для розпізнавання пива на фото та п
 виправлення матчера). У userscript власний кеш на 6 годин; кнопка оновлення
 на сторінці його скидає.
 
+**Щоденний обхід магазинів лінзи** (`shop_crawl.py`, цикл `_shop_crawl_loop`).
+Раз на добу бот сам обходить сайти, які підтримує userscript — `hoptimaal.com`
+(Shopify `products.json`), `piwnemosty.pl` (категорія "Piwo kraftowe",
+`?counter=N`, ~50 сторінок), `hopincraftbier.be` (`/products`) і таплісти
+`*.ontap.pl` (змінна `SHOP_CRAWL_ONTAP_VENUES`, за замовчуванням
+`pinta-wroclaw`) — витягує пари (пивоварня, назва) тим самим способом, що й
+userscript, і прогонює їх через той самий резолвер, записуючи результат у
+`lens_log` (`source="crawl"`: лічильник `crawlSeen`, а не `count`, тож товари,
+які ви реально відкривали, лишаються вищими в `unmatched`). За прохід
+резолвиться до `SHOP_CRAWL_MAX_RESOLVES`=600 товарів: спершу ті, що лишались
+незнайденими (могли виправитись), потім нові, потім знайдені понад 14 днів
+тому. Жодних токенів LLM і квоти Untappd (пошук — публічний індекс).
+`onemorebeer.pl` не обходиться: каталог малюється клієнтським JS (мінімізований
+Nuxt-стан), потрібен браузер. Кожен магазин ізольований — збій одного (чи зміна
+верстки: `items: 0` і текст помилки) видно в `/api/lens/report` → `crawl`, але
+він не зупиняє інші. Запустити негайно (напр. після виправлення матчера):
+`curl -X POST -H "X-Lens-Token: $LENS_API_TOKEN" <origin>/api/lens/crawl`
+(фоном, 202; 409 якщо вже йде). Стан обходу — `shop_crawl_state.json`.
+
 **Публічна карта фестивалю.** `GET /map` (`PUBLIC_BASE_URL` + `/map`, опційно
 `?fest=<ключ із festivals.json>` і deep link `?mapZone=…&mapBrewery=…`) —
 той самий `index.html`/`app.js` у read-only режимі (`window.PUBLIC_MAP`, клас

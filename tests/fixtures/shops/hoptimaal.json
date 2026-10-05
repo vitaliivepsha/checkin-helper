@@ -1,0 +1,40 @@
+{
+ "products": [
+  {
+   "title": "Sparkle ✨ Nectaron Paradise ✧ Galaxy",
+   "vendor": "Sparkle ✨",
+   "product_type": "Blik",
+   "handle": "sparkle-nectaron-paradise-galaxy"
+  },
+  {
+   "title": "Sparkle ✨ Hazy Livin’",
+   "vendor": "Sparkle ✨",
+   "product_type": "Blik",
+   "handle": "sparkle-hazy-livin"
+  },
+  {
+   "title": "Sparkle ✨ Edge of Light",
+   "vendor": "Sparkle ✨",
+   "product_type": "Blik",
+   "handle": "sparkle-edge-of-light"
+  },
+  {
+   "title": "Hoppy Road TRIPPIN' (2026) - Triple NEIPA",
+   "vendor": "Hoppy Road",
+   "product_type": "Blik",
+   "handle": "hoppy-road-trippin-2026-triple-neipa"
+  },
+  {
+   "title": "Hoppy Road BRUTAL MONKEY - Double NEIPA",
+   "vendor": "Hoppy Road",
+   "product_type": "Blik",
+   "handle": "hoppy-road-brutal-monkey-double-neipa"
+  },
+  {
+   "title": "Hoppy Road COSMIC RAPTOR - Triple",
+   "vendor": "Hoppy Road",
+   "product_type": "",
+   "handle": "hoppy-road-cosmic-raptor-triple"
+  }
+ ]
+}

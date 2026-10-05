@@ -54,7 +54,9 @@ import venue_index
 import special_badge_dismissals
 import pending_checkins
 import wishlist_items
+import httpx
 import lens_log
+import shop_crawl
 import wishlist_sheets
 
 logger = logging.getLogger(__name__)
@@ -2140,7 +2142,23 @@ async def handle_lens_report(request: web.Request) -> web.Response:
         limit = max(1, min(200, int(request.query.get("limit", "50"))))
     except ValueError:
         limit = 50
-    return web.json_response(await lens_log.report(limit))
+    report = await lens_log.report(limit)
+    report["crawl"] = {**shop_crawl.load_state(), "running": _shop_crawl_running}
+    return web.json_response(report)
+
+
+async def handle_lens_crawl(request: web.Request) -> web.Response:
+    """Starts the shop crawl now (same X-Lens-Token) instead of waiting for
+    the daily run - e.g. right after a matcher fix, to re-resolve what was
+    unmatched. Runs in the background; progress shows up in /api/lens/report
+    under "crawl"."""
+    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+        return _json_error("unauthorized", 401)
+    if _shop_crawl_running:
+        return _json_error("already_running", 409)
+    global _shop_crawl_manual_task
+    _shop_crawl_manual_task = asyncio.create_task(_run_shop_crawl())
+    return web.json_response({"ok": True, "started": True}, status=202)
 
 
 async def handle_deploy_webhook(request: web.Request) -> web.Response:
@@ -3042,6 +3060,7 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/style_info", handle_style_info)
     app.router.add_post("/api/lens/lookup", handle_lens_lookup)
     app.router.add_get("/api/lens/report", handle_lens_report)
+    app.router.add_post("/api/lens/crawl", handle_lens_crawl)
     app.router.add_post("/api/deploy/webhook", handle_deploy_webhook)
     app.router.add_post("/api/checkin/festival/list", handle_festival_list)
     app.router.add_post("/api/checkin/festival/switch", handle_festival_switch)
@@ -3187,6 +3206,7 @@ async def start_webapp_server(
         wishlist_sheets.init(data_dir)
         wishlist_items.init(data_dir)
         lens_log.init(data_dir)
+        shop_crawl.init(data_dir)
         pending_checkins.init(data_dir)
         special_badge_dismissals.init(data_dir)
     port = int(os.environ.get("PORT", 8080))
@@ -3203,6 +3223,7 @@ async def start_webapp_server(
         _start_comment_watch()
         _start_festival_watch_venue()
         _start_festival_watch_scrape()
+        _start_shop_crawl()
         _start_badge_index_sync()
         _start_special_badges_sync()
 
@@ -4516,6 +4537,112 @@ async def _scrape_extra_venue(job: dict, fetched: dict[int, list[dict]]) -> None
         ]
         await _notify_festival_novelty(owner_id, candidates, job["venueName"])
     await festival_watch.record_extra_venue_tick(owner_id, venue_id, max(newest_id, cursor or 0))
+
+
+# Daily crawl of the lens-supported shops into lens_log (see shop_crawl.py).
+SHOP_CRAWL_INTERVAL_SECONDS = float(os.environ.get("SHOP_CRAWL_INTERVAL_SECONDS", str(24 * 3600)))
+SHOP_CRAWL_STARTUP_DELAY_SECONDS = float(os.environ.get("SHOP_CRAWL_STARTUP_DELAY_SECONDS", "600"))
+SHOP_CRAWL_MAX_RESOLVES = int(os.environ.get("SHOP_CRAWL_MAX_RESOLVES", "600"))  # per run; the rest waits for the next one
+SHOP_CRAWL_BATCH_SIZE = 50
+_shop_crawl_task = None
+_shop_crawl_manual_task = None  # keeps the create_task result alive (avoid GC)
+_shop_crawl_running = False
+
+
+def _start_shop_crawl() -> None:
+    global _shop_crawl_task
+    if _shop_crawl_task and not _shop_crawl_task.done():
+        return
+    _shop_crawl_task = asyncio.create_task(_shop_crawl_loop())
+
+
+async def _shop_crawl_loop() -> None:
+    await asyncio.sleep(SHOP_CRAWL_STARTUP_DELAY_SECONDS)
+    while True:
+        try:
+            wait = shop_crawl.load_state().get("lastRun", 0) + SHOP_CRAWL_INTERVAL_SECONDS - time.time()
+            if wait > 0:
+                await asyncio.sleep(wait)
+            await _run_shop_crawl()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("shop crawl failed")
+            await asyncio.sleep(3600)  # retry in an hour, never hot-loop on a persistent failure
+
+
+async def _crawl_resolve_one(token: str, owner_id: int, item: dict, sem: asyncio.Semaphore, stop: asyncio.Event):
+    """One crawled product through the same resolver the lens uses; None when
+    the run already hit a rate limit (left for the next run)."""
+    if stop.is_set():
+        return None
+    async with sem:
+        try:
+            return await beer_match.resolve_beer(
+                token, owner_id, item["name"], item["brewery"], need_country=False, live_fallback=False,
+            )
+        except untappd_mcp.UntappdRateLimited:
+            stop.set()
+            return None
+        except untappd_mcp.UntappdMCPError as exc:
+            logger.warning("shop crawl: lookup failed for %r %r: %s", item["brewery"], item["name"], exc)
+        except Exception:
+            logger.exception("shop crawl: unexpected error for %r %r", item["brewery"], item["name"])
+        return {"matched": False, "candidates": [], "error": True}
+
+
+async def _run_shop_crawl() -> dict:
+    """Crawls every supported shop, then resolves the products worth a look
+    (unmatched, new, or stale - see lens_log.due_for_crawl), at most
+    SHOP_CRAWL_MAX_RESOLVES per run, recording each outcome in lens_log.
+    Costs no tokens and no Untappd API quota (search_beers is the free search
+    index, same as the lens)."""
+    global _shop_crawl_running
+    if _shop_crawl_running:
+        return {}
+    _shop_crawl_running = True
+    state = {"lastRun": int(time.time()), "running": True, "shops": {}}
+    shop_crawl.save_state(state)
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=25) as client:
+            get_text, get_json = shop_crawl.make_http_getters(client)
+            crawl = await shop_crawl.crawl_shops(get_text, get_json)
+        state["shops"] = shop_crawl.summarize(crawl)
+        items = shop_crawl.dedupe([it for r in crawl.values() for it in r["items"]])
+        state["products"] = len(items)
+
+        owner_id = int(AUTO_TOAST_OWNER_ID) if AUTO_TOAST_OWNER_ID else None
+        token = await user_tokens.get_token(owner_id) if owner_id else None
+        resolved = 0
+        todo: list[dict] = []
+        if token:
+            due = await lens_log.due_for_crawl(items)
+            todo = due[:SHOP_CRAWL_MAX_RESOLVES]
+            state["deferred"] = len(due) - len(todo)
+            sem, stop = asyncio.Semaphore(2), asyncio.Event()
+            for i in range(0, len(todo), SHOP_CRAWL_BATCH_SIZE):
+                batch = todo[i:i + SHOP_CRAWL_BATCH_SIZE]
+                results = await asyncio.gather(*(_crawl_resolve_one(token, owner_id, it, sem, stop) for it in batch))
+                done = [(it, r) for it, r in zip(batch, results) if r is not None]
+                if done:
+                    await lens_log.record([d[0] for d in done], [d[1] for d in done], source="crawl")
+                    resolved += len(done)
+                if stop.is_set():
+                    state["stoppedEarly"] = "rate_limited"
+                    break
+                await asyncio.sleep(1)
+        else:
+            state["skipped"] = "no owner Untappd token - products listed but not resolved"
+        todo_keys = {(it["brewery"].lower(), it["name"].lower()) for it in todo}
+        await lens_log.mark_crawled([it for it in items if (it["brewery"].lower(), it["name"].lower()) not in todo_keys])
+        state["resolved"] = resolved
+        logger.info("shop crawl: %d products, %d resolved, shops=%s", len(items), resolved, state["shops"])
+    finally:
+        state["running"] = False
+        state["finishedAt"] = int(time.time())
+        shop_crawl.save_state(state)
+        _shop_crawl_running = False
+    return state
 
 
 def _start_badge_index_sync() -> None:

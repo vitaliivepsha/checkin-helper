@@ -21,6 +21,7 @@ festival_mode.json
 wishlist_items.json
 pending_checkins.json
 lens_log.json
+shop_crawl_state.json
 badge_index_sync.json
 group_membership.json
 group_festivals.json

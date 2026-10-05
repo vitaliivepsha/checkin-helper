@@ -27,7 +27,8 @@ import beer_match
 _path: str | None = None
 _lock = asyncio.Lock()
 _mirror: dict | None = None
-MAX_ENTRIES = 5000
+MAX_ENTRIES = 20000
+STALE_AFTER_SECONDS = 14 * 24 * 3600  # re-check a product that matched this long ago
 MAX_CANDIDATES_KEPT = 5
 # Matches at least this many words apart from the shop title are worth a look.
 SUSPICIOUS_DELTA = 3
@@ -74,9 +75,12 @@ def _outcome(result: dict) -> str:
     return "ambiguous" if result.get("candidates") else "no_results"
 
 
-async def record(items: list, results: list[dict]) -> None:
+async def record(items: list, results: list[dict], source: str = "lens") -> None:
     """items[i] is the {name, brewery} the shop page sent, results[i] what the
-    lookup returned for it (same order)."""
+    lookup returned for it (same order). source "lens" = a real page view
+    (counts toward `count`, i.e. someone looked at it); "crawl" = the daily
+    shop crawl (counts toward `crawlSeen` only), so products people actually
+    open rank above ones only the crawler has seen."""
     now = int(time.time())
     async with _lock:
         data = _load()
@@ -93,7 +97,7 @@ async def record(items: list, results: list[dict]) -> None:
                 match_kind, delta = beer_match.classify_match(name, brewery, result.get("name") or "")
             entry = data.get(_key(brewery, name))
             if entry is None:
-                entry = data[_key(brewery, name)] = {"count": 0, "firstSeen": now}
+                entry = data[_key(brewery, name)] = {"count": 0, "crawlSeen": 0, "firstSeen": now}
             elif entry.get("outcome") != outcome or entry.get("bid") != result.get("bid"):
                 entry["previous"] = {"outcome": entry.get("outcome"), "bid": entry.get("bid"), "until": now}
             entry.update({
@@ -103,13 +107,55 @@ async def record(items: list, results: list[dict]) -> None:
                 "matchedName": result.get("name") if outcome == "matched" else None,
                 "matchedBrewery": result.get("brewery") if outcome == "matched" else None,
                 "candidates": [c.get("name") for c in (result.get("candidates") or [])[:MAX_CANDIDATES_KEPT]],
-                "lastSeen": now,
+                "lastSeen": now, "resolvedAt": now,
             })
-            entry["count"] = entry.get("count", 0) + 1
+            if source == "crawl":
+                entry["crawlSeen"] = entry.get("crawlSeen", 0) + 1
+                entry["lastCrawl"] = now
+            else:
+                entry["count"] = entry.get("count", 0) + 1
+            shop = item.get("shop")
+            if shop and shop not in entry.setdefault("shops", []) and len(entry["shops"]) < 3:
+                entry["shops"].append(shop)
         if len(data) > MAX_ENTRIES:
             for k in sorted(data, key=lambda k: data[k].get("lastSeen", 0))[: len(data) - MAX_ENTRIES]:
                 del data[k]
         _save()
+
+
+async def due_for_crawl(items: list[dict]) -> list[dict]:
+    """The subset of crawled products worth resolving now, most useful first:
+    products still unmatched (they may have been fixed since), then new ones,
+    then matched ones not re-checked for STALE_AFTER_SECONDS."""
+    now = int(time.time())
+    async with _lock:
+        data = _load()
+        buckets: tuple[list, list, list] = ([], [], [])
+        for item in items:
+            entry = data.get(_key(item.get("brewery") or "", item.get("name") or ""))
+            if entry is None:
+                buckets[1].append(item)
+            elif entry.get("outcome") != "matched":
+                buckets[0].append(item)
+            elif now - entry.get("resolvedAt", 0) > STALE_AFTER_SECONDS:
+                buckets[2].append(item)
+    return buckets[0] + buckets[1] + buckets[2]
+
+
+async def mark_crawled(items: list[dict]) -> None:
+    """Products the crawl saw again but didn't need to re-resolve."""
+    now = int(time.time())
+    async with _lock:
+        data = _load()
+        touched = False
+        for item in items:
+            entry = data.get(_key(item.get("brewery") or "", item.get("name") or ""))
+            if entry is not None:
+                entry["crawlSeen"] = entry.get("crawlSeen", 0) + 1
+                entry["lastCrawl"] = entry["lastSeen"] = now
+                touched = True
+        if touched:
+            _save()
 
 
 async def report(limit: int = 50) -> dict:
@@ -129,12 +175,12 @@ async def report(limit: int = 50) -> dict:
     def brief(e: dict) -> dict:
         return {k: e.get(k) for k in (
             "queryBrewery", "queryName", "outcome", "matchKind", "delta", "bid", "matchedName",
-            "candidates", "count", "lastSeen", "previous",
+            "candidates", "count", "crawlSeen", "shops", "lastSeen", "previous",
         ) if e.get(k) not in (None, [], 0) or k in ("queryName", "queryBrewery")}
 
     unmatched = sorted(
         (e for e in entries if e["outcome"] in ("no_results", "ambiguous")),
-        key=lambda e: (-e.get("count", 0), -e.get("lastSeen", 0)),
+        key=lambda e: (-e.get("count", 0), -e.get("crawlSeen", 0), -e.get("lastSeen", 0)),
     )
     suspicious = sorted(
         (e for e in entries if e["outcome"] == "matched" and (
