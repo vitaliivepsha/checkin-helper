@@ -3097,7 +3097,11 @@
   function renderIslands(midEl, zone, islands, draggable) {
     const wrap = midEl.querySelector(".map-islands");
     wrap.innerHTML = "";
-    const entries = Object.entries(islands || {});
+    // An island whose stands were all removed (e.g. dropped from the plan)
+    // would be an empty dashed box - only editors still see it, to delete it.
+    const entries = Object.entries(islands || {}).filter(
+      ([, island]) => draggable || (island.breweries || []).some(Boolean)
+    );
     midEl.classList.toggle("has-islands", entries.length > 0);
     entries.forEach(([islandId, island]) => {
       const box = document.createElement("div");
