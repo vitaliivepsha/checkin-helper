@@ -173,3 +173,29 @@ async def test_gaps_work_inside_islands_and_reject_bad_targets(tmp_path):
     assert not await festival_map.insert_gap("wfp", "Area 9", "left", 0, ZONES)
     assert not await festival_map.insert_gap("wfp", "Area 1", "middle", 0, ZONES)
     assert not await festival_map.insert_gap("wfp", "Area 1", "left", -1, ZONES)
+
+
+async def test_an_island_keeps_a_gap_below_its_last_stand_but_a_side_does_not(tmp_path):
+    festival_map.init(str(tmp_path))
+    known = KNOWN + ["Alchemik"]
+    await layout(tmp_path, known=known)  # island isl_1: Alchemik, Brokreacja
+    assert await festival_map.insert_gap("wfp", "Area 1", "island", 2, ZONES, island_id="isl_1")
+    assert (await layout(tmp_path, known=known))["Area 1"]["islands"]["isl_1"]["breweries"] == [
+        "Alchemik", "Browar Brokreacja", None]
+    assert await festival_map.insert_gap("wfp", "Area 1", "island", 0, ZONES, island_id="isl_1")  # and above the first
+    assert (await layout(tmp_path, known=known))["Area 1"]["islands"]["isl_1"]["breweries"] == [
+        None, "Alchemik", "Browar Brokreacja", None]
+    assert await festival_map.remove_gap("wfp", "Area 1", "island", 3, ZONES, island_id="isl_1")
+    assert await festival_map.insert_gap("wfp", "Area 1", "left", 9, ZONES)  # a side: accepted, nothing stored
+    assert (await layout(tmp_path, known=known))["Area 1"]["left"] == ["Browar Bednary", "Browar Zakładowy"]
+
+
+async def test_an_island_shrinks_when_its_last_stand_leaves_but_keeps_explicit_bottom_gaps(tmp_path):
+    festival_map.init(str(tmp_path))
+    known = KNOWN + ["Alchemik"]
+    await layout(tmp_path, known=known)  # isl_1: Alchemik, Brokreacja
+    await festival_map.move_brewery("wfp", "Browar Brokreacja", "Area 2", "top", 0, ZONES)
+    assert (await layout(tmp_path, known=known))["Area 1"]["islands"]["isl_1"]["breweries"] == ["Alchemik"]
+    await festival_map.insert_gap("wfp", "Area 1", "island", 1, ZONES, island_id="isl_1")
+    await festival_map.move_brewery("wfp", "Browar Nieczajna", "Area 2", "top", 0, ZONES)  # unrelated move
+    assert (await layout(tmp_path, known=known))["Area 1"]["islands"]["isl_1"]["breweries"] == ["Alchemik", None]

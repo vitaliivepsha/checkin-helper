@@ -3732,11 +3732,13 @@
     const target = lastSide === "island"
       ? (sides.islands[lastIslandId] || {}).breweries
       : sides[lastSide];
-    if (!target || lastIndex >= target.length) {
-      renderFestivalMap(); // a gap past the last stand separates nothing
+    // Past the last stand of a perimeter side a gap separates nothing; in an
+    // island it's spacing below the last pill (mirrors festival_map.insert_gap).
+    if (!target || (lastIndex >= target.length && lastSide !== "island")) {
+      renderFestivalMap();
       return;
     }
-    target.splice(lastIndex, 0, null);
+    target.splice(Math.min(lastIndex, target.length), 0, null);
     renderFestivalMap();
     await apiPost("/api/checkin/festival_map/gap_insert", {
       zone: lastZone, side: lastSide, index: lastIndex, islandId: lastSide === "island" ? lastIslandId : null,

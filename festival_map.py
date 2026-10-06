@@ -188,14 +188,16 @@ def _island_lists(zone: dict) -> list[list[str | None]]:
 
 
 def _trim_trailing_none(loaded: dict[str, dict]) -> bool:
-    """A None past the last real entry in a side's (or island's) list
-    doesn't align with anything anymore (nothing further along to leave
-    room for) - trims it so an empty tail doesn't linger/grow forever as
-    items get moved around. Returns True if anything was actually trimmed
-    (the caller's cue to persist the change)."""
+    """A None past the last real entry in a side's list doesn't align with
+    anything anymore (nothing further along to leave room for) - trims it
+    so an empty tail doesn't linger/grow forever as items get moved around.
+    Island lists are left alone: an island is a small floating box, so a gap
+    at its bottom (like one at its top) is real spacing the editors asked
+    for. Returns True if anything was actually trimmed (the caller's cue to
+    persist the change)."""
     trimmed = False
     for zone in loaded.values():
-        for lst in [zone[side] for side in SIDES] + _island_lists(zone):
+        for lst in [zone[side] for side in SIDES]:
             while lst and lst[-1] is None:
                 lst.pop()
                 trimmed = True
@@ -495,6 +497,7 @@ async def move_brewery(
         index = max(0, index)
         claim_slot = index >= len(target) or target[index] is None
 
+        source = None
         for z in loaded.values():
             for lst in [z[s] for s in SIDES] + _island_lists(z):
                 for i, b in enumerate(lst):
@@ -503,6 +506,7 @@ async def move_brewery(
                             lst[i] = None
                         else:
                             lst.pop(i)
+                        source = lst
                         break  # a brewery only ever occupies one slot at a time
 
         if claim_slot:
@@ -512,6 +516,10 @@ async def move_brewery(
         else:
             target.insert(min(index, len(target)), brewery)
 
+        # An island a stand just left shrinks back (islands are exempt from
+        # the global trim so explicit bottom gaps survive other moves).
+        while source is not None and source is not target and source and source[-1] is None:
+            source.pop()
         _trim_trailing_none(loaded)
         all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
         _save_all(all_data)
@@ -523,7 +531,8 @@ async def insert_gap(
 ) -> bool:
     """Inserts an empty slot (a walkway / gap between stands) at `index` of
     the given side or island list, shifting everything after it. Past the
-    end there is nothing to separate, so it's a no-op that still succeeds.
+    end of a side there is nothing to separate, so it's a no-op that still
+    succeeds; past the end of an island it appends one (bottom spacing).
     False for an invalid zone/side/island."""
     return await _edit_gap(festival_key, zone, side, index, zones, island_id, insert=True)
 
@@ -557,6 +566,8 @@ async def _edit_gap(
         if insert:
             if index < len(target):
                 target.insert(index, None)
+            elif island_id is not None:
+                target.append(None)  # a gap at the bottom of an island is spacing too
         else:
             if index >= len(target) or target[index] is not None:
                 return False
