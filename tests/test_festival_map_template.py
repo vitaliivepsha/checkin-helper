@@ -114,7 +114,7 @@ async def test_a_version_bump_rebuilds_again(tmp_path):
 
 def test_the_shipped_wfp_template_is_well_formed():
     template = json.loads((Path(__file__).parent.parent / "festival_layouts" / "wfp2026.json").read_text(encoding="utf-8"))
-    assert template["version"] >= 1 and set(template["zones"]) <= {"Area 1", "Area 2", "Area 3", "Area 4"}
+    assert template["version"] >= 1 and set(template["zones"]) <= {"Area 1", "Area 2", "Area 3"}
     labels = [lab for spec in template["zones"].values()
               for key, v in spec.items() if key in ("top", "left", "right", "bottom") for lab in v]
     labels += [lab for spec in template["zones"].values() for isl in spec.get("islands", {}).values() for lab in isl["breweries"]]
