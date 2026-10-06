@@ -1058,7 +1058,7 @@ body.map-edit-mode .brewery-pill {
 /* Outline for brewery pills on the festival map - derived from --hint so
    it stays clearly visible on both the light and dark card surface. */
 body { --pill-border: color-mix(in srgb, var(--hint) 45%, transparent); }
-.perimeter-mid .icon { width: 28px; height: 28px; stroke-width: 1.6; color: var(--hint); opacity: 0.6; }
+.perimeter-mid > .icon { width: 28px; height: 28px; stroke-width: 1.6; color: var(--hint); opacity: 0.6; }
 .map-zone-label .icon { width: 14px; height: 14px; vertical-align: -2px; }
 .perimeter-mid {
   grid-area: mid;
@@ -1067,7 +1067,7 @@ body { --pill-border: color-mix(in srgb, var(--hint) 45%, transparent); }
 /* The decorative watermark icon is only useful while a zone has no
    islands yet - once it does, it'd just compete with them for the same
    small area. */
-.perimeter-mid.has-islands .icon { display: none; }
+.perimeter-mid.has-islands > .icon { display: none; } /* only the watermark, not icons inside islands */
 .map-island-add-btn { display: none; }
 body.map-edit-mode .map-island-add-btn {
   display: block;
@@ -1080,7 +1080,7 @@ body.map-edit-mode .map-island-add-btn {
    flex-wrap list, same drag/drop gesture as the 4 perimeter sides (see
    app.js's findDropTarget/onMapPillPointerUp) - just a second kind of
    target list to point at. */
-.map-islands { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.map-islands { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .map-island {
   position: relative;
   display: flex; flex-wrap: wrap; gap: 4px; max-width: 100%;
@@ -1093,7 +1093,14 @@ body.map-edit-mode .map-island-add-btn {
    precisely (not by nearest-distance, unlike the perimeter fallback) - an
    empty island would be a real box you can see but can never actually
    drop anything onto. */
-.map-island-pills { display: flex; flex-wrap: wrap; gap: 4px; min-width: 50px; min-height: 27px; }
+.map-island-pills { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 50px; min-height: 27px; }
+/* Each stand of an island is aligned on its own (left by default) - picked by the editors. */
+.map-island-pills .brewery-pill[data-align="center"] { align-self: center; }
+.map-island-pills .brewery-pill[data-align="right"] { align-self: flex-end; }
+.pill-align-icon { width: 11px; height: 11px; margin-left: 5px; vertical-align: -1px; opacity: 0.55; }
+/* A blank space between islands: invisible in the read-only map, a dashed row (with its x) for editors. */
+.map-island-spacer { position: relative; width: 100%; min-height: 22px; }
+body.map-edit-mode .map-island-spacer { border: 1px dashed var(--pill-border); border-radius: 10px; }
 .map-island-remove {
   position: absolute; top: -8px; right: -8px;
   width: 18px; height: 18px; border-radius: 50%;
@@ -1116,7 +1123,7 @@ body.map-edit-mode .map-island-add-btn {
    the target index). */
 .perimeter-row-slot { position: relative; min-height: 27px; } /* an invisible spacer (a gap) outside edit mode */
 /* In an island a gap is always a whole row - a short slot would just sit beside a short pill. */
-.map-island-pills .perimeter-gap-h { flex: 0 0 100%; }
+.map-island-pills .perimeter-gap-h { flex: 0 0 auto; align-self: stretch; }
 .perimeter-gap-remove {
   position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
   width: 18px; height: 18px; border-radius: 50%; padding: 0; cursor: pointer;

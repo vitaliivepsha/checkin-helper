@@ -2971,7 +2971,7 @@
     "Browar Monsters / Sick Boy Brewing": "Monsters/Sick Boy",
   };
 
-  function makeBreweryPill(brewery, draggable) {
+  function makeBreweryPill(brewery, draggable, islandAlign) {
     const pill = document.createElement("div");
     pill.className = "brewery-pill";
     pill.textContent = BREWERY_DISPLAY_ALIASES[brewery] || brewery;
@@ -2986,6 +2986,19 @@
       drop.appendChild(use);
       pill.prepend(drop);
       pill.title = brewery + " · " + T("app_map_water");
+    }
+    // Stands inside an island carry their own horizontal alignment (left by
+    // default); editors cycle it by tapping the pill, and the icon shows it.
+    if (islandAlign) {
+      pill.dataset.align = islandAlign;
+      if (draggable) {
+        const mark = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        mark.setAttribute("class", "icon pill-align-icon");
+        const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.setAttribute("href", `#icon-align-${islandAlign}`);
+        mark.appendChild(use);
+        pill.appendChild(mark);
+      }
     }
     // A plan stand whose menu isn't in the data yet: shown (and movable by
     // editors) but there are no beers to open.
@@ -3134,17 +3147,37 @@
     // An island whose stands were all removed (e.g. dropped from the plan)
     // would be an empty dashed box - only editors still see it, to delete it.
     const entries = Object.entries(islands || {}).filter(
-      ([, island]) => draggable || (island.breweries || []).some(Boolean)
+      ([, island]) => island.spacer || draggable || (island.breweries || []).some(Boolean)
     );
-    midEl.classList.toggle("has-islands", entries.length > 0);
+    midEl.classList.toggle("has-islands", entries.some(([, island]) => !island.spacer));
     entries.forEach(([islandId, island]) => {
+      if (island.spacer) {
+        // A blank row between islands; only editors see (and can remove) it.
+        const spacer = document.createElement("div");
+        spacer.className = "map-island-spacer";
+        spacer.dataset.islandId = islandId;
+        if (draggable) {
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "perimeter-gap-remove";
+          removeBtn.setAttribute("aria-label", T("app_map_remove_gap"));
+          removeBtn.textContent = "×";
+          removeBtn.addEventListener("click", () => deleteMapIsland(zone, islandId));
+          spacer.appendChild(removeBtn);
+        }
+        wrap.appendChild(spacer);
+        return;
+      }
       const box = document.createElement("div");
       box.className = "map-island";
       box.dataset.islandId = islandId;
       const pills = document.createElement("div");
       pills.className = "map-island-pills";
       (island.breweries || []).forEach((brewery, i) => {
-        pills.appendChild(brewery ? makeBreweryPill(brewery, draggable) : makeGapSlot(zone, "island", islandId, i, true));
+        pills.appendChild(
+          brewery ? makeBreweryPill(brewery, draggable, (island.align || {})[brewery] || "left")
+                  : makeGapSlot(zone, "island", islandId, i, true)
+        );
       });
       box.appendChild(pills);
       if (draggable) {
@@ -3587,6 +3620,11 @@
       lastIslandId: originalLoc.islandId,
       lastContainer: originalContainer,
       lastIndex: originalIndex,
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false,
+      originIsland: originalLoc.side === "island" ? originalLoc.islandId : null,
+      originZone: originalZone,
     };
     document.addEventListener("pointermove", onMapPillPointerMove);
     document.addEventListener("pointerup", onMapPillPointerUp);
@@ -3675,19 +3713,20 @@
     if (!mapDrag) return;
     mapDrag.pill.style.left = `${e.clientX}px`;
     mapDrag.pill.style.top = `${e.clientY}px`;
+    if (!mapDrag.moved && Math.hypot(e.clientX - mapDrag.startX, e.clientY - mapDrag.startY) > 6) mapDrag.moved = true;
     document.querySelectorAll(".map-zone.drag-over").forEach((el) => el.classList.remove("drag-over"));
     const target = findDropTarget(e.clientX, e.clientY);
     if (!target) return; // hovering outside any zone - leave the placeholder at its last valid slot
     target.zoneEl.classList.add("drag-over");
-    // An island's pills wrap, and a narrow island stacks them (or holds a
-    // single one) - comparing x there made "above this pill" read as "after
-    // it". Only a genuine single row of 2+ pills is a horizontal list.
-    const islandPills = target.side === "island"
-      ? [...target.sideContainer.children].filter((el) => el !== mapDrag.placeholder)
-      : [];
-    const islandIsRow = islandPills.length > 1
-      && islandPills.every((el) => Math.abs(el.getBoundingClientRect().top - islandPills[0].getBoundingClientRect().top) < 4);
-    const horizontal = target.side === "top" || target.side === "bottom" || (target.side === "island" && islandIsRow);
+    // The gap chip over an island means "space between islands": aim at the
+    // islands column (its boxes/spacers), top-to-bottom, not at the island's own stands.
+    if (mapDrag.gap && target.side === "island") {
+      target.side = "islands";
+      target.sideContainer = target.sideContainer.closest(".map-islands");
+    }
+    // Islands list their stands in a column (see .map-island-pills), so only
+    // the top/bottom perimeter rows are horizontal lists.
+    const horizontal = target.side === "top" || target.side === "bottom";
     const index = insertionIndex(target.sideContainer, e.clientX, e.clientY, mapDrag.placeholder, horizontal);
     if (target.sideContainer === mapDrag.lastContainer && index === mapDrag.lastIndex) return;
     mapDrag.lastZone = target.zone;
@@ -3716,7 +3755,7 @@
     placeholder.className = "brewery-pill-placeholder";
     mapDragActive = true;
     mapDrag = {
-      gap: true, brewery: null, pill: chip, placeholder,
+      gap: true, brewery: null, pill: chip, placeholder, startX: e.clientX, startY: e.clientY, moved: false,
       lastZone: null, lastSide: null, lastIslandId: null, lastContainer: null, lastIndex: 0,
     };
     document.addEventListener("pointermove", onMapPillPointerMove);
@@ -3726,23 +3765,39 @@
     mapDragTimeoutHandle = setTimeout(cancelMapDrag, 8000);
   }
 
-  async function dropMapGap({ lastZone, lastSide, lastIslandId, lastIndex }) {
+  async function dropMapGap({ lastZone, lastSide, lastIndex }) {
     if (!lastZone) return;
-    const sides = state.festivalMap.zones[lastZone];
-    const target = lastSide === "island"
-      ? (sides.islands[lastIslandId] || {}).breweries
-      : sides[lastSide];
-    // Past the last stand of a perimeter side a gap separates nothing; in an
-    // island it's spacing below the last pill (mirrors festival_map.insert_gap).
-    if (!target || (lastIndex >= target.length && lastSide !== "island")) {
-      renderFestivalMap();
+    if (lastSide === "islands") {
+      // Space between islands: a blank entry in the zone's island list.
+      const { ok } = await apiPost("/api/checkin/festival_map/island_spacer", { zone: lastZone, index: lastIndex });
+      if (ok) await fetchFestivalMap();
+      else renderFestivalMap();
       return;
     }
-    target.splice(Math.min(lastIndex, target.length), 0, null);
+    const target = state.festivalMap.zones[lastZone][lastSide];
+    if (!target || lastIndex >= target.length) {
+      renderFestivalMap(); // a gap past the last stand separates nothing
+      return;
+    }
+    target.splice(lastIndex, 0, null);
     renderFestivalMap();
-    await apiPost("/api/checkin/festival_map/gap_insert", {
-      zone: lastZone, side: lastSide, index: lastIndex, islandId: lastSide === "island" ? lastIslandId : null,
-    });
+    await apiPost("/api/checkin/festival_map/gap_insert", { zone: lastZone, side: lastSide, index: lastIndex, islandId: null });
+  }
+
+  // Tapping (not dragging) a stand inside an island cycles its alignment in
+  // the island: left -> center -> right. Chosen by the editor, never automatic.
+  const ISLAND_ALIGN_CYCLE = ["left", "center", "right"];
+  async function cycleIslandAlign(zone, islandId, brewery) {
+    const island = ((state.festivalMap.zones[zone] || {}).islands || {})[islandId];
+    if (!island || !(island.breweries || []).includes(brewery)) return;
+    const current = (island.align || {})[brewery] || "left";
+    const next = ISLAND_ALIGN_CYCLE[(ISLAND_ALIGN_CYCLE.indexOf(current) + 1) % ISLAND_ALIGN_CYCLE.length];
+    island.align = island.align || {};
+    if (next === "left") delete island.align[brewery];
+    else island.align[brewery] = next;
+    renderFestivalMap();
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    await apiPost("/api/checkin/festival_map/island_align", { zone, islandId, brewery, align: next });
   }
 
   async function onMapPillPointerUp() {
@@ -3753,8 +3808,13 @@
       await dropMapGap(drop);
       return;
     }
-    const { brewery, lastZone, lastSide, lastIslandId, lastIndex } = mapDrag;
+    const { brewery, lastZone, lastSide, lastIslandId, lastIndex, moved, originIsland, originZone } = mapDrag;
     cancelMapDrag();
+    if (!moved && originIsland) {
+      renderFestivalMap(); // the pill was lifted out of its island for the (never started) drag
+      await cycleIslandAlign(originZone, originIsland, brewery);
+      return;
+    }
 
     // Optimistic local move so nothing snaps back while the request is in
     // flight, then let the next poll reconcile with the server. Mirrors

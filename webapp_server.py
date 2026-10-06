@@ -2479,6 +2479,47 @@ async def handle_festival_map_gap_remove(request: web.Request) -> web.Response:
     return await _handle_festival_map_gap(request, festival_map.remove_gap)
 
 
+async def _festival_map_island_call(request: web.Request, call) -> web.Response:
+    """Shared auth/body/zone-list plumbing of the island handlers below: `call`
+    gets (map_key, body, zone_names) and returns the response payload dict, or
+    None for an invalid request."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    user_id = (init_data.get("user") or {}).get("id")
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+    festival_key = await _resolve_festival_key(user_id)
+    beers, _ = _festival_data_for(festival_key)
+    map_key = festival_key or _active_festival_key
+    result = await call(map_key, body, _festival_editable_zone_names(beers))
+    if result is None:
+        return _json_error("invalid_request")
+    return web.json_response({"ok": True, **result})
+
+
+async def handle_festival_map_island_spacer(request: web.Request) -> web.Response:
+    async def call(map_key, body, zone_names):
+        index = body.get("index")
+        if not isinstance(index, int):
+            return None
+        island_id = await festival_map.insert_island_spacer(map_key, body.get("zone"), index, zone_names)
+        return None if island_id is None else {"islandId": island_id}
+    return await _festival_map_island_call(request, call)
+
+
+async def handle_festival_map_island_align(request: web.Request) -> web.Response:
+    async def call(map_key, body, zone_names):
+        brewery, island_id, align = body.get("brewery"), body.get("islandId"), body.get("align")
+        if not isinstance(brewery, str) or not isinstance(island_id, str) or not isinstance(align, str):
+            return None
+        done = await festival_map.set_island_align(map_key, body.get("zone"), island_id, brewery, align, zone_names)
+        return {} if done else None
+    return await _festival_map_island_call(request, call)
+
+
 async def handle_festival_map_island_create(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
@@ -3074,6 +3115,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/festival_map/move", handle_festival_map_move)
     app.router.add_post("/api/checkin/festival_map/gap_insert", handle_festival_map_gap_insert)
     app.router.add_post("/api/checkin/festival_map/gap_remove", handle_festival_map_gap_remove)
+    app.router.add_post("/api/checkin/festival_map/island_spacer", handle_festival_map_island_spacer)
+    app.router.add_post("/api/checkin/festival_map/island_align", handle_festival_map_island_align)
     app.router.add_post("/api/checkin/festival_map/island_create", handle_festival_map_island_create)
     app.router.add_post("/api/checkin/festival_map/island_delete", handle_festival_map_island_delete)
     app.router.add_post("/api/checkin/wishlist/list", handle_wishlist_list)

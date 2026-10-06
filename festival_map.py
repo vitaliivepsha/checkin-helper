@@ -155,6 +155,10 @@ async def migrate_legacy_default(default_key: str | None) -> None:
         _save_all({_bucket_key(default_key): raw})
 
 
+# Per-stand horizontal alignment inside an island ("left" is the default and is never stored).
+ISLAND_ALIGNS = ("center", "right")
+
+
 def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dict]:
     loaded = _empty_zones(zones)
     bucket_data = all_data.get(bucket)
@@ -176,10 +180,18 @@ def _load_bucket(all_data: dict, bucket: str, zones: list[str]) -> dict[str, dic
                 if not isinstance(breweries, list):
                     continue
                 label = island.get("label")
-                loaded[z]["islands"][island_id] = {
+                entry = {
                     "label": label if isinstance(label, str) else "",
                     "breweries": [b for b in breweries if isinstance(b, str) or b is None],
                 }
+                if island.get("spacer") is True:
+                    entry["spacer"] = True  # a blank space between islands, not a box
+                align = island.get("align")
+                if isinstance(align, dict):
+                    marks = {b: a for b, a in align.items() if isinstance(b, str) and a in ISLAND_ALIGNS}
+                    if marks:
+                        entry["align"] = marks
+                loaded[z]["islands"][island_id] = entry
     return loaded
 
 
@@ -188,16 +200,14 @@ def _island_lists(zone: dict) -> list[list[str | None]]:
 
 
 def _trim_trailing_none(loaded: dict[str, dict]) -> bool:
-    """A None past the last real entry in a side's list doesn't align with
-    anything anymore (nothing further along to leave room for) - trims it
-    so an empty tail doesn't linger/grow forever as items get moved around.
-    Island lists are left alone: an island is a small floating box, so a gap
-    at its bottom (like one at its top) is real spacing the editors asked
-    for. Returns True if anything was actually trimmed (the caller's cue to
-    persist the change)."""
+    """A None past the last real entry in a side's (or island's) list
+    doesn't align with anything anymore (nothing further along to leave
+    room for) - trims it so an empty tail doesn't linger/grow forever as
+    items get moved around. Returns True if anything was actually trimmed
+    (the caller's cue to persist the change)."""
     trimmed = False
     for zone in loaded.values():
-        for lst in [zone[side] for side in SIDES]:
+        for lst in [zone[side] for side in SIDES] + _island_lists(zone):
             while lst and lst[-1] is None:
                 lst.pop()
                 trimmed = True
@@ -302,6 +312,9 @@ def _adopt_arrivals(loaded: dict, template: dict, known: set[str]) -> bool:
                 arrival = resolve_label(name, [b for b in known if b not in placed])
                 if arrival is not None:
                     lst[i] = arrival
+                    for island in zone["islands"].values():
+                        if lst is island["breweries"] and name in island.get("align", {}):
+                            island["align"][arrival] = island["align"].pop(name)
                     placed.add(arrival)
                     changed = True
     return changed
@@ -497,7 +510,6 @@ async def move_brewery(
         index = max(0, index)
         claim_slot = index >= len(target) or target[index] is None
 
-        source = None
         for z in loaded.values():
             for lst in [z[s] for s in SIDES] + _island_lists(z):
                 for i, b in enumerate(lst):
@@ -506,7 +518,9 @@ async def move_brewery(
                             lst[i] = None
                         else:
                             lst.pop(i)
-                        source = lst
+                        for island in z["islands"].values():
+                            if lst is island["breweries"] and lst is not target:
+                                island.get("align", {}).pop(brewery, None)  # alignment belongs to its old island
                         break  # a brewery only ever occupies one slot at a time
 
         if claim_slot:
@@ -516,10 +530,6 @@ async def move_brewery(
         else:
             target.insert(min(index, len(target)), brewery)
 
-        # An island a stand just left shrinks back (islands are exempt from
-        # the global trim so explicit bottom gaps survive other moves).
-        while source is not None and source is not target and source and source[-1] is None:
-            source.pop()
         _trim_trailing_none(loaded)
         all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
         _save_all(all_data)
@@ -531,8 +541,7 @@ async def insert_gap(
 ) -> bool:
     """Inserts an empty slot (a walkway / gap between stands) at `index` of
     the given side or island list, shifting everything after it. Past the
-    end of a side there is nothing to separate, so it's a no-op that still
-    succeeds; past the end of an island it appends one (bottom spacing).
+    end there is nothing to separate, so it's a no-op that still succeeds.
     False for an invalid zone/side/island."""
     return await _edit_gap(festival_key, zone, side, index, zones, island_id, insert=True)
 
@@ -566,8 +575,6 @@ async def _edit_gap(
         if insert:
             if index < len(target):
                 target.insert(index, None)
-            elif island_id is not None:
-                target.append(None)  # a gap at the bottom of an island is spacing too
         else:
             if index >= len(target) or target[index] is not None:
                 return False
@@ -617,6 +624,58 @@ async def delete_island(festival_key: str | None, zone: str, island_id: str, zon
             return False
         loaded[zone]["top"].extend(b for b in island["breweries"] if b is not None)
         _trim_trailing_none(loaded)
+        all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
+        _save_all(all_data)
+        return True
+
+
+async def insert_island_spacer(festival_key: str | None, zone: str, index: int, zones: list[str]) -> str | None:
+    """Adds a blank space between islands: an island entry flagged
+    `spacer` (no stands, drawn as an empty row, removed with delete_island)
+    at position `index` of the zone's islands (display order = dict order).
+    Returns its id, or None for an invalid zone/index."""
+    if zone not in zones or index < 0:
+        return None
+    bucket = _bucket_key(festival_key)
+    async with _lock:
+        all_data = _load_all()
+        loaded = _load_bucket(all_data, bucket, zones)
+        existing = loaded[zone]["islands"]
+        n = 1
+        for island_id in existing:
+            if island_id.startswith("isl_") and island_id[4:].isdigit():
+                n = max(n, int(island_id[4:]) + 1)
+        new_id = f"isl_{n}"
+        items = list(existing.items())
+        items.insert(min(index, len(items)), (new_id, {"label": "", "breweries": [], "spacer": True}))
+        loaded[zone]["islands"] = dict(items)
+        all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
+        _save_all(all_data)
+        return new_id
+
+
+async def set_island_align(
+    festival_key: str | None, zone: str, island_id: str, brewery: str, align: str, zones: list[str],
+) -> bool:
+    """Sets how one stand is aligned inside its island: "left" (the default,
+    stored as nothing), "center" or "right". False if the zone/island
+    doesn't exist, the stand isn't in that island, or `align` is unknown."""
+    if zone not in zones or align not in ("left",) + ISLAND_ALIGNS:
+        return False
+    bucket = _bucket_key(festival_key)
+    async with _lock:
+        all_data = _load_all()
+        loaded = _load_bucket(all_data, bucket, zones)
+        island = loaded[zone]["islands"].get(island_id)
+        if island is None or brewery not in island["breweries"]:
+            return False
+        marks = island.setdefault("align", {})
+        if align == "left":
+            marks.pop(brewery, None)
+        else:
+            marks[brewery] = align
+        if not marks:
+            island.pop("align", None)
         all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
         _save_all(all_data)
         return True
