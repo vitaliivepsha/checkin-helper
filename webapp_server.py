@@ -2445,6 +2445,40 @@ async def handle_festival_map_move(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
+async def _handle_festival_map_gap(request: web.Request, edit) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    user_id = (init_data.get("user") or {}).get("id")
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+    index = body.get("index")
+    island_id = body.get("islandId")
+    if not isinstance(index, int) or index < 0:
+        return _json_error("invalid_index")
+    if island_id is not None and not isinstance(island_id, str):
+        return _json_error("invalid_island")
+    festival_key = await _resolve_festival_key(user_id)
+    beers, _ = _festival_data_for(festival_key)
+    map_key = festival_key or _active_festival_key
+    done = await edit(
+        map_key, body.get("zone"), body.get("side"), index, _festival_editable_zone_names(beers), island_id=island_id
+    )
+    if not done:
+        return _json_error("invalid_gap")
+    return web.json_response({"ok": True})
+
+
+async def handle_festival_map_gap_insert(request: web.Request) -> web.Response:
+    return await _handle_festival_map_gap(request, festival_map.insert_gap)
+
+
+async def handle_festival_map_gap_remove(request: web.Request) -> web.Response:
+    return await _handle_festival_map_gap(request, festival_map.remove_gap)
+
+
 async def handle_festival_map_island_create(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
@@ -3038,6 +3072,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/queue/reset_personal", handle_queue_reset_personal)
     app.router.add_post("/api/checkin/festival_map/get", handle_festival_map_get)
     app.router.add_post("/api/checkin/festival_map/move", handle_festival_map_move)
+    app.router.add_post("/api/checkin/festival_map/gap_insert", handle_festival_map_gap_insert)
+    app.router.add_post("/api/checkin/festival_map/gap_remove", handle_festival_map_gap_remove)
     app.router.add_post("/api/checkin/festival_map/island_create", handle_festival_map_island_create)
     app.router.add_post("/api/checkin/festival_map/island_delete", handle_festival_map_island_delete)
     app.router.add_post("/api/checkin/wishlist/list", handle_wishlist_list)

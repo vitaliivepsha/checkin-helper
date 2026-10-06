@@ -518,6 +518,55 @@ async def move_brewery(
         return True
 
 
+async def insert_gap(
+    festival_key: str | None, zone: str, side: str, index: int, zones: list[str], island_id: str | None = None,
+) -> bool:
+    """Inserts an empty slot (a walkway / gap between stands) at `index` of
+    the given side or island list, shifting everything after it. Past the
+    end there is nothing to separate, so it's a no-op that still succeeds.
+    False for an invalid zone/side/island."""
+    return await _edit_gap(festival_key, zone, side, index, zones, island_id, insert=True)
+
+
+async def remove_gap(
+    festival_key: str | None, zone: str, side: str, index: int, zones: list[str], island_id: str | None = None,
+) -> bool:
+    """Removes the empty slot at `index` (collapsing the stands after it).
+    False if that position isn't an empty slot, or on an invalid target."""
+    return await _edit_gap(festival_key, zone, side, index, zones, island_id, insert=False)
+
+
+async def _edit_gap(
+    festival_key: str | None, zone: str, side: str, index: int, zones: list[str], island_id: str | None, insert: bool,
+) -> bool:
+    if zone not in zones or index < 0:
+        return False
+    if island_id is None and side not in SIDES:
+        return False
+    bucket = _bucket_key(festival_key)
+    async with _lock:
+        all_data = _load_all()
+        loaded = _load_bucket(all_data, bucket, zones)
+        if island_id is not None:
+            island = loaded[zone]["islands"].get(island_id)
+            if island is None:
+                return False
+            target = island["breweries"]
+        else:
+            target = loaded[zone][side]
+        if insert:
+            if index < len(target):
+                target.insert(index, None)
+        else:
+            if index >= len(target) or target[index] is not None:
+                return False
+            target.pop(index)
+        _trim_trailing_none(loaded)
+        all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
+        _save_all(all_data)
+        return True
+
+
 async def create_island(festival_key: str | None, zone: str, zones: list[str]) -> str | None:
     """Creates a new, empty island in `zone` and returns its id, or None
     if `zone` is invalid. The id is locally unique within the zone

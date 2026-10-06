@@ -2897,11 +2897,13 @@
         <div class="perimeter-mid">
           <div class="map-islands"></div>
           <button type="button" class="map-island-add-btn">${escapeHtml(T("app_map_add_island"))}</button>
+          <div class="map-gap-source">${escapeHtml(T("app_map_add_gap"))}</div>
           ${ICON_BEER}
         </div>
         <div class="perimeter-right"></div>
         <div class="perimeter-bottom"></div>
       </div>`;
+    card.querySelector(".map-gap-source").addEventListener("pointerdown", onGapSourcePointerDown);
     return card;
   }
 
@@ -3055,34 +3057,66 @@
   // index, independent of this cross-side padding). The read-only detail
   // view has no dragging to support, so it skips all of this and just
   // shows whatever's really there, tightly packed.
+  //
+  // The empty slots (`null`s, i.e. the gaps / walkways the editors left
+  // between stands) are kept in the read-only view too, as invisible
+  // spacers, and left/right always share one row grid - otherwise the
+  // saved layout would collapse the moment edit mode is left (positions
+  // only lined up while editing).
+  function makeGapSlot(zone, side, islandId, index, removable) {
+    const slot = document.createElement("div");
+    slot.className = "perimeter-row-slot" + (side === "left" || side === "right" ? "" : " perimeter-gap-h");
+    if (removable && festivalMapEditMode) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "perimeter-gap-remove";
+      btn.setAttribute("aria-label", T("app_map_remove_gap"));
+      btn.textContent = "×";
+      btn.addEventListener("click", () => removeMapGap(zone, side, islandId, index));
+      slot.appendChild(btn);
+    }
+    return slot;
+  }
+
   function renderPerimeterPills(rootEl, zoneSides, draggable) {
     const sections = perimeterSections(rootEl);
+    const zoneCard = rootEl.closest(".map-zone");
+    const zone = zoneCard ? zoneCard.dataset.zone : null;
     ["top", "bottom"].forEach((side) => {
       const container = sections[side];
       container.innerHTML = "";
-      (zoneSides[side] || []).forEach((brewery) => {
-        if (brewery) container.appendChild(makeBreweryPill(brewery, draggable));
+      (zoneSides[side] || []).forEach((brewery, i) => {
+        container.appendChild(brewery ? makeBreweryPill(brewery, draggable) : makeGapSlot(zone, side, null, i, true));
       });
     });
     const leftList = zoneSides.left || [];
     const rightList = zoneSides.right || [];
-    const rowCount = draggable ? Math.max(leftList.length, rightList.length, 1) : 0;
+    const rowCount = Math.max(leftList.length, rightList.length, draggable ? 1 : 0);
     ["left", "right"].forEach((side) => {
       const container = sections[side];
       container.innerHTML = "";
       const list = side === "left" ? leftList : rightList;
-      const count = draggable ? rowCount : list.length;
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < rowCount; i++) {
         const brewery = list[i];
-        if (brewery) {
-          container.appendChild(makeBreweryPill(brewery, draggable));
-        } else if (draggable) {
-          const slot = document.createElement("div");
-          slot.className = "perimeter-row-slot";
-          container.appendChild(slot);
-        }
+        // `null` is a real, stored gap (removable); undefined is just this
+        // side padding out to the other side's row count.
+        container.appendChild(brewery ? makeBreweryPill(brewery, draggable) : makeGapSlot(zone, side, null, i, brewery === null));
       }
     });
+  }
+
+  // Removes a stored gap (collapsing what follows it) - optimistic locally,
+  // then confirmed by the server like every other map edit.
+  async function removeMapGap(zone, side, islandId, index) {
+    const sides = state.festivalMap.zones[zone];
+    if (!sides) return;
+    const list = side === "island"
+      ? (sides.islands[islandId] || {}).breweries
+      : sides[side];
+    if (!list || list[index] !== null) return;
+    list.splice(index, 1);
+    renderFestivalMap();
+    await apiPost("/api/checkin/festival_map/gap_remove", { zone, side, index, islandId: side === "island" ? islandId : null });
   }
 
   // Interior clusters (see festival_map.py's own docstring) - a handful of
@@ -3109,8 +3143,8 @@
       box.dataset.islandId = islandId;
       const pills = document.createElement("div");
       pills.className = "map-island-pills";
-      (island.breweries || []).forEach((brewery) => {
-        if (brewery) pills.appendChild(makeBreweryPill(brewery, draggable));
+      (island.breweries || []).forEach((brewery, i) => {
+        pills.appendChild(brewery ? makeBreweryPill(brewery, draggable) : makeGapSlot(zone, "island", islandId, i, true));
       });
       box.appendChild(pills);
       if (draggable) {
@@ -3653,8 +3687,59 @@
     flipReorder(() => placePlaceholderAt(target.sideContainer, index));
   }
 
+  // Dragging the "+ Прохід" chip onto a side/island inserts an empty slot (a
+  // walkway) there - same drag machinery as a stand, minus the stand: the
+  // floating chip is a throwaway and nothing leaves its original place.
+  function onGapSourcePointerDown(e) {
+    if (!festivalMapEditMode) return;
+    if (mapDrag) cancelMapDrag();
+    e.preventDefault();
+    const chip = document.createElement("div");
+    chip.className = "brewery-pill map-pill-floating";
+    chip.textContent = T("app_map_gap");
+    chip.style.width = "96px";
+    chip.style.left = `${e.clientX}px`;
+    chip.style.top = `${e.clientY}px`;
+    document.body.appendChild(chip);
+    const placeholder = document.createElement("div");
+    placeholder.className = "brewery-pill-placeholder";
+    mapDragActive = true;
+    mapDrag = {
+      gap: true, brewery: null, pill: chip, placeholder,
+      lastZone: null, lastSide: null, lastIslandId: null, lastContainer: null, lastIndex: 0,
+    };
+    document.addEventListener("pointermove", onMapPillPointerMove);
+    document.addEventListener("pointerup", onMapPillPointerUp);
+    document.addEventListener("pointercancel", onMapPillPointerUp);
+    clearTimeout(mapDragTimeoutHandle);
+    mapDragTimeoutHandle = setTimeout(cancelMapDrag, 8000);
+  }
+
+  async function dropMapGap({ lastZone, lastSide, lastIslandId, lastIndex }) {
+    if (!lastZone) return;
+    const sides = state.festivalMap.zones[lastZone];
+    const target = lastSide === "island"
+      ? (sides.islands[lastIslandId] || {}).breweries
+      : sides[lastSide];
+    if (!target || lastIndex >= target.length) {
+      renderFestivalMap(); // a gap past the last stand separates nothing
+      return;
+    }
+    target.splice(lastIndex, 0, null);
+    renderFestivalMap();
+    await apiPost("/api/checkin/festival_map/gap_insert", {
+      zone: lastZone, side: lastSide, index: lastIndex, islandId: lastSide === "island" ? lastIslandId : null,
+    });
+  }
+
   async function onMapPillPointerUp() {
     if (!mapDrag) return;
+    if (mapDrag.gap) {
+      const drop = mapDrag;
+      cancelMapDrag();
+      await dropMapGap(drop);
+      return;
+    }
     const { brewery, lastZone, lastSide, lastIslandId, lastIndex } = mapDrag;
     cancelMapDrag();
 

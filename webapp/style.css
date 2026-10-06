@@ -1114,6 +1114,20 @@ body.map-edit-mode .map-island-add-btn {
    dropping onto one CLAIMS that exact slot (festival_map.py's own
    move_brewery decides this the same way, based on what's actually at
    the target index). */
+.perimeter-row-slot { position: relative; min-height: 27px; } /* an invisible spacer (a gap) outside edit mode */
+.map-island-pills .perimeter-gap-h { width: 44px; }
+.perimeter-gap-remove {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+  width: 18px; height: 18px; border-radius: 50%; padding: 0; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--pill-border);
+  color: var(--hint); font-size: 12px; line-height: 1;
+}
+.map-gap-source { display: none; }
+body.map-edit-mode .map-gap-source {
+  display: block; touch-action: none; user-select: none; cursor: grab;
+  border: 1px dashed var(--button); border-radius: 999px;
+  color: var(--button); font-size: 11px; padding: 3px 10px; text-align: center;
+}
 body.map-edit-mode .perimeter-row-slot {
   min-height: 27px;
   border: 1px dashed var(--pill-border); border-radius: 999px;

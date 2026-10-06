@@ -148,3 +148,28 @@ async def test_placeholders_fill_the_plan_and_a_real_arrival_takes_over_the_slot
     assert result["Area 2"]["top"][0] == "Browar Markowy"  # same slot, no duplicate
     assert "Markowy" not in [b for z in result.values() for s in ("top", "left", "right", "bottom") for b in z[s]]
     assert sum("Markowy" in (b or "") for z in result.values() for s in ("top", "left", "right", "bottom") for b in z[s]) == 1
+
+
+async def test_gaps_can_be_inserted_removed_and_survive_a_reload(tmp_path):
+    festival_map.init(str(tmp_path))
+    await layout(tmp_path)  # Area 1 left: Bednary, Zakładowy
+    assert await festival_map.insert_gap("wfp", "Area 1", "left", 1, ZONES)
+    assert (await layout(tmp_path))["Area 1"]["left"] == ["Browar Bednary", None, "Browar Zakładowy"]
+    # a gap past the end separates nothing: accepted, nothing stored
+    assert await festival_map.insert_gap("wfp", "Area 1", "left", 9, ZONES)
+    assert (await layout(tmp_path))["Area 1"]["left"] == ["Browar Bednary", None, "Browar Zakładowy"]
+    assert not await festival_map.remove_gap("wfp", "Area 1", "left", 0, ZONES)  # a real stand, not a gap
+    assert await festival_map.remove_gap("wfp", "Area 1", "left", 1, ZONES)
+    assert (await layout(tmp_path))["Area 1"]["left"] == ["Browar Bednary", "Browar Zakładowy"]
+
+
+async def test_gaps_work_inside_islands_and_reject_bad_targets(tmp_path):
+    festival_map.init(str(tmp_path))
+    await layout(tmp_path, known=KNOWN + ["Alchemik"])
+    assert await festival_map.insert_gap("wfp", "Area 1", "island", 1, ZONES, island_id="isl_1")
+    assert (await layout(tmp_path, known=KNOWN + ["Alchemik"]))["Area 1"]["islands"]["isl_1"]["breweries"] == [
+        "Alchemik", None, "Browar Brokreacja"]
+    assert not await festival_map.insert_gap("wfp", "Area 1", "island", 0, ZONES, island_id="isl_9")
+    assert not await festival_map.insert_gap("wfp", "Area 9", "left", 0, ZONES)
+    assert not await festival_map.insert_gap("wfp", "Area 1", "middle", 0, ZONES)
+    assert not await festival_map.insert_gap("wfp", "Area 1", "left", -1, ZONES)
