@@ -57,11 +57,27 @@ lands on the perimeter, same as before islands existed) and never
 implicitly created by a move - create_island/delete_island are the only
 way an island comes or goes, so move_brewery treats a request for an
 island id that doesn't exist as invalid rather than inventing it.
+
+A festival can also ship a LAYOUT TEMPLATE (festival_layouts/<key>.json,
+loaded by webapp_server): the official floor plan transcribed as lists of
+stand LABELS per zone/side/island in plan order, plus a `version`. Labels are
+matched to the festival data's own brewery names by whole-word,
+diacritic-insensitive containment (resolve_label - "Bednary" finds "Browar
+Bednary"), so the template doesn't need the data's exact spelling. When a
+bucket's saved `templateVersion` differs from the template's, the layout is
+rebuilt ONCE from the template (the previous zones are kept under
+`previousZones`); from then on it is ordinary drag-and-drop data again,
+except that a brewery appearing in the data LATER and matching a label is
+inserted at its plan position (next to its template neighbours) instead of
+being appended to the perimeter.
 """
 
 import asyncio
+import copy
 import json
 import os
+import re
+import unicodedata
 
 SIDES = ("top", "left", "right", "bottom")
 
@@ -201,8 +217,106 @@ def _seed_sides(breweries: list[str]) -> dict[str, list[str]]:
     return {"top": top, "left": middle[0::2], "right": middle[1::2], "bottom": bottom}
 
 
+def _tokens(text: str) -> list[str]:
+    folded = unicodedata.normalize("NFKD", (text or "").replace("ł", "l").replace("Ł", "L"))
+    return re.findall(r"[a-z0-9]+", "".join(c for c in folded if not unicodedata.combining(c)).lower())
+
+
+def resolve_label(label: str, candidates: list[str]) -> str | None:
+    """The candidate brewery a plan `label` stands for: every word of the
+    label must be a whole word of the brewery name (so "Bednary" finds
+    "Browar Bednary", "Magic Road" finds "Magic Road", but "Pinta" does not
+    find "Pintaz"), and among several matches the one with the fewest extra
+    words wins (the label's own stand over a longer name that merely
+    contains it)."""
+    wanted = set(_tokens(label))
+    if not wanted:
+        return None
+    best: tuple[int, str] | None = None
+    for brewery in candidates:
+        words = set(_tokens(brewery))
+        if wanted <= words:
+            extra = len(words - wanted)
+            if best is None or extra < best[0]:
+                best = (extra, brewery)
+    return best[1] if best else None
+
+
+def _template_containers(template: dict, zones: list[str]) -> list[tuple[str, str, str, str, list[str]]]:
+    """[(zone, kind, key, island_label, labels)] - kind is "side" (key =
+    the side name) or "island" (key = the island id) - for the template's
+    zones that exist in `zones`, in plan order."""
+    out = []
+    for zone, spec in (template.get("zones") or {}).items():
+        if zone not in zones or not isinstance(spec, dict):
+            continue
+        for side in SIDES:
+            labels = spec.get(side)
+            if isinstance(labels, list):
+                out.append((zone, "side", side, "", [x for x in labels if isinstance(x, str)]))
+        for island_id, island in (spec.get("islands") or {}).items():
+            if isinstance(island, dict) and isinstance(island.get("breweries"), list):
+                label = island.get("label") if isinstance(island.get("label"), str) else ""
+                out.append((zone, "island", island_id, label, [x for x in island["breweries"] if isinstance(x, str)]))
+    return out
+
+
+def _container_list(loaded: dict, zone: str, kind: str, key: str, island_label: str, create: bool) -> list | None:
+    if kind == "side":
+        return loaded[zone][key]
+    islands = loaded[zone]["islands"]
+    if key not in islands:
+        if not create:
+            return None
+        islands[key] = {"label": island_label, "breweries": []}
+    return islands[key]["breweries"]
+
+
+def _rebuild_from_template(template: dict, zones: list[str], known_breweries: list[str]) -> dict[str, dict]:
+    """A fresh layout holding every known brewery that matches a template
+    label, in plan order. Breweries matching no label are left unplaced (the
+    caller's normal seeding puts them on the perimeter); labels matching no
+    known brewery yet simply don't appear - no empty placeholder slots."""
+    fresh = _empty_zones(zones)
+    free = list(known_breweries)
+    for zone, kind, key, island_label, labels in _template_containers(template, zones):
+        placed = []
+        for label in labels:
+            brewery = resolve_label(label, free)
+            if brewery is not None:
+                placed.append(brewery)
+                free.remove(brewery)
+        if placed:
+            _container_list(fresh, zone, kind, key, island_label, create=True).extend(placed)
+    return fresh
+
+
+def _place_from_template(loaded: dict, template: dict, zones: list[str], brewery: str) -> bool:
+    """Puts a not-yet-placed `brewery` at its plan position, if a template
+    label names it: inside the container (side or island) that label lives
+    in, before the first already-placed brewery that comes LATER in the
+    plan (else at the end). Returns False when no label matches."""
+    for zone, kind, key, island_label, labels in _template_containers(template, zones):
+        for position, label in enumerate(labels):
+            if resolve_label(label, [brewery]) != brewery:
+                continue
+            target = _container_list(loaded, zone, kind, key, island_label, create=True)
+            insert_at = len(target)
+            for i, other in enumerate(target):
+                if other is None:
+                    continue
+                order = next((j for j, lab in enumerate(labels) if resolve_label(lab, [other]) == other), None)
+                if order is not None and order > position:
+                    insert_at = i
+                    break
+            target.insert(insert_at, brewery)
+            return True
+    return False
+
+
 async def get_layout(
-    festival_key: str | None, known_breweries: list[str], brewery_zone_hint: dict[str, str], zones: list[str]
+    festival_key: str | None, known_breweries: list[str], brewery_zone_hint: dict[str, str], zones: list[str],
+    template: dict | None = None,
 ) -> dict[str, dict]:
     """Returns the current zone layout for `festival_key` (for the given
     `zones` - whatever the caller currently considers that festival's main,
@@ -225,6 +339,12 @@ async def get_layout(
         loaded = _load_bucket(all_data, bucket, zones)
         known = set(known_breweries)
         pruned = False
+        bucket_meta = dict(all_data.get(bucket) or {})
+        if template and bucket_meta.get("templateVersion") != template.get("version"):
+            bucket_meta["previousZones"] = copy.deepcopy(loaded)  # kept so a rebuild can be undone by hand
+            bucket_meta["templateVersion"] = template.get("version")
+            loaded = _rebuild_from_template(template, zones, known_breweries)
+            pruned = True
         for zone in loaded.values():
             for side in SIDES:
                 filtered = [b for b in zone[side] if b is None or b in known]
@@ -247,6 +367,10 @@ async def get_layout(
         for brewery in known_breweries:
             if brewery in placed:
                 continue
+            if template and _place_from_template(loaded, template, zones, brewery):
+                placed.add(brewery)
+                pruned = True  # a change to persist, same as a seeded placement
+                continue
             zone = brewery_zone_hint.get(brewery, zones[0])
             if zone not in zones:
                 zone = zones[0]
@@ -260,7 +384,7 @@ async def get_layout(
         if _trim_trailing_none(loaded):
             pruned = True
         if new_by_zone or pruned:
-            all_data[bucket] = {"zones": loaded}
+            all_data[bucket] = {**bucket_meta, "zones": loaded}
             _save_all(all_data)
         return loaded
 
@@ -324,7 +448,7 @@ async def move_brewery(
             target.insert(min(index, len(target)), brewery)
 
         _trim_trailing_none(loaded)
-        all_data[bucket] = {"zones": loaded}
+        all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
         _save_all(all_data)
         return True
 
@@ -347,7 +471,7 @@ async def create_island(festival_key: str | None, zone: str, zones: list[str]) -
                 n = max(n, int(island_id[4:]) + 1)
         island_id = f"isl_{n}"
         existing[island_id] = {"label": "", "breweries": []}
-        all_data[bucket] = {"zones": loaded}
+        all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
         _save_all(all_data)
         return island_id
 
@@ -368,6 +492,6 @@ async def delete_island(festival_key: str | None, zone: str, island_id: str, zon
             return False
         loaded[zone]["top"].extend(b for b in island["breweries"] if b is not None)
         _trim_trailing_none(loaded)
-        all_data[bucket] = {"zones": loaded}
+        all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
         _save_all(all_data)
         return True

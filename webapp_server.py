@@ -2387,7 +2387,9 @@ async def _festival_map_payload(festival_key: str | None) -> dict:
     zone_names = _festival_editable_zone_names(beers)
     zone_hint = _festival_brewery_zone_map(beers)
     known_breweries = list(zone_hint.keys())
-    zones = await festival_map.get_layout(map_key, known_breweries, zone_hint, zone_names)
+    zones = await festival_map.get_layout(
+        map_key, known_breweries, zone_hint, zone_names, template=_festival_layout_template(map_key),
+    )
     return {
         "zones": zones,
         "zoneOrder": zone_names,
@@ -3240,6 +3242,36 @@ def _load_festivals_registry() -> list[dict]:
     except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.warning("Could not load festivals.json: %s", e)
         return []
+
+
+_layout_template_cache: dict[str, tuple[float, dict | None]] = {}
+
+
+def _festival_layout_template(festival_key: str | None) -> dict | None:
+    """festival_layouts/<key>.json - the festival's official floor plan as a
+    layout template (see festival_map.py's docstring), or None. Re-read only
+    when the file changes; a malformed file is treated as absent rather than
+    breaking the map."""
+    if not festival_key or not re.fullmatch(r"[A-Za-z0-9_-]+", festival_key):
+        return None
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "festival_layouts", f"{festival_key}.json")
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return None
+    cached = _layout_template_cache.get(path)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    try:
+        with open(path, encoding="utf-8") as f:
+            template = json.load(f)
+        if not isinstance(template, dict) or not isinstance(template.get("zones"), dict):
+            template = None
+    except (OSError, json.JSONDecodeError):
+        logger.warning("festival layout template %s is unreadable - ignoring it", path)
+        template = None
+    _layout_template_cache[path] = (mtime, template)
+    return template
 
 
 def _zone_labels_for(festival_key: str | None) -> dict[str, str]:

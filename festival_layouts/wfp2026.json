@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "source": "22. Warszawski Festiwal Piwa, Stadion Legii, 15-17 X 2026 - official floor plans of the 2nd and 3rd floors. Area 1 = 1st floor (no plan yet - stands listed in the data only), Area 2 and Area 3 = the two halves of the 2nd floor, Area 4 = the 3rd floor. Labels are the plan's stand names (matched to the data's brewery names by whole words, ignoring case and diacritics); non-brewery exhibitors (green boxes), the relax zone, DKMS and the craft-fair area are not listed.",
+  "zones": {
+    "Area 2": {
+      "left": [
+        "Bednary",
+        "Markowy",
+        "Zakładowy",
+        "Piwne Podziemie",
+        "Artezan",
+        "Nepo",
+        "Kazimierz"
+      ],
+      "right": [
+        "Nieczajna",
+        "Stara Szkoła",
+        "Przełom",
+        "Lubrow",
+        "Starkraft",
+        "Jedlinka",
+        "Za Miastem",
+        "Imbiorowicz"
+      ],
+      "bottom": [
+        "AleBrowar",
+        "Chyliczki",
+        "Trzech Kumpli"
+      ],
+      "islands": {
+        "isl_1": {
+          "label": "",
+          "breweries": [
+            "Alchemik",
+            "Augustowska",
+            "Brokreacja",
+            "Łańcut"
+          ]
+        },
+        "isl_2": {
+          "label": "",
+          "breweries": [
+            "Miejski Lis"
+          ]
+        }
+      }
+    },
+    "Area 3": {
+      "top": [
+        "Mazurski",
+        "Quantum Satis",
+        "Inne Beczki"
+      ],
+      "left": [
+        "Cztery Ściany",
+        "Monsters",
+        "Wielka Sowa",
+        "Palatum",
+        "Sady",
+        "De Facto",
+        "Maryensztadt",
+        "Spółdzielczy",
+        "Recraft"
+      ],
+      "right": [
+        "Dziki Miód",
+        "Warszawski",
+        "Brofaktura",
+        "Pinta",
+        "Dwaj Bracia",
+        "Stu Mostów",
+        "Green Head"
+      ],
+      "islands": {
+        "isl_1": {
+          "label": "",
+          "breweries": [
+            "OneMoreBeer"
+          ]
+        },
+        "isl_2": {
+          "label": "",
+          "breweries": [
+            "Bałtów"
+          ]
+        }
+      }
+    },
+    "Area 4": {
+      "left": [
+        "Sarabanda",
+        "Magic Road",
+        "Dziki Wschód",
+        "PSPD",
+        "Coypu",
+        "Hopkultura",
+        "Kingpin",
+        "Moczybroda",
+        "Funky Fluid"
+      ]
+    }
+  }
+}
