@@ -3620,8 +3620,11 @@
       const rect = zoneEl.getBoundingClientRect();
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
         for (const box of zoneEl.querySelectorAll(".map-island-pills")) {
-          const bRect = box.getBoundingClientRect();
-          if (x >= bRect.left && x <= bRect.right && y >= bRect.top && y <= bRect.bottom) {
+          // The whole island frame (plus a little slack) counts: a small
+          // island's pills box is only a pill or two wide, too easy to miss.
+          const bRect = box.parentElement.getBoundingClientRect();
+          const slack = 10;
+          if (x >= bRect.left - slack && x <= bRect.right + slack && y >= bRect.top - slack && y <= bRect.bottom + slack) {
             return { zone, zoneEl, side: "island", islandId: box.parentElement.dataset.islandId, sideContainer: box };
           }
         }
@@ -3676,7 +3679,15 @@
     const target = findDropTarget(e.clientX, e.clientY);
     if (!target) return; // hovering outside any zone - leave the placeholder at its last valid slot
     target.zoneEl.classList.add("drag-over");
-    const horizontal = target.side === "top" || target.side === "bottom" || target.side === "island";
+    // An island's pills wrap, and a narrow island stacks them (or holds a
+    // single one) - comparing x there made "above this pill" read as "after
+    // it". Only a genuine single row of 2+ pills is a horizontal list.
+    const islandPills = target.side === "island"
+      ? [...target.sideContainer.children].filter((el) => el !== mapDrag.placeholder)
+      : [];
+    const islandIsRow = islandPills.length > 1
+      && islandPills.every((el) => Math.abs(el.getBoundingClientRect().top - islandPills[0].getBoundingClientRect().top) < 4);
+    const horizontal = target.side === "top" || target.side === "bottom" || (target.side === "island" && islandIsRow);
     const index = insertionIndex(target.sideContainer, e.clientX, e.clientY, mapDrag.placeholder, horizontal);
     if (target.sideContainer === mapDrag.lastContainer && index === mapDrag.lastIndex) return;
     mapDrag.lastZone = target.zone;
