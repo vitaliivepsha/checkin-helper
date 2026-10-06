@@ -2974,7 +2974,12 @@
   function makeBreweryPill(brewery, draggable, islandAlign) {
     const pill = document.createElement("div");
     pill.className = "brewery-pill";
-    pill.textContent = BREWERY_DISPLAY_ALIASES[brewery] || brewery;
+    // The text lives in its own clipped label so the water mark can sit on the
+    // pill's corner, partly outside it, without being cut by the ellipsis.
+    const label = document.createElement("span");
+    label.className = "pill-label";
+    label.textContent = BREWERY_DISPLAY_ALIASES[brewery] || brewery;
+    pill.appendChild(label);
     pill.title = brewery;
     pill.dataset.brewery = brewery;
     if (state.festivalMap && state.festivalMap.waterStands && state.festivalMap.waterStands.has(brewery)) {
@@ -2984,7 +2989,7 @@
       const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
       use.setAttribute("href", "#icon-droplet");
       drop.appendChild(use);
-      pill.prepend(drop);
+      pill.appendChild(drop);
       pill.title = brewery + " · " + T("app_map_water");
     }
     // Stands inside an island carry their own horizontal alignment (left by
@@ -2997,7 +3002,7 @@
         const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
         use.setAttribute("href", `#icon-align-${islandAlign}`);
         mark.appendChild(use);
-        pill.appendChild(mark);
+        label.appendChild(mark);
       }
     }
     // A plan stand whose menu isn't in the data yet: shown (and movable by
