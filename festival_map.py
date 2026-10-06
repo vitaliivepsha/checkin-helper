@@ -256,6 +256,55 @@ def water_stands(template: dict | None, known_breweries: list[str]) -> list[str]
     return found
 
 
+def _template_labels(template: dict) -> list[str]:
+    """Every stand label of the template's plan, in plan order."""
+    labels = []
+    for spec in (template.get("zones") or {}).values():
+        for side in SIDES:
+            labels.extend(spec.get(side) or [])
+        for island in (spec.get("islands") or {}).values():
+            labels.extend(island.get("breweries") or [])
+    return labels
+
+
+def planned_stands(template: dict | None, known_breweries: list[str]) -> list[str]:
+    """The plan's stand labels no known brewery matches yet. The caller adds
+    them to the layout as placeholder stands (named by their plan label) so
+    the whole floor plan shows up before every menu is published; once a real
+    brewery matching the label appears, get_layout swaps it in at the
+    placeholder's place."""
+    if not template:
+        return []
+    out = []
+    for label in _template_labels(template):
+        if label not in out and resolve_label(label, known_breweries) is None:
+            out.append(label)
+    return out
+
+
+def _adopt_arrivals(loaded: dict, template: dict, known: set[str]) -> bool:
+    """Replaces a placed placeholder (a plan label that's no longer a known
+    name) with the real brewery now matching that label, in the same slot, so
+    a placeholder the editors already moved keeps its place when its menu
+    arrives."""
+    labels = set(_template_labels(template))
+    placed = {
+        b for zone in loaded.values() for lst in [zone[s] for s in SIDES] + _island_lists(zone) for b in lst if b
+    }
+    changed = False
+    for zone in loaded.values():
+        for lst in [zone[s] for s in SIDES] + _island_lists(zone):
+            for i, name in enumerate(lst):
+                if name is None or name in known or name not in labels:
+                    continue
+                arrival = resolve_label(name, [b for b in known if b not in placed])
+                if arrival is not None:
+                    lst[i] = arrival
+                    placed.add(arrival)
+                    changed = True
+    return changed
+
+
 def _template_containers(template: dict, zones: list[str]) -> list[tuple[str, str, str, str, list[str]]]:
     """[(zone, kind, key, island_label, labels)] - kind is "side" (key =
     the side name) or "island" (key = the island id) - for the template's
@@ -358,6 +407,8 @@ async def get_layout(
             bucket_meta["previousZones"] = copy.deepcopy(loaded)  # kept so a rebuild can be undone by hand
             bucket_meta["templateVersion"] = template.get("version")
             loaded = _rebuild_from_template(template, zones, known_breweries)
+            pruned = True
+        if template and _adopt_arrivals(loaded, template, known):
             pruned = True
         for zone in loaded.values():
             for side in SIDES:

@@ -2862,6 +2862,7 @@
       zones: data.zones || {}, bonusCategories: data.bonusCategories || {},
       zoneLabels: data.zoneLabels || {}, breweryAliases: data.breweryAliases || {},
       waterStands: new Set(data.waterStands || []),
+      plannedStands: new Set(data.plannedStands || []),
     };
     $("festival-map-water-legend").hidden = state.festivalMap.waterStands.size === 0;
     renderFestivalMap();
@@ -2976,7 +2977,7 @@
     pill.dataset.brewery = brewery;
     if (state.festivalMap && state.festivalMap.waterStands && state.festivalMap.waterStands.has(brewery)) {
       const drop = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      drop.setAttribute("class", "icon pill-water-icon");
+      drop.setAttribute("class", "icon icon-filled pill-water-icon");
       drop.setAttribute("aria-label", T("app_map_water"));
       const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
       use.setAttribute("href", "#icon-droplet");
@@ -2984,9 +2985,16 @@
       pill.prepend(drop);
       pill.title = brewery + " · " + T("app_map_water");
     }
+    // A plan stand whose menu isn't in the data yet: shown (and movable by
+    // editors) but there are no beers to open.
+    const planned = !!(state.festivalMap && state.festivalMap.plannedStands && state.festivalMap.plannedStands.has(brewery));
+    if (planned) {
+      pill.classList.add("brewery-pill-planned");
+      pill.title = brewery + " · " + T("app_map_planned");
+    }
     if (draggable) {
       pill.addEventListener("pointerdown", onMapPillPointerDown);
-    } else {
+    } else if (!planned) {
       // Non-draggable pills only ever show up in read-only contexts (the
       // zone detail view, Lagerland) - editing has its own drag gesture and
       // deliberately doesn't also open this on a stray tap.

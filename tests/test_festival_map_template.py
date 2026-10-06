@@ -126,3 +126,25 @@ def test_water_stands_resolves_labels_to_known_stands_and_skips_unknown_ones():
     assert festival_map.water_stands(template, KNOWN) == ["Browar Bednary", "Browar Sulewski"]
     assert festival_map.water_stands({}, KNOWN) == []
     assert festival_map.water_stands(None, KNOWN) == []
+
+
+def test_planned_stands_are_the_plan_labels_no_known_brewery_matches():
+    planned = festival_map.planned_stands(TEMPLATE, KNOWN)
+    assert planned == ["Markowy", "Nepo", "Alchemik", "Mazurski", "Inne Beczki"]
+    assert festival_map.planned_stands(None, KNOWN) == []
+
+
+async def test_placeholders_fill_the_plan_and_a_real_arrival_takes_over_the_slot(tmp_path):
+    festival_map.init(str(tmp_path))
+    planned = festival_map.planned_stands(TEMPLATE, KNOWN)
+    result = await layout(tmp_path, known=KNOWN + planned)
+    assert result["Area 1"]["left"] == ["Browar Bednary", "Markowy", "Browar Zakładowy", "Nepo"]
+    assert result["Area 1"]["islands"]["isl_1"]["breweries"] == ["Alchemik", "Browar Brokreacja"]
+    assert result["Area 2"]["top"] == ["Mazurski", "Inne Beczki"]
+    # an editor moves the placeholder, then its real brewery shows up in the data
+    await festival_map.move_brewery("wfp", "Markowy", "Area 2", "top", 0, ZONES)
+    known = KNOWN + ["Browar Markowy"]
+    result = await layout(tmp_path, known=known + festival_map.planned_stands(TEMPLATE, known))
+    assert result["Area 2"]["top"][0] == "Browar Markowy"  # same slot, no duplicate
+    assert "Markowy" not in [b for z in result.values() for s in ("top", "left", "right", "bottom") for b in z[s]]
+    assert sum("Markowy" in (b or "") for z in result.values() for s in ("top", "left", "right", "bottom") for b in z[s]) == 1

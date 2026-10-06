@@ -2388,12 +2388,16 @@ async def _festival_map_payload(festival_key: str | None) -> dict:
     zone_hint = _festival_brewery_zone_map(beers)
     known_breweries = list(zone_hint.keys())
     template = _festival_layout_template(map_key)
+    # The whole floor plan shows up from day one: plan stands with no beers
+    # in the data yet are placeholders (see festival_map.planned_stands).
+    planned = festival_map.planned_stands(template, known_breweries)
     zones = await festival_map.get_layout(
-        map_key, known_breweries, zone_hint, zone_names, template=template,
+        map_key, known_breweries + planned, zone_hint, zone_names, template=template,
     )
     return {
         "zones": zones,
-        "waterStands": festival_map.water_stands(template, known_breweries),
+        "plannedStands": planned,
+        "waterStands": festival_map.water_stands(template, known_breweries + planned),
         "zoneOrder": zone_names,
         "zoneLabels": _zone_labels_for(map_key),
         "bonusCategories": _festival_bonus_categories(beers),
@@ -2422,7 +2426,11 @@ async def handle_festival_map_move(request: web.Request) -> web.Response:
     side = body.get("side")
     index = body.get("index")
     island_id = body.get("islandId")
-    if not isinstance(brewery, str) or brewery not in _festival_brewery_zone_map(beers):
+    zone_map = _festival_brewery_zone_map(beers)
+    if not isinstance(brewery, str) or (
+        brewery not in zone_map
+        and brewery not in festival_map.planned_stands(_festival_layout_template(map_key), list(zone_map))
+    ):
         return _json_error("invalid_brewery")
     if not isinstance(index, int) or index < 0:
         return _json_error("invalid_index")
