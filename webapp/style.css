@@ -1031,7 +1031,8 @@ body.map-edit-mode .brewery-pill {
    single-zone detail view and by each zone's edit-mode panel. */
 .perimeter-grid {
   display: grid;
-  grid-template-columns: 1fr 1.6fr 1fr;
+  /* minmax(0, ..): a plain 1fr never shrinks below its widest nowrap pill, which pushed the right column off-screen. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr);
   grid-template-areas:
     "top top top"
     "left mid right"
