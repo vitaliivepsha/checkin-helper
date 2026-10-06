@@ -201,3 +201,22 @@ async def test_island_spacers_sit_between_islands_in_order(tmp_path):
     assert await festival_map.insert_island_spacer("wfp", "Area 9", 0, ZONES) is None
     assert await festival_map.delete_island("wfp", "Area 1", spacer, ZONES)
     assert list((await festival_map.get_layout("wfp", [], {}, ZONES))["Area 1"]["islands"]) == ["isl_1", "isl_2"]
+
+
+async def test_zone_order_is_saved_validated_and_applied(tmp_path):
+    festival_map.init(str(tmp_path))
+    zones = ["Area 1", "Area 2", "Area 3"]
+    assert await festival_map.get_zone_order("wfp") == []
+    assert festival_map.apply_zone_order(zones, []) == zones
+    assert await festival_map.set_zone_order("wfp", ["Area 3", "Area 1", "Area 2"], zones)
+    saved = await festival_map.get_zone_order("wfp")
+    assert festival_map.apply_zone_order(zones, saved) == ["Area 3", "Area 1", "Area 2"]
+    assert festival_map.apply_zone_order(zones + ["Area 4"], saved) == ["Area 3", "Area 1", "Area 2", "Area 4"]  # a new floor goes last
+    assert festival_map.apply_zone_order(["Area 1", "Area 3"], saved) == ["Area 3", "Area 1"]  # a vanished floor is ignored
+    assert not await festival_map.set_zone_order("wfp", ["Area 1", "Area 2"], zones)  # missing one
+    assert not await festival_map.set_zone_order("wfp", ["Area 1", "Area 1", "Area 2"], zones)
+    assert not await festival_map.set_zone_order("wfp", "Area 1", zones)
+    # the layout read/writes keep the saved order
+    await festival_map.get_layout("wfp", [], {}, zones)
+    await festival_map.move_brewery("wfp", "X", "Area 1", "top", 0, zones)
+    assert await festival_map.get_zone_order("wfp") == ["Area 3", "Area 1", "Area 2"]

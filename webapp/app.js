@@ -2888,6 +2888,10 @@
     card.innerHTML = `
       <div class="map-zone-header">
         <span class="map-zone-label">${escapeHtml(zoneDisplayLabel(zone))}</span>
+        <span class="map-zone-order">
+          <button type="button" class="map-zone-move" data-dir="-1" aria-label="${escapeHtml(T("app_map_zone_up"))}"><svg class="icon"><use href="#icon-arrow-up"/></svg></button>
+          <button type="button" class="map-zone-move" data-dir="1" aria-label="${escapeHtml(T("app_map_zone_down"))}"><svg class="icon"><use href="#icon-arrow-down"/></svg></button>
+        </span>
         <span class="map-zone-count"></span>
       </div>
       <div class="map-zone-pills preview" data-zone="${escapeHtml(zone)}"></div>
@@ -2904,7 +2908,26 @@
         <div class="perimeter-bottom"></div>
       </div>`;
     card.querySelector(".map-gap-source").addEventListener("pointerdown", onGapSourcePointerDown);
+    // Reordering floors only matters (and is only offered) when there are several.
+    const position = MAP_ZONES.indexOf(zone);
+    card.classList.toggle("multi-zone", MAP_ZONES.length > 1);
+    card.querySelectorAll(".map-zone-move").forEach((btn) => {
+      const dir = Number(btn.dataset.dir);
+      btn.disabled = position + dir < 0 || position + dir >= MAP_ZONES.length;
+      btn.addEventListener("click", () => moveMapZone(zone, dir));
+    });
     return card;
+  }
+
+  // Moves a zone (floor) one place up/down in the festival's display order -
+  // an editor's choice, saved with the festival's map.
+  async function moveMapZone(zone, dir) {
+    const from = MAP_ZONES.indexOf(zone);
+    const to = from + dir;
+    if (from < 0 || to < 0 || to >= MAP_ZONES.length) return;
+    [MAP_ZONES[from], MAP_ZONES[to]] = [MAP_ZONES[to], MAP_ZONES[from]];
+    renderFestivalMap();
+    await apiPost("/api/checkin/festival_map/zone_order", { order: MAP_ZONES });
   }
 
   // Some breweries' real Untappd/festival names are too long to read as a

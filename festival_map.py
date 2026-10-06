@@ -679,3 +679,34 @@ async def set_island_align(
         all_data[bucket] = {**(all_data.get(bucket) or {}), "zones": loaded}
         _save_all(all_data)
         return True
+
+
+def apply_zone_order(zones: list[str], saved: list[str]) -> list[str]:
+    """`zones` arranged by the editors' saved order: zones named in `saved`
+    first (in that order), then any zone it doesn't mention (a floor added
+    since) in its natural order. Saved names that no longer exist are ignored."""
+    ordered = [z for z in saved if z in zones]
+    return ordered + [z for z in zones if z not in ordered]
+
+
+async def get_zone_order(festival_key: str | None) -> list[str]:
+    """The saved zone display order for the festival (empty = natural order)."""
+    async with _lock:
+        meta = _load_all().get(_bucket_key(festival_key))
+    order = meta.get("zoneOrder") if isinstance(meta, dict) else None
+    return [z for z in order if isinstance(z, str)] if isinstance(order, list) else []
+
+
+async def set_zone_order(festival_key: str | None, order: list, zones: list[str]) -> bool:
+    """Saves a new display order of the festival's zones (floors). `order`
+    must be exactly the current zones, each once - anything else is rejected."""
+    if not isinstance(order, list) or sorted(order, key=str) != sorted(zones):
+        return False
+    bucket = _bucket_key(festival_key)
+    async with _lock:
+        all_data = _load_all()
+        entry = dict(all_data.get(bucket) or {})
+        entry["zoneOrder"] = list(order)
+        all_data[bucket] = entry
+        _save_all(all_data)
+        return True

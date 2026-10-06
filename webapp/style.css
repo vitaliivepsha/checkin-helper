@@ -1126,6 +1126,15 @@ body.map-edit-mode .map-island-spacer { border: 1px dashed var(--pill-border); b
    dropping onto one CLAIMS that exact slot (festival_map.py's own
    move_brewery decides this the same way, based on what's actually at
    the target index). */
+.map-zone-order { display: none; margin-left: auto; margin-right: 8px; gap: 4px; }
+body.map-edit-mode .map-zone.multi-zone .map-zone-order { display: inline-flex; }
+.map-zone-move {
+  width: 26px; height: 26px; padding: 0; border-radius: 50%; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--pill-border); color: var(--text);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.map-zone-move:disabled { opacity: 0.3; cursor: default; }
+.map-zone-move .icon { width: 14px; height: 14px; }
 .perimeter-row-slot { position: relative; min-height: 27px; } /* an invisible spacer (a gap) outside edit mode */
 /* In an island a gap is always a whole row - a short slot would just sit beside a short pill. */
 .map-island-pills .perimeter-gap-h { flex: 0 0 auto; align-self: stretch; }

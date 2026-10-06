@@ -2398,7 +2398,7 @@ async def _festival_map_payload(festival_key: str | None) -> dict:
         "zones": zones,
         "plannedStands": planned,
         "waterStands": festival_map.water_stands(template, known_breweries + planned),
-        "zoneOrder": zone_names,
+        "zoneOrder": festival_map.apply_zone_order(zone_names, await festival_map.get_zone_order(map_key)),
         "zoneLabels": _zone_labels_for(map_key),
         "bonusCategories": _festival_bonus_categories(beers),
         "breweryAliases": _festival_brewery_aliases(beers),
@@ -2507,6 +2507,13 @@ async def handle_festival_map_island_spacer(request: web.Request) -> web.Respons
             return None
         island_id = await festival_map.insert_island_spacer(map_key, body.get("zone"), index, zone_names)
         return None if island_id is None else {"islandId": island_id}
+    return await _festival_map_island_call(request, call)
+
+
+async def handle_festival_map_zone_order(request: web.Request) -> web.Response:
+    async def call(map_key, body, zone_names):
+        done = await festival_map.set_zone_order(map_key, body.get("order"), zone_names)
+        return {} if done else None
     return await _festival_map_island_call(request, call)
 
 
@@ -3117,6 +3124,7 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/festival_map/gap_remove", handle_festival_map_gap_remove)
     app.router.add_post("/api/checkin/festival_map/island_spacer", handle_festival_map_island_spacer)
     app.router.add_post("/api/checkin/festival_map/island_align", handle_festival_map_island_align)
+    app.router.add_post("/api/checkin/festival_map/zone_order", handle_festival_map_zone_order)
     app.router.add_post("/api/checkin/festival_map/island_create", handle_festival_map_island_create)
     app.router.add_post("/api/checkin/festival_map/island_delete", handle_festival_map_island_delete)
     app.router.add_post("/api/checkin/wishlist/list", handle_wishlist_list)
