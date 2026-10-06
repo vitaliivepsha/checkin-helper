@@ -2861,7 +2861,9 @@
     state.festivalMap = {
       zones: data.zones || {}, bonusCategories: data.bonusCategories || {},
       zoneLabels: data.zoneLabels || {}, breweryAliases: data.breweryAliases || {},
+      waterStands: new Set(data.waterStands || []),
     };
+    $("festival-map-water-legend").hidden = state.festivalMap.waterStands.size === 0;
     renderFestivalMap();
   }
 
@@ -2972,6 +2974,16 @@
     pill.textContent = BREWERY_DISPLAY_ALIASES[brewery] || brewery;
     pill.title = brewery;
     pill.dataset.brewery = brewery;
+    if (state.festivalMap && state.festivalMap.waterStands && state.festivalMap.waterStands.has(brewery)) {
+      const drop = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      drop.setAttribute("class", "icon pill-water-icon");
+      drop.setAttribute("aria-label", T("app_map_water"));
+      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+      use.setAttribute("href", "#icon-droplet");
+      drop.appendChild(use);
+      pill.prepend(drop);
+      pill.title = brewery + " · " + T("app_map_water");
+    }
     if (draggable) {
       pill.addEventListener("pointerdown", onMapPillPointerDown);
     } else {

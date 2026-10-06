@@ -91,5 +91,35 @@
         "Funky Fluid"
       ]
     }
-  }
+  },
+  "water": [
+    "Sarabanda",
+    "Spółdzielczy",
+    "Magic Road",
+    "Green Head",
+    "Markowy",
+    "Maryensztadt",
+    "Imbiorowicz",
+    "Trzech Kumpli",
+    "Wielka Sowa",
+    "Przełom",
+    "OneMoreBeer",
+    "Stara Szkoła",
+    "Łańcut",
+    "Mazurski",
+    "Brofaktura",
+    "Bednary",
+    "Moczybroda",
+    "Sulewski",
+    "Kazimierz",
+    "Starkraft",
+    "Stu Mostów",
+    "Bałtów",
+    "Hopkultura",
+    "Alchemik",
+    "Hopbrook",
+    "Nieczajna",
+    "Piwne Podziemie",
+    "Lubrow"
+  ]
 }

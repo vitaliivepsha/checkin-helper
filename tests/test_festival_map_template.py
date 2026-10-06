@@ -119,3 +119,10 @@ def test_the_shipped_wfp_template_is_well_formed():
               for key, v in spec.items() if key in ("top", "left", "right", "bottom") for lab in v]
     labels += [lab for spec in template["zones"].values() for isl in spec.get("islands", {}).values() for lab in isl["breweries"]]
     assert len(labels) == len({lab.lower() for lab in labels})  # a stand appears once
+
+
+def test_water_stands_resolves_labels_to_known_stands_and_skips_unknown_ones():
+    template = {"water": ["Bednary", "Sulewski", "Not Here Yet", "bednary"]}
+    assert festival_map.water_stands(template, KNOWN) == ["Browar Bednary", "Browar Sulewski"]
+    assert festival_map.water_stands({}, KNOWN) == []
+    assert festival_map.water_stands(None, KNOWN) == []

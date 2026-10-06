@@ -2387,11 +2387,13 @@ async def _festival_map_payload(festival_key: str | None) -> dict:
     zone_names = _festival_editable_zone_names(beers)
     zone_hint = _festival_brewery_zone_map(beers)
     known_breweries = list(zone_hint.keys())
+    template = _festival_layout_template(map_key)
     zones = await festival_map.get_layout(
-        map_key, known_breweries, zone_hint, zone_names, template=_festival_layout_template(map_key),
+        map_key, known_breweries, zone_hint, zone_names, template=template,
     )
     return {
         "zones": zones,
+        "waterStands": festival_map.water_stands(template, known_breweries),
         "zoneOrder": zone_names,
         "zoneLabels": _zone_labels_for(map_key),
         "bonusCategories": _festival_bonus_categories(beers),

@@ -242,6 +242,20 @@ def resolve_label(label: str, candidates: list[str]) -> str | None:
     return best[1] if best else None
 
 
+def water_stands(template: dict | None, known_breweries: list[str]) -> list[str]:
+    """The known stands the template's optional "water" label list names -
+    the ones serving free potable water. Labels are matched like plan labels
+    (resolve_label); a label no known stand matches yet is simply skipped."""
+    if not template:
+        return []
+    found = []
+    for label in template.get("water") or []:
+        brewery = resolve_label(label, known_breweries)
+        if brewery is not None and brewery not in found:
+            found.append(brewery)
+    return found
+
+
 def _template_containers(template: dict, zones: list[str]) -> list[tuple[str, str, str, str, list[str]]]:
     """[(zone, kind, key, island_label, labels)] - kind is "side" (key =
     the side name) or "island" (key = the island id) - for the template's
