@@ -1427,3 +1427,46 @@ body.public-map .row-menu-btn { display: none !important; }
 .public-beer-result { display: flex; align-items: center; gap: 8px; }
 .public-beer-result-text { flex: 1; min-width: 0; }
 body.public-map .brewery-session-stats { display: none; }
+
+/* ---- Festival novelty filter (style picker + average-rating range) ---- */
+#festival-watch-filter-block { margin-top: 18px; }
+#festival-watch-filter-block h3 { margin: 0 0 4px; font-size: 15px; }
+.filter-field-label { margin: 14px 0 6px; font-size: 12px; font-weight: 600; color: var(--hint); text-transform: uppercase; letter-spacing: 0.02em; }
+.filter-range-head { display: flex; justify-content: space-between; align-items: baseline; }
+.filter-range-head span:last-child { color: var(--text); font-variant-numeric: tabular-nums; text-transform: none; }
+.dropdown-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 14px; border-radius: 12px; font: inherit; color: var(--text); cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--pill-border);
+}
+.dropdown-btn[aria-expanded="true"] .icon { transform: rotate(180deg); }
+.style-dropdown {
+  margin-top: 6px; padding: 8px; border-radius: 12px;
+  background: var(--surface-2); border: 1px solid var(--pill-border);
+}
+.style-dropdown input[type="text"] { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
+.style-dropdown-list { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; }
+.style-option { display: flex; align-items: center; gap: 10px; padding: 7px 4px; font-size: 14px; cursor: pointer; }
+.style-option.hidden { display: none; }
+.style-option input { flex: none; }
+.style-option-all { border-bottom: 1px solid var(--pill-border); font-weight: 600; margin-bottom: 2px; }
+
+/* Two native range inputs stacked on one track: only the thumbs take the pointer. */
+.dual-range { position: relative; height: 28px; margin: 4px 6px 6px; }
+.dual-range-track { position: absolute; left: 0; right: 0; top: 12px; height: 4px; border-radius: 2px; background: var(--pill-border); }
+#festival-watch-rating-fill { position: absolute; top: 0; bottom: 0; background: var(--button); border-radius: 2px; }
+.dual-range input[type="range"] {
+  position: absolute; left: 0; top: 0; width: 100%; height: 28px; margin: 0;
+  background: none; pointer-events: none; -webkit-appearance: none; appearance: none;
+}
+.dual-range input[type="range"]::-webkit-slider-runnable-track { background: none; height: 28px; }
+.dual-range input[type="range"]::-moz-range-track { background: none; }
+.dual-range input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; pointer-events: auto; cursor: pointer;
+  width: 22px; height: 22px; margin-top: 3px; border-radius: 50%;
+  background: var(--button); border: 3px solid var(--bg); box-shadow: var(--shadow-sm);
+}
+.dual-range input[type="range"]::-moz-range-thumb {
+  pointer-events: auto; cursor: pointer; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--button); border: 3px solid var(--bg);
+}

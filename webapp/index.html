@@ -310,6 +310,35 @@
   <label class="checkbox-label">
     <input type="checkbox" id="festival-watch-notify-listed-toggle"> <span data-i18n="app_watch_notify_listed"></span>
   </label>
+  <div id="festival-watch-filter-block">
+    <h3 data-i18n="app_watch_filter_title"></h3>
+    <div class="hint" data-i18n="app_watch_filter_hint"></div>
+    <div class="filter-field-label" data-i18n="app_watch_styles_label"></div>
+    <button type="button" id="festival-watch-styles-btn" class="dropdown-btn" aria-expanded="false">
+      <span id="festival-watch-styles-label"></span>
+      <svg class="icon"><use href="#icon-arrow-down"/></svg>
+    </button>
+    <div id="festival-watch-styles-panel" class="style-dropdown hidden">
+      <input id="festival-watch-styles-search" type="text" inputmode="search"
+             data-i18n-placeholder="app_watch_styles_search_ph" autocomplete="off">
+      <label class="style-option style-option-all">
+        <input type="checkbox" id="festival-watch-styles-all">
+        <span data-i18n="app_watch_styles_all"></span>
+      </label>
+      <div id="festival-watch-styles-list" class="style-dropdown-list"></div>
+      <div id="festival-watch-styles-empty" class="hint hidden" data-i18n="app_watch_styles_none_found"></div>
+    </div>
+    <div class="filter-field-label filter-range-head">
+      <span data-i18n="app_watch_rating_label"></span>
+      <span id="festival-watch-rating-value"></span>
+    </div>
+    <div class="dual-range">
+      <div class="dual-range-track"><div id="festival-watch-rating-fill"></div></div>
+      <input type="range" id="festival-watch-rating-min" min="0" max="5" step="0.1" value="0" aria-label="min">
+      <input type="range" id="festival-watch-rating-max" min="0" max="5" step="0.1" value="5" aria-label="max">
+    </div>
+    <div class="hint" data-i18n="app_watch_rating_hint"></div>
+  </div>
 </div>
 
 <div id="screen-festival-map" class="screen">

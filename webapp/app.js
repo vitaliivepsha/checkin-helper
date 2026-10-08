@@ -2317,6 +2317,7 @@
     if (venueMode) {
       hintEl.innerHTML = `<svg class="icon"><use href="#icon-pin"/></svg> ${escapeHtml(T("app_watch_venue_hint", { venue: data.venueName || T("app_watch_this_venue") }))}`;
     }
+    applyWatchFilterFromServer(data);
     const extrasEl = $("festival-watch-extra-list");
     extrasEl.innerHTML = "";
     (data.extraVenues || []).forEach((v) => {
@@ -2346,6 +2347,113 @@
     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
     await apiPost("/api/checkin/festival_watch/set_notify_listed", { enabled: e.target.checked });
   });
+
+  // ---- Novelty filter: which styles and what average rating are worth a ping ----
+  // Defaults mean "everything": no style ticked = all styles, 0..5 = every
+  // rating. Saved a moment after the last change (same debounce idea as the radius).
+  const watchFilter = { styles: new Set(), min: 0, max: 5, allStyles: null, loaded: false };
+
+  function updateWatchFilterLabels() {
+    const n = watchFilter.styles.size;
+    $("festival-watch-styles-label").textContent = n === 0 ? T("app_watch_styles_all") : TP("app_watch_styles_count", n);
+    $("festival-watch-styles-all").checked = n === 0;
+    $("festival-watch-rating-value").textContent = `${watchFilter.min.toFixed(1)} – ${watchFilter.max.toFixed(1)}`;
+    const fill = $("festival-watch-rating-fill");
+    fill.style.left = `${(watchFilter.min / 5) * 100}%`;
+    fill.style.right = `${100 - (watchFilter.max / 5) * 100}%`;
+  }
+
+  function applyWatchFilterFromServer(cfg) {
+    watchFilter.styles = new Set(cfg.noveltyStyles || []);
+    watchFilter.min = typeof cfg.noveltyRatingMin === "number" ? cfg.noveltyRatingMin : 0;
+    watchFilter.max = typeof cfg.noveltyRatingMax === "number" ? cfg.noveltyRatingMax : 5;
+    $("festival-watch-rating-min").value = watchFilter.min;
+    $("festival-watch-rating-max").value = watchFilter.max;
+    updateWatchFilterLabels();
+    if (watchFilter.allStyles) renderWatchStyleList();
+  }
+
+  let watchFilterSaveTimer = null;
+  function saveWatchFilterSoon() {
+    clearTimeout(watchFilterSaveTimer);
+    watchFilterSaveTimer = setTimeout(() => {
+      apiPost("/api/checkin/festival_watch/set_filter", {
+        styles: [...watchFilter.styles], ratingMin: watchFilter.min, ratingMax: watchFilter.max,
+      });
+    }, 600);
+  }
+
+  function renderWatchStyleList() {
+    const list = $("festival-watch-styles-list");
+    list.innerHTML = "";
+    (watchFilter.allStyles || []).forEach((name) => {
+      const row = document.createElement("label");
+      row.className = "style-option";
+      row.dataset.name = name.toLowerCase();
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = watchFilter.styles.has(name);
+      box.addEventListener("change", () => {
+        if (box.checked) watchFilter.styles.add(name); else watchFilter.styles.delete(name);
+        updateWatchFilterLabels();
+        saveWatchFilterSoon();
+      });
+      const text = document.createElement("span");
+      text.textContent = name;
+      row.append(box, text);
+      list.appendChild(row);
+    });
+    filterWatchStyleList();
+  }
+
+  function filterWatchStyleList() {
+    const q = $("festival-watch-styles-search").value.trim().toLowerCase();
+    let shown = 0;
+    $("festival-watch-styles-list").querySelectorAll(".style-option").forEach((row) => {
+      const match = !q || row.dataset.name.includes(q);
+      row.classList.toggle("hidden", !match);
+      if (match) shown++;
+    });
+    $("festival-watch-styles-empty").classList.toggle("hidden", shown > 0);
+  }
+
+  $("festival-watch-styles-btn").addEventListener("click", async () => {
+    const panel = $("festival-watch-styles-panel");
+    const opening = panel.classList.contains("hidden");
+    panel.classList.toggle("hidden", !opening);
+    $("festival-watch-styles-btn").setAttribute("aria-expanded", String(opening));
+    if (opening && !watchFilter.allStyles) {
+      const { ok, data } = await apiPost("/api/checkin/festival_watch/styles", {});
+      if (ok) {
+        watchFilter.allStyles = data.styles || [];
+        renderWatchStyleList();
+      }
+    }
+  });
+  $("festival-watch-styles-search").addEventListener("input", filterWatchStyleList);
+  // Ticking "All styles" clears the selection (no style ticked = every style).
+  $("festival-watch-styles-all").addEventListener("change", () => {
+    watchFilter.styles.clear();
+    $("festival-watch-styles-list").querySelectorAll("input").forEach((box) => { box.checked = false; });
+    updateWatchFilterLabels();
+    saveWatchFilterSoon();
+  });
+
+  function onWatchRatingInput(changed) {
+    let lo = parseFloat($("festival-watch-rating-min").value);
+    let hi = parseFloat($("festival-watch-rating-max").value);
+    if (lo > hi) { // the thumbs can't cross - the one being dragged stops at the other
+      if (changed === "min") lo = hi; else hi = lo;
+      $("festival-watch-rating-min").value = lo;
+      $("festival-watch-rating-max").value = hi;
+    }
+    watchFilter.min = Math.round(lo * 10) / 10;
+    watchFilter.max = Math.round(hi * 10) / 10;
+    updateWatchFilterLabels();
+    saveWatchFilterSoon();
+  }
+  $("festival-watch-rating-min").addEventListener("input", () => onWatchRatingInput("min"));
+  $("festival-watch-rating-max").addEventListener("input", () => onWatchRatingInput("max"));
 
   let festivalWatchRadiusDebounce = null;
   $("festival-watch-radius-input").addEventListener("input", (e) => {

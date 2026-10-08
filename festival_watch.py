@@ -31,6 +31,25 @@ _lock = asyncio.Lock()
 
 DEFAULT_RADIUS_METERS = 500
 
+# Novelty filter defaults: every style, every average rating = no filtering.
+RATING_MIN, RATING_MAX = 0.0, 5.0
+_STYLES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "untappd_styles.json")
+_styles_cache: list[str] | None = None
+
+
+def styles_taxonomy() -> list[str]:
+    """Untappd's beer-like style names (untappd_styles.json), in the file's
+    alphabetical order - what the style filter's picker offers and the only
+    names it accepts."""
+    global _styles_cache
+    if _styles_cache is None:
+        try:
+            with open(_STYLES_FILE, encoding="utf-8") as fh:
+                _styles_cache = [x for x in json.load(fh).get("styles", []) if isinstance(x, str)]
+        except (OSError, json.JSONDecodeError):
+            _styles_cache = []
+    return _styles_cache
+
 
 def init(data_dir: str) -> None:
     global _path
@@ -87,6 +106,11 @@ async def get_config(owner_id: int) -> dict:
             "friendsLastCheckinId": entry.get("friendsLastCheckinId"),
             # Off by default - see set_notify_listed's own docstring for why.
             "notifyListedBeers": entry.get("notifyListedBeers", False),
+            # Novelty filter (see set_novelty_filter): no styles listed = all
+            # styles; 0..5 = every average rating.
+            "noveltyStyles": list(entry.get("noveltyStyles") or []),
+            "noveltyRatingMin": entry.get("noveltyRatingMin", RATING_MIN),
+            "noveltyRatingMax": entry.get("noveltyRatingMax", RATING_MAX),
         }
 
 
@@ -229,6 +253,63 @@ async def set_notify_listed(owner_id: int, enabled: bool) -> None:
         entry = _owner_entry(data, owner_id)
         entry["notifyListedBeers"] = enabled
         _save(data)
+
+
+async def set_novelty_filter(owner_id: int, styles, rating_min, rating_max) -> bool:
+    """Narrows which novelties get a notification: only beers of the chosen
+    `styles` (an empty list, or every style ticked, means all styles) whose
+    average Untappd rating is within [rating_min, rating_max] (0..5 = all).
+    Names outside the taxonomy are dropped; False for a malformed request
+    (non-list styles, non-numeric or inverted/out-of-range ratings)."""
+    if not isinstance(styles, list) or not all(isinstance(x, str) for x in styles):
+        return False
+    try:
+        lo, hi = round(float(rating_min), 1), round(float(rating_max), 1)
+    except (TypeError, ValueError):
+        return False
+    if not (RATING_MIN <= lo <= hi <= RATING_MAX):
+        return False
+    taxonomy = styles_taxonomy()
+    chosen = set(styles)
+    kept = [x for x in taxonomy if x in chosen]
+    if len(kept) == len(taxonomy):
+        kept = []  # every style ticked = no style filter
+    async with _lock:
+        data = _load()
+        entry = _owner_entry(data, owner_id)
+        entry["noveltyStyles"] = kept
+        entry["noveltyRatingMin"] = lo
+        entry["noveltyRatingMax"] = hi
+        _save(data)
+    return True
+
+
+def novelty_filter_active(config: dict) -> bool:
+    return bool(config.get("noveltyStyles")) or config.get("noveltyRatingMin", RATING_MIN) > RATING_MIN         or config.get("noveltyRatingMax", RATING_MAX) < RATING_MAX
+
+
+def novelty_filter_needs_facts(config: dict, style: str | None) -> bool:
+    """Whether judging a beer needs a lookup beyond what the check-in item
+    itself carries: its style (scraped items have none) or its average rating
+    (no check-in item has it)."""
+    rating_filtered = config.get("noveltyRatingMin", RATING_MIN) > RATING_MIN         or config.get("noveltyRatingMax", RATING_MAX) < RATING_MAX
+    return rating_filtered or (bool(config.get("noveltyStyles")) and not style)
+
+
+def novelty_passes_filter(config: dict, style: str | None, rating: float | None) -> bool:
+    """Whether a beer passes the owner's novelty filter. Unknown facts never
+    suppress a notification (missing a new beer is worse than one extra
+    ping): a beer without a known style isn't dropped by the style filter,
+    and one with no ratings yet (None/0 - typical for a fresh release) isn't
+    dropped by the rating filter."""
+    styles = config.get("noveltyStyles") or []
+    if styles and style and style not in styles:
+        return False
+    lo = config.get("noveltyRatingMin", RATING_MIN)
+    hi = config.get("noveltyRatingMax", RATING_MAX)
+    if rating and (lo > RATING_MIN or hi < RATING_MAX) and not (lo <= rating <= hi):
+        return False
+    return True
 
 
 def haversine_meters(lat1: float, lng1: float, lat2: float, lng2: float) -> float:

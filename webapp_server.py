@@ -3080,6 +3080,31 @@ async def handle_festival_watch_toggle(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
+async def handle_festival_watch_styles(request: web.Request) -> web.Response:
+    """The style names the novelty filter's picker offers."""
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    return web.json_response({"styles": festival_watch.styles_taxonomy()})
+
+
+async def handle_festival_watch_set_filter(request: web.Request) -> web.Response:
+    init_data = await _require_valid_init_data(request)
+    if not init_data:
+        return _json_error("invalid_init_data", 401)
+    user_id = (init_data.get("user") or {}).get("id")
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return _json_error("invalid_json")
+    done = await festival_watch.set_novelty_filter(
+        user_id, body.get("styles"), body.get("ratingMin"), body.get("ratingMax"),
+    )
+    if not done:
+        return _json_error("invalid_filter")
+    return web.json_response({"ok": True})
+
+
 async def handle_festival_watch_set_notify_listed(request: web.Request) -> web.Response:
     init_data = await _require_valid_init_data(request)
     if not init_data:
@@ -3145,6 +3170,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/festival_watch/set_radius", handle_festival_watch_set_radius)
     app.router.add_post("/api/checkin/festival_watch/toggle", handle_festival_watch_toggle)
     app.router.add_post("/api/checkin/festival_watch/set_notify_listed", handle_festival_watch_set_notify_listed)
+    app.router.add_post("/api/checkin/festival_watch/styles", handle_festival_watch_styles)
+    app.router.add_post("/api/checkin/festival_watch/set_filter", handle_festival_watch_set_filter)
     app.router.add_post("/api/checkin/maintenance/get", handle_maintenance_get)
     app.router.add_post("/api/checkin/autotoast/status", handle_autotoast_status)
     app.router.add_post("/api/checkin/comment_watch/get", handle_comment_watch_get)
@@ -3915,6 +3942,54 @@ def _html_link(url: str, text: str) -> str:
     return f'<a href="{url}">{html.escape(text)}</a>'
 
 
+# A beer's style and average rating for the novelty filter - neither a
+# friends-feed item (no average rating) nor a scraped activity item (no style
+# at all) carries them, so they come from get_beer on the owner's own token
+# (1 MCP call, cached for hours: a hot tap is checked in many times).
+_novelty_facts_cache = public_map_util.TTLCache(ttl_seconds=6 * 3600, max_entries=3000)
+
+
+async def _novelty_beer_facts(owner_id: int, bid: int) -> dict | None:
+    """{"style", "rating"} for `bid`, or None when it can't be looked up right
+    now (no token, rate-limited, MCP error) - the caller then lets the beer
+    through rather than risk hiding a genuine novelty."""
+    cached = _novelty_facts_cache.get(bid)
+    if cached is not None:
+        return cached
+    token = await user_tokens.get_token(owner_id)
+    if not token:
+        return None
+    try:
+        detail = await untappd_mcp.get_beer(token, bid)
+    except untappd_mcp.UntappdMCPError as e:
+        logger.info("novelty filter: get_beer(%s) failed, notifying unfiltered: %s", bid, e)
+        return None
+    beer = (detail or {}).get("beer") or {}
+    rating = beer.get("rating_score")
+    facts = {
+        "style": beer.get("beer_style"),
+        "rating": float(rating) if isinstance(rating, (int, float)) and (beer.get("rating_count") or 0) > 0 else None,
+    }
+    _novelty_facts_cache.set(bid, facts)
+    return facts
+
+
+async def _novelty_item_passes_filter(owner_id: int, watch: dict, item: dict, bid: int | None) -> bool:
+    """The owner's style/average-rating filter (festival_watch.
+    set_novelty_filter) applied to one candidate check-in. Cheap when the
+    filter is at its defaults (nothing is looked up at all)."""
+    if not festival_watch.novelty_filter_active(watch):
+        return True
+    style = (item.get("beer") or {}).get("beer_style")
+    rating = None
+    if bid is not None and festival_watch.novelty_filter_needs_facts(watch, style):
+        facts = await _novelty_beer_facts(owner_id, bid)
+        if facts is not None:
+            style = style or facts.get("style")
+            rating = facts.get("rating")
+    return festival_watch.novelty_passes_filter(watch, style, rating)
+
+
 async def _check_festival_novelty(owner_id: int, items: list[dict]) -> None:
     """Sends a Telegram message for any item in `items` that's within the
     owner's saved festival_watch radius AND whose beer isn't on the current
@@ -3984,7 +4059,8 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
     if not items:
         return
     known_beer_ids = _all_festival_beer_ids()
-    notify_listed = (await festival_watch.get_config(owner_id))["notifyListedBeers"]
+    watch_config = await festival_watch.get_config(owner_id)
+    notify_listed = watch_config["notifyListedBeers"]
     # The owner's last-seen language (set when they open the Mini App);
     # "uk" until they ever have, which is what these messages always were.
     lang = await user_tokens.get_language(owner_id) or "uk"
@@ -3998,6 +4074,8 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
 
         if bid is not None and await _beer_already_queued(owner_id, bid):
             continue  # rule 1: already tracked in the shared queue
+        if not await _novelty_item_passes_filter(owner_id, watch_config, item, bid):
+            continue  # not one of the styles / outside the average-rating range the owner asked for
         if bid is not None and not _festival_novelty_notify_allowed(owner_id, bid):
             continue  # rule 4 (spam cap): already pinged enough this hour
 
