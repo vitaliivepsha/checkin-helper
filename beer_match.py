@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Bumped whenever the matching rules change in a way that can alter outcomes: the
 # lens log stores the version each entry was resolved with, and the daily crawl
 # re-resolves still-unmatched and questionable entries of an older version once.
-MATCHER_VERSION = 4
+MATCHER_VERSION = 5
 
 SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # exact-name match past position 5 among a brewery's many similarly-styled
@@ -145,8 +145,29 @@ def scan_norm(text: str) -> str:
     return " ".join(words)
 
 
+# Letters scan_norm's NFKD folding leaves alone (it would split "Hindbærsnitter" or
+# "To Øl" into fragments); folded here, for matching only, so the lens log's keys
+# (built on scan_norm itself) stay as they were.
+_EXTRA_FOLD = str.maketrans({
+    "æ": "ae", "Æ": "AE", "ø": "o", "Ø": "O", "œ": "oe", "Œ": "OE", "ß": "ss",
+    "đ": "d", "Đ": "D", "ð": "d", "þ": "th",
+})
+_LETTER_DIGIT_BOUNDARY_RE = re.compile(r"(?<=[a-z])(?=[0-9])|(?<=[0-9])(?=[a-z])")
+
+
+def _token_list(text: str) -> list[str]:
+    """Ordered words of `text` as the matcher compares them: scan_norm, the extra
+    letter folds above, and a split between letters and digits ("Tap01" ==
+    "Tap 01", "Citraplus1" == "Citraplus 1") so a glued number doesn't make
+    two spellings of one name differ."""
+    words: list[str] = []
+    for w in scan_norm((text or "").translate(_EXTRA_FOLD)).split():
+        words.extend(_LETTER_DIGIT_BOUNDARY_RE.sub(" ", w).split())
+    return words
+
+
 def _token_set(text: str) -> frozenset:
-    return frozenset(scan_norm(text).split())
+    return frozenset(_token_list(text))
 
 
 # An em/en dash in a catalog beerName marks a deliberate "core name -
@@ -180,13 +201,15 @@ def _brewery_matches_query(result: dict, query_brewery_name: str) -> bool:
     and case-insensitive - the query brewery is often a shortened form of
     Untappd's fuller name (shop's "Stu Mostów" vs catalog's "Browar Stu
     Mostów"), or vice versa."""
-    query_key = (query_brewery_name or "").strip().lower()
+    # Compared as matcher words (folded letters, punctuation and curly vs straight
+    # apostrophes gone) - "l’Abbaye" and "l'Abbaye" are the same brewery.
+    query_key = " ".join(_token_list(query_brewery_name or ""))
     if not query_key:
         return False
     names = [(result.get("brewery") or {}).get("name") or ""]
     names.extend(result.get("aliases") or [])
     for name in names:
-        name_key = name.strip().lower()
+        name_key = " ".join(_token_list(name))
         if name_key and (name_key in query_key or query_key in name_key):
             return True
     return False
@@ -232,7 +255,7 @@ def _typo_token_match(a: str, b: str) -> bool:
     """Two different words a shop typo could confuse: they differ only by a
     doubled letter ("Dass"/"Das", "Kwass"/"Kwas"), by one adjacent swap of two
     letters in a word of 5+ ("Mouteka"/"Motueka"), or - only for long words of
-    8+ letters, where one wrong letter can't make a different word - by one
+    7+ letters, where one wrong letter can't make a different word - by one
     inserted/missing/wrong letter ("Collsion"/"Collision", "Biologigue"/
     "Biologique"). Deliberately narrow - never a general edit distance on short
     words, which would equate real siblings like "Gose"/"Rose" - and never for
@@ -241,7 +264,7 @@ def _typo_token_match(a: str, b: str) -> bool:
         return False
     if _collapse_repeats(a) == _collapse_repeats(b) or _one_adjacent_swap(a, b):
         return True
-    return min(len(a), len(b)) >= 8 and _one_edit_apart(a, b)
+    return min(len(a), len(b)) >= 7 and _one_edit_apart(a, b)
 
 
 def _typo_equal(query_tokens: frozenset, candidate_tokens: frozenset) -> bool:
@@ -335,10 +358,19 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
     # truly a duplicate (still matches fine) but adds a safety margin
     # against exactly this kind of coincidence.
     query_tokens = raw_query_tokens - _token_set(brewery_name)
-    if not query_tokens:
-        return None
+    name_is_brewery = not query_tokens
+    if name_is_brewery:
+        # The beer is named like its brewery ("Orval" by Brasserie d'Orval, "Cuba
+        # Libre" by Cuba Libre): subtracting the brewery's words leaves nothing, so
+        # compare the whole name - but then only an exact name credited to that very
+        # brewery will do.
+        query_tokens = raw_query_tokens
 
-    exact = [r for r in results if _token_set(r.get("beerName") or "") == query_tokens]
+    exact = [
+        r for r in results
+        if _token_set(r.get("beerName") or "") == query_tokens
+        and (not name_is_brewery or _brewery_matches_query(r, brewery_name))
+    ]
     if len(exact) > 1:
         # Multiple identically-named catalog entries - not necessarily
         # ambiguous. The exact-match check above deliberately never looks
@@ -404,6 +436,13 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
     if exact_only:
         return None
 
+    brewery_words = _token_set(brewery_name)
+    query_list = [t for t in _token_list(beer_name) if t not in brewery_words]
+
+    def _starts_with_query(name: str) -> bool:
+        candidate_list = [t for t in _token_list(name) if t not in brewery_words]
+        return bool(query_list) and candidate_list[: len(query_list)] == query_list
+
     def _within_superset_cap(name: str) -> bool:
         # The cap only ever counts extra tokens within the candidate's own
         # CORE name (see _core_token_set) - a trailing "— full hop/flavor
@@ -422,6 +461,11 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
         # vs "Gelato XTREME: Blue Velvet" case, and a lone "Red" fitting "English
         # Barley Wine Red Wine BA").
         cap = {1: 2, 2: 4}.get(len(raw_query_tokens), MAX_SUPERSET_EXTRA_TOKENS)
+        if _starts_with_query(name):
+            # "Quill" -> "Quill. Extra Hořká 12°", "Klasik" -> "Klasik. Hořký Ležák 12°": the
+            # catalog name BEGINS with the shop's name, so the rest is a descriptor, not
+            # another product ("Velvet" inside "Gelato XTREME: Blue Velvet" is).
+            cap = MAX_SUPERSET_EXTRA_TOKENS
         # "Komes Barley Wine" must not become "Komes Wymrażany Barley Wine Cognac
         # BA": a barrel-aged/nitro catalog beer is another product than the plain one.
         if extra_in_core & _VARIANT_MARKER_TOKENS:
@@ -721,6 +765,10 @@ _DANGLING_CONNECTOR_RE = re.compile(r"(^|\s)[&/](\s|$)")
 # neighbor above) - this is the query-building-time equivalent, needed
 # because here the untouched word breaks the search itself, not just the
 # token comparison after.
+# A Czech/Polish gravity ("Parohatej 11°", "12°"): never part of the catalog name
+# of a beer whose title already says it all.
+_PLATO_DEGREE_RE = re.compile(r"\s*[0-9]{1,2}(?:[.,][0-9]+)?\s*°")
+
 _POLISH_AND_RE = re.compile(r"\bi\b", re.IGNORECASE)
 
 # Polish "z" ("with") - a grammatical connector, not identifying content,
@@ -948,6 +996,7 @@ def _clean_beer_name_query(beer_name: str, brewery_name: str = "") -> str:
     cleaned = _KRAFT_ROKU_RE.sub("", cleaned)
     cleaned = _IN_OUT_RE.sub("", cleaned)
     cleaned = _POLISH_VINTAGE_RE.sub("", cleaned)
+    cleaned = _PLATO_DEGREE_RE.sub("", cleaned)
     cleaned = _POLISH_AND_RE.sub("", cleaned)
     cleaned = _POLISH_WITH_RE.sub("", cleaned)
     cleaned = _collapse_non_alco_markers(cleaned)
@@ -957,6 +1006,9 @@ def _clean_beer_name_query(beer_name: str, brewery_name: str = "") -> str:
     cleaned = _DANGLING_CONNECTOR_RE.sub(" ", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned or (beer_name or "").strip()
+
+
+_BREWERY_TITLE_SUFFIX_WORDS = frozenset({"brewing", "brewery", "brouwerij", "browar", "brasserie", "bierbrouwerij"})
 
 
 def _brewery_prefix_stripped_variant(beer_name: str, brewery_core: str) -> str | None:
@@ -983,7 +1035,12 @@ def _brewery_prefix_stripped_variant(beer_name: str, brewery_core: str) -> str |
     # brewery stayed in the query (and in the superset comparison).
     if [w.lower().rstrip(":,;") for w in name_words[: len(core_words)]] != [w.lower() for w in core_words]:
         return None
-    return " ".join(name_words[len(core_words):]).strip() or None
+    rest = name_words[len(core_words):]
+    # "Two Chefs Brewing Bon Chef": the title repeats the brewery with its own
+    # suffix word too ("Brewing", "Brouwerij", ...), which is no part of the beer.
+    if len(rest) > 1 and rest[0].lower().rstrip(":,;") in _BREWERY_TITLE_SUFFIX_WORDS:
+        rest = rest[1:]
+    return " ".join(rest).strip() or None
 
 
 def _style_stripped_variant(text: str) -> str | None:

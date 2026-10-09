@@ -93,3 +93,41 @@ def test_keg_and_case_listings_lose_their_packaging_suffix():
         ("Atak Chmielu - karton 10 szt.", "Atak Chmielu"), ("Hazy Morning - puszka 500 ml", "Hazy Morning"),
     ]:
         assert beer_match._clean_beer_name_query(title, "") == clean
+
+
+def test_a_beer_named_like_its_brewery_matches_only_its_own_exact_name():
+    results = [beer(70, "Orval", "Brasserie d'Orval"), beer(71, "Orval (2025)", "Brasserie d'Orval"), beer(72, "Orval Vert", "Brasserie d'Orval")]
+    assert beer_match.pick_best_match(results, "Orval", "Brasserie d'Orval")["bid"] == 70
+    assert beer_match.pick_best_match([beer(73, "Orval", "Another Brewery")], "Orval", "Brasserie d'Orval") is None
+
+
+def test_a_descriptor_after_the_shops_name_is_fine_but_a_name_inside_another_is_not():
+    moon = "Moon Lark"
+    assert beer_match.pick_best_match([beer(80, "Quill. Extra Hořká 12°", moon)], "Quill", moon)["bid"] == 80
+    assert beer_match.pick_best_match([beer(81, "Klasik. Hořký Ležák 12°", moon)], "Klasik", moon)["bid"] == 81
+    # the documented counter-example: the shop's word sits INSIDE a different beer's name
+    assert beer_match.pick_best_match([beer(82, "Gelato XTREME: Blue Velvet", "Funky Fluid")], "Velvet", "Funky Fluid") is None
+
+
+def test_scandinavian_letters_and_glued_numbers_compare_equal():
+    assert beer_match.pick_best_match([beer(90, "Hindbærsnitter", "Magic Road")], "Hindbaersnitter", "Magic Road")["bid"] == 90
+    assert beer_match.pick_best_match([beer(91, "Implosion", "To Øl"), beer(92, "Implosion Lager", "To Øl")], "To Ol Implosion", "To Øl")["bid"] == 91
+    tap = beer(93, "Hefeweissbier Naturtrüb (Tap 01)", "Schneider Weisse")
+    assert beer_match.pick_best_match([tap], "TAP01 HEFEWEISSBIER", "Schneider")["bid"] == 93  # (the variant with the brewery prefix stripped)
+
+
+def test_plato_degrees_and_a_repeated_brewery_suffix_are_not_part_of_the_name():
+    assert beer_match._clean_beer_name_query("Parohatej 11°", "") == "Parohatej"
+    assert beer_match._brewery_prefix_stripped_variant("Two Chefs Brewing Bon Chef", "Two Chefs") == "Bon Chef"
+    assert beer_match._brewery_prefix_stripped_variant("Two Chefs Bon Chef", "Two Chefs") == "Bon Chef"
+
+
+def test_brewery_names_compare_across_apostrophe_styles_and_accents():
+    valdieu = beer(100, "Val-Dieu Triple", "Brasserie de l'Abbaye du Val-Dieu")
+    assert beer_match.pick_best_match([valdieu], "Val-Dieu Triple", "Brasserie de l’Abbaye du Val-Dieu")["bid"] == 100
+    assert beer_match.pick_best_match([beer(101, "Cuvée", "Brasserie Fantôme")], "Cuvee", "Brasserie Fantome")["bid"] == 101
+
+
+def test_a_missing_letter_in_a_seven_letter_word_is_a_typo():
+    cocktail = beer(102, "The Cocktail Collection: Rio Vibes", "Nepo Brewing")
+    assert beer_match.pick_best_match([cocktail], "The Coctail Collection Rio Vibes", "Nepo Brewing")["bid"] == 102
