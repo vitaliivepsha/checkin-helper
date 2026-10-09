@@ -83,3 +83,13 @@ def test_homebrew_clone_kits_are_never_a_match():
     assert beer_match.pick_best_match([kit], "Verdant Even Sharks Need Water", "Verdant") is None
     real = beer(61, "Even Sharks Need Water", "Verdant")
     assert beer_match.pick_best_match([kit, real], "Verdant Even Sharks Need Water", "Verdant")["bid"] == 61
+
+
+def test_keg_and_case_listings_lose_their_packaging_suffix():
+    for title, clean in [
+        ("Schops - keg A 30l", "Schops"), ("Plum Blond Sour Ale - keykeg 20l", "Plum Blond Sour Ale"),
+        ("Autumn Hug - KEG 30 l A", "Autumn Hug"), ("Neon Pulse - KEG 30 l A", "Neon Pulse"),
+        ("10th Anniversary TDH New England Dipa - KEG 20L typ A", "10th Anniversary TDH New England Dipa"),
+        ("Atak Chmielu - karton 10 szt.", "Atak Chmielu"), ("Hazy Morning - puszka 500 ml", "Hazy Morning"),
+    ]:
+        assert beer_match._clean_beer_name_query(title, "") == clean

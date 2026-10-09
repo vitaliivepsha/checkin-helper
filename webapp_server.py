@@ -2139,7 +2139,7 @@ async def handle_lens_report(request: web.Request) -> web.Response:
     if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
         return _json_error("unauthorized", 401)
     try:
-        limit = max(1, min(200, int(request.query.get("limit", "50"))))
+        limit = max(1, min(1000, int(request.query.get("limit", "50"))))
     except ValueError:
         limit = 50
     report = await lens_log.report(limit)

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Bumped whenever the matching rules change in a way that can alter outcomes: the
 # lens log stores the version each entry was resolved with, and the daily crawl
 # re-resolves still-unmatched and questionable entries of an older version once.
-MATCHER_VERSION = 3
+MATCHER_VERSION = 4
 
 SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # exact-name match past position 5 among a brewery's many similarly-styled
@@ -671,6 +671,14 @@ _NOISE_WORDS_RE = re.compile(
 _PACKAGING_SUFFIX_RE = re.compile(
     r"\s*-?\s*(?:"
     r"(?:bottle|can|keg|growler|crowler|butelka|puszka|beczka)\s*\d+(?:[.,]\d+)?\s*m?l"
+    r"|"
+    # a keg listing: "keykeg 20l", "KEG 30 l A", "keg 20L typ A" (the trailing letter/type is the coupler)
+    r"(?:key)?keg\s*\d+(?:[.,]\d+)?\s*l\b(?:\s*(?:typ\s+)?[A-Za-z]\b)?"
+    r"|"
+    r"(?:key)?keg\s+[A-Za-z]\s+\d+(?:[.,]\d+)?\s*l\b"
+    r"|"
+    # a case: "karton 10 szt."
+    r"karton\s*\d+\s*szt\.?"
     r"|"
     r"\d+(?:[.,]\d+)?\s*m?l\s*(?:bottle|can|keg|growler|crowler|butelka|puszka|beczka)"
     r"|"

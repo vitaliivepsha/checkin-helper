@@ -185,3 +185,10 @@ def test_merch_slips_are_recognised_but_beers_are_not():
     assert shop_crawl.is_not_a_beer({"brewery": "Frizzante Brewery", "name": "Frizzante"})
     assert not shop_crawl.is_not_a_beer({"brewery": "WRCLW", "name": "Pszeniczny"})
     assert not shop_crawl.is_not_a_beer({"brewery": "Browar X", "name": "Szklanka Stout"} | {"name": "Czarny Stout"})
+
+
+def test_packaging_and_gift_items_are_not_beers():
+    for name in ["Atak Chmielu - karton 10 szt.", "Shaker - szkło 300 ml", "Szkło Paris 300 ml - Beer Geek Madness 2022",
+                 "Październikowy Mystery Box", "Advent Statiegeld", "ONEMOREBEER OTWIERACZ MAGNES", "Domyślna nazwa"]:
+        assert shop_crawl.is_not_a_beer({"brewery": "", "name": name}), name
+    assert not shop_crawl.is_not_a_beer({"brewery": "Browar X", "name": "Hazy Pale Ale"})

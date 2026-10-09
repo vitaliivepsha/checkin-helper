@@ -144,7 +144,8 @@ def is_non_beer(item: dict) -> bool:
 # Merchandise that slipped past a shop's own product-type filter - found in the
 # lens log: WRCLW's "Pszeniczny T-Shirt" matched the beer "WRCLW Pszeniczny".
 _MERCH_RE = re.compile(
-    r"\b(?:t-?shirt|koszulk\w*|bluz\w*|hoodie|czapk\w*|kubek|szklank\w*|kufel|tumbler|plakat|naklejk\w*|sticker|bidon)\b",
+    r"\b(?:t-?shirt|koszulk\w*|bluz\w*|hoodie|czapk\w*|kubek|szklank\w*|kufel|tumbler|plakat|naklejk\w*|sticker|bidon"
+    r"|szk[łl]o|karton|mystery\s+box|statiegeld|otwieracz|magnes\w*|domy[śs]lna\s+nazwa)\b",
     re.IGNORECASE,
 )
 
