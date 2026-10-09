@@ -1,5 +1,5 @@
 {
-  "_source": "Manually curated from https://untappd.com/blog's 'New Badge: X' posts - these are Untappd's own time-limited promotional badges, never in the permanent badges.untappd.com catalog (badge_beer_categories.json/badge_venue_categories.json), so they have to be read and re-catalogued by hand whenever a new one is announced. Checked live 2026-10-05 - entries are ACTIVE-or-UPCOMING as of that date (activeUntil >= today); anything already past its activeUntil at cataloguing time was skipped rather than included pre-expired. New posts whose criteria this schema can't compute (brewery-specific, venue-location, or otherwise ambiguous) are logged in special_badges_pending_review.json instead of guessed here. Re-check the blog periodically (no feed/API for this - it's a real page read each time) and prune entries whose activeUntil has passed, same way this list was built.",
+  "_source": "Manually curated from https://untappd.com/blog's 'New Badge: X' posts - these are Untappd's own time-limited promotional badges, never in the permanent badges.untappd.com catalog (badge_beer_categories.json/badge_venue_categories.json), so they have to be read and re-catalogued by hand whenever a new one is announced. Checked live 2026-10-09 - entries are ACTIVE-or-UPCOMING as of that date (activeUntil >= today); anything already past its activeUntil at cataloguing time was skipped rather than included pre-expired. New posts whose criteria this schema can't compute (brewery-specific, venue-location, or otherwise ambiguous) are logged in special_badges_pending_review.json instead of guessed here. Re-check the blog periodically (no feed/API for this - it's a real page read each time) and prune entries whose activeUntil has passed, same way this list was built.",
   "special_badges": [
     {
       "badge": "Canadian Beer Day 2026",
@@ -9,6 +9,16 @@
       "activeUntil": "2026-10-17",
       "note": "Check in any one (1) beverage from a Canadian brewery in the window - matches had_it_index's own 'country' field, same as the permanent country_badges catalog.",
       "sourceUrl": "https://untappd.com/blog/new-badge-canadian-beer-day-2026/1953"
+    },
+    {
+      "badge": "Pumpkin Beer Season Badge (2026)",
+      "kind": "style",
+      "styles": ["Pumpkin / Yam"],
+      "icon": "https://assets.untappd.com/promo/be8bced48c_UTC-PumpkinBeerSeason-2026_1080x1440.png",
+      "activeFrom": "2026-10-09",
+      "activeUntil": "2026-10-31",
+      "note": "Check in any one (1) pumpkin/yam beer in the window - matches had_it_index's own 'style' field, same convention as the permanent 'Gourd to the Last Drop' style badge which uses the identical 'Pumpkin / Yam' catalog style.",
+      "sourceUrl": "https://untappd.com/blog/new-badge-pumpkin-beer-season-2026/1961"
     }
   ]
 }
