@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.5.0
+// @version      2.6.0
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -43,6 +43,16 @@
   // ------------------------------------------------------------------------
 
   const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h - had_it_index changes slowly; avoids re-querying every page view
+
+  // Titles that are not a beer at all - the same list the server-side crawl drops
+  // (shop_crawl.py's is_not_a_beer): merchandise, glassware, cases, mystery boxes,
+  // deposits, wine/cocktails on a taplist. "whisky" alone is NOT here (barrel-aged beers).
+  const NOT_A_BEER_RE = new RegExp(
+    "\\b(?:t-?shirt|koszulk\\w*|bluz\\w*|hoodie|czapk\\w*|kubek|szklank\\w*|kufel|tumbler|plakat|naklejk\\w*|sticker|bidon" +
+      "|szk[łl]o|karton|mystery\\s+box|statiegeld|otwieracz|magnes\\w*|domy[śs]lna\\s+nazwa" +
+      "|frizzante|prosecco|glera|aperol|spritz|mojito|margarita|negroni|cuba\\s+libre|whisk(?:e)?y\\s+z\\s+col\\w*)\\b",
+    "i"
+  );
 
   // ---- Site adapters - add one entry per shop --------------------------
   // Each adapter only needs to know how to find product cards on ITS OWN
@@ -617,6 +627,7 @@
       const extracted = extractedList[i];
       if (!extracted || !extracted.name) return;
       const { brewery, name } = extracted;
+      if (NOT_A_BEER_RE.test(`${brewery || ""} ${name}`)) return; // merchandise, glassware, gift boxes, wine/cocktails
       const key = cacheKey(brewery, name);
       cardsByKey.set(key, card);
       const cached = cache[key];
