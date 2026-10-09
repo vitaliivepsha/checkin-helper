@@ -112,6 +112,8 @@ async def record(items: list, results: list[dict], source: str = "lens") -> None
             if source == "crawl":
                 entry["crawlSeen"] = entry.get("crawlSeen", 0) + 1
                 entry["lastCrawl"] = now
+            elif source == "recheck":
+                pass  # re-resolving an old entry says nothing about anyone looking at it again
             else:
                 entry["count"] = entry.get("count", 0) + 1
             shop = item.get("shop")
@@ -140,6 +142,33 @@ async def due_for_crawl(items: list[dict]) -> list[dict]:
             elif now - entry.get("resolvedAt", 0) > STALE_AFTER_SECONDS:
                 buckets[2].append(item)
     return buckets[0] + buckets[1] + buckets[2]
+
+
+async def unmatched_to_recheck(crawled_items: list[dict], limit: int, is_junk=None) -> list[dict]:
+    """Logged products that are still unmatched but weren't among today's
+    crawled items (so the crawl itself never re-resolves them - e.g. ones only
+    the userscript ever saw): [{"name", "brewery"}], most-looked-at first, at
+    most `limit`. Lets a matcher fix show up in the report without waiting
+    for someone to open that page again. Entries `is_junk` calls not-a-beer
+    (wine, cocktails) are dropped from the log instead of re-resolved."""
+    seen = {_key(it.get("brewery") or "", it.get("name") or "") for it in crawled_items}
+    async with _lock:
+        data = _load()
+        out, dropped = [], False
+        for key, e in sorted(data.items(), key=lambda kv: (-kv[1].get("count", 0), -kv[1].get("lastSeen", 0))):
+            if e.get("outcome") not in ("no_results", "ambiguous") or key in seen:
+                continue
+            item = {"name": e.get("queryName") or "", "brewery": e.get("queryBrewery") or ""}
+            if not item["name"]:
+                continue
+            if is_junk is not None and is_junk(item):
+                del data[key]
+                dropped = True
+                continue
+            out.append(item)
+        if dropped:
+            _save()
+    return out[:limit]
 
 
 async def mark_crawled(items: list[dict]) -> None:

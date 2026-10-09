@@ -4751,6 +4751,7 @@ SHOP_CRAWL_INTERVAL_SECONDS = float(os.environ.get("SHOP_CRAWL_INTERVAL_SECONDS"
 SHOP_CRAWL_STARTUP_DELAY_SECONDS = float(os.environ.get("SHOP_CRAWL_STARTUP_DELAY_SECONDS", "600"))
 SHOP_CRAWL_MAX_RESOLVES = int(os.environ.get("SHOP_CRAWL_MAX_RESOLVES", "600"))  # per run; the rest waits for the next one
 SHOP_CRAWL_BATCH_SIZE = 50
+SHOP_CRAWL_RECHECK_MAX = int(os.environ.get("SHOP_CRAWL_RECHECK_MAX", "200"))  # still-unmatched log entries the crawl didn't list
 _shop_crawl_task = None
 _shop_crawl_manual_task = None  # keeps the create_task result alive (avoid GC)
 _shop_crawl_running = False
@@ -4798,6 +4799,26 @@ async def _crawl_resolve_one(token: str, owner_id: int, item: dict, sem: asyncio
         return {"matched": False, "candidates": [], "error": True}
 
 
+async def _resolve_and_record(token: str, owner_id: int, todo: list[dict], source: str, state: dict) -> int:
+    """Resolves `todo` in batches through the lens resolver and records each
+    outcome; stops (and notes it in `state`) at the first rate limit. Returns
+    how many were resolved."""
+    resolved = 0
+    sem, stop = asyncio.Semaphore(2), asyncio.Event()
+    for i in range(0, len(todo), SHOP_CRAWL_BATCH_SIZE):
+        batch = todo[i:i + SHOP_CRAWL_BATCH_SIZE]
+        results = await asyncio.gather(*(_crawl_resolve_one(token, owner_id, it, sem, stop) for it in batch))
+        done = [(it, r) for it, r in zip(batch, results) if r is not None]
+        if done:
+            await lens_log.record([d[0] for d in done], [d[1] for d in done], source=source)
+            resolved += len(done)
+        if stop.is_set():
+            state["stoppedEarly"] = "rate_limited"
+            break
+        await asyncio.sleep(1)
+    return resolved
+
+
 async def _run_shop_crawl() -> dict:
     """Crawls every supported shop, then resolves the products worth a look
     (unmatched, new, or stale - see lens_log.due_for_crawl), at most
@@ -4826,18 +4847,13 @@ async def _run_shop_crawl() -> dict:
             due = await lens_log.due_for_crawl(items)
             todo = due[:SHOP_CRAWL_MAX_RESOLVES]
             state["deferred"] = len(due) - len(todo)
-            sem, stop = asyncio.Semaphore(2), asyncio.Event()
-            for i in range(0, len(todo), SHOP_CRAWL_BATCH_SIZE):
-                batch = todo[i:i + SHOP_CRAWL_BATCH_SIZE]
-                results = await asyncio.gather(*(_crawl_resolve_one(token, owner_id, it, sem, stop) for it in batch))
-                done = [(it, r) for it, r in zip(batch, results) if r is not None]
-                if done:
-                    await lens_log.record([d[0] for d in done], [d[1] for d in done], source="crawl")
-                    resolved += len(done)
-                if stop.is_set():
-                    state["stoppedEarly"] = "rate_limited"
-                    break
-                await asyncio.sleep(1)
+            resolved = await _resolve_and_record(token, owner_id, todo, "crawl", state)
+            if "stoppedEarly" not in state:
+                # Then the unmatched entries the crawl itself didn't list (e.g. only
+                # the userscript ever saw them) - so a matcher fix shows up without
+                # anyone reopening that page. Not-a-beer entries are dropped here.
+                recheck = await lens_log.unmatched_to_recheck(items, SHOP_CRAWL_RECHECK_MAX, shop_crawl.is_non_beer)
+                state["rechecked"] = await _resolve_and_record(token, owner_id, recheck, "recheck", state)
         else:
             state["skipped"] = "no owner Untappd token - products listed but not resolved"
         todo_keys = {(it["brewery"].lower(), it["name"].lower()) for it in todo}

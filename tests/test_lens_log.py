@@ -121,3 +121,24 @@ async def test_lookup_handler_logs_and_report_endpoint_needs_the_token(tmp_path,
         report = await (await c.get("/api/lens/report?limit=5", headers=headers)).json()
         assert report["total"] == 2 and report["outcomes"] == {"matched": 1, "no_results": 1}
         assert [e["queryName"] for e in report["unmatched"]] == ["Mystery Beer"]
+
+
+async def test_unmatched_to_recheck_skips_crawled_items_drops_junk_and_keeps_counters(tmp_path):
+    lens_log.init(str(tmp_path))
+    userscript_only = {"name": "Wujek z Ameryki", "brewery": "Browar Zakładowy"}
+    in_todays_crawl = {"name": "Mini Maxi", "brewery": "PINTA"}
+    junk = {"name": "GLERA VENETO", "brewery": "FRIZZANTE MACCARI Brewery"}
+    fine = {"name": "Hazy Morning", "brewery": "PINTA"}
+    await lens_log.record([userscript_only, in_todays_crawl, junk, fine], [unmatched(["a", "b"]), unmatched(), unmatched(), matched("Hazy Morning", "PINTA", 1)])
+    await lens_log.record([userscript_only], [unmatched(["a", "b"])])  # opened twice: ranks first
+
+    import shop_crawl
+    todo = await lens_log.unmatched_to_recheck([in_todays_crawl], 10, shop_crawl.is_non_beer)
+    assert todo == [{"name": "Wujek z Ameryki", "brewery": "Browar Zakładowy"}]  # crawled / matched / junk are out
+    assert (await lens_log.report())["total"] == 3  # the junk entry was dropped from the log
+    assert await lens_log.unmatched_to_recheck([], 0) == []
+
+    # a recheck updates the outcome but is not another person looking at it
+    await lens_log.record(todo, [matched("Wujek z Ameryki", "Browar Zakładowy", 2403878)], source="recheck")
+    entry = next(e for e in (await lens_log.report())["changed"] if e["queryName"] == "Wujek z Ameryki")
+    assert entry["outcome"] == "matched" and entry["count"] == 2 and entry["previous"]["outcome"] == "ambiguous"
