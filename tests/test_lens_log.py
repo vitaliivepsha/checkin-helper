@@ -144,7 +144,7 @@ async def test_entries_to_recheck_skips_crawled_items_drops_junk_and_keeps_count
     assert entry["outcome"] == "matched" and entry["count"] == 2 and entry["previous"]["outcome"] == "ambiguous"
 
 
-async def test_entries_to_recheck_also_covers_questionable_matches_and_drops_merch(tmp_path):
+async def test_entries_to_recheck_also_covers_questionable_matches_and_drops_merch(tmp_path, monkeypatch):
     lens_log.init(str(tmp_path))
     import shop_crawl
     wrong = {"name": "GRYBÓW PILSVAR LACH", "brewery": "Pilsvar"}
@@ -155,7 +155,21 @@ async def test_entries_to_recheck_also_covers_questionable_matches_and_drops_mer
         [wrong, fine, shirt, gone],
         [matched("Pilsvar Grybów", "Pilsvar", 1), matched("Hazy Morning", "PINTA", 2), matched("WRCLW Pszeniczny", "WRCLW", 3), unmatched()],
     )
+    # recorded under the current rules: the questionable match is not due yet
+    assert [t["name"] for t in await lens_log.entries_to_recheck([], 10)] == ["Nothing Here"]
+    monkeypatch.setattr(beer_match, "MATCHER_VERSION", beer_match.MATCHER_VERSION + 1)  # the rules changed since
     todo = await lens_log.entries_to_recheck([], 10, shop_crawl.is_not_a_beer)
     names = [t["name"] for t in todo]
     assert names == ["Nothing Here", "GRYBÓW PILSVAR LACH"]   # unmatched first, then the questionable match
     assert (await lens_log.report())["total"] == 3          # the t-shirt left the log
+
+
+async def test_the_crawl_also_re_resolves_questionable_matches_of_an_older_matcher(tmp_path, monkeypatch):
+    lens_log.init(str(tmp_path))
+    item = {"name": "GRYBÓW PILSVAR LACH", "brewery": "Pilsvar"}
+    await lens_log.record([item], [matched("Pilsvar Grybów", "Pilsvar", 1)], source="crawl")
+    assert await lens_log.due_for_crawl([item]) == []      # judged by the current rules, matched: nothing to do
+    monkeypatch.setattr(beer_match, "MATCHER_VERSION", beer_match.MATCHER_VERSION + 1)
+    assert await lens_log.due_for_crawl([item]) == [item]  # rules changed: look again, once
+    await lens_log.record([item], [unmatched()], source="crawl")
+    assert await lens_log.due_for_crawl([item]) == [item]  # (still unmatched, so still due)

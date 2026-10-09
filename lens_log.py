@@ -107,7 +107,7 @@ async def record(items: list, results: list[dict], source: str = "lens") -> None
                 "matchedName": result.get("name") if outcome == "matched" else None,
                 "matchedBrewery": result.get("brewery") if outcome == "matched" else None,
                 "candidates": [c.get("name") for c in (result.get("candidates") or [])[:MAX_CANDIDATES_KEPT]],
-                "lastSeen": now, "resolvedAt": now,
+                "lastSeen": now, "resolvedAt": now, "matcherVersion": beer_match.MATCHER_VERSION,
             })
             if source == "crawl":
                 entry["crawlSeen"] = entry.get("crawlSeen", 0) + 1
@@ -137,7 +137,7 @@ async def due_for_crawl(items: list[dict]) -> list[dict]:
             entry = data.get(_key(item.get("brewery") or "", item.get("name") or ""))
             if entry is None:
                 buckets[1].append(item)
-            elif entry.get("outcome") != "matched":
+            elif entry.get("outcome") != "matched" or _needs_recheck_rank(entry) == 1:
                 buckets[0].append(item)
             elif now - entry.get("resolvedAt", 0) > STALE_AFTER_SECONDS:
                 buckets[2].append(item)
@@ -146,14 +146,15 @@ async def due_for_crawl(items: list[dict]) -> list[dict]:
 
 def _needs_recheck_rank(entry: dict) -> int | None:
     """0 = still unmatched, 1 = matched but questionable (the report's
-    "suspicious" set), None = nothing to re-check."""
+    "suspicious" set) under matching rules older than the current
+    beer_match.MATCHER_VERSION, None = nothing to re-check."""
     if entry.get("outcome") in ("no_results", "ambiguous"):
         return 0
-    if entry.get("outcome") == "matched" and (
+    if entry.get("outcome") == "matched" and entry.get("matcherVersion") != beer_match.MATCHER_VERSION and (
         entry.get("matchKind") == "different"
         or (entry.get("matchKind") in ("candidate_longer", "query_longer") and entry.get("delta", 0) >= SUSPICIOUS_DELTA)
     ):
-        return 1
+        return 1  # questionable, and judged by older matching rules
     return None
 
 

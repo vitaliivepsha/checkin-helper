@@ -21,6 +21,11 @@ import untappd_mcp
 
 logger = logging.getLogger(__name__)
 
+# Bumped whenever the matching rules change in a way that can alter outcomes: the
+# lens log stores the version each entry was resolved with, and the daily crawl
+# re-resolves still-unmatched and questionable entries of an older version once.
+MATCHER_VERSION = 3
+
 SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # exact-name match past position 5 among a brewery's many similarly-styled
 # beers - proven live (Magic Road "IPA" ranked 9th of a real 10-candidate
