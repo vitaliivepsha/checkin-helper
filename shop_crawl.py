@@ -126,6 +126,21 @@ def parse_ontap(html: str) -> list[dict]:
     return items
 
 
+# A venue taplist also pours wine and mixed drinks, which Untappd's beer
+# catalog doesn't have - they'd only ever show up as "no results" and bury the
+# real misses in the report. Narrow on purpose: whole phrases that are only ever
+# a drink, never a word a beer name could plausibly contain ("whisky" alone
+# stays - barrel-aged beers use it).
+_NON_BEER_RE = re.compile(
+    r"\b(?:frizzante|prosecco|glera|aperol|spritz|mojito|margarita|negroni|cuba\s+libre|whisk(?:e)?y\s+z\s+col\w*)\b",
+    re.IGNORECASE,
+)
+
+
+def is_non_beer(item: dict) -> bool:
+    return bool(_NON_BEER_RE.search(f"{item.get('brewery', '')} {item.get('name', '')}"))
+
+
 def parse_hopincraftbier(html: str) -> list[dict]:
     """"Brewery - Beer name" titles. Titles without that separator are shop
     items that aren't beers (gift card, can clips) - skipped here, unlike the
@@ -240,7 +255,7 @@ async def _crawl_ontap(get_text, sleep, gap) -> tuple[list[dict], int]:
     for i, venue in enumerate(ONTAP_VENUES):
         if i:
             await sleep(gap)
-        items.extend(parse_ontap(await get_text(f"https://{venue}.ontap.pl/")))
+        items.extend(it for it in parse_ontap(await get_text(f"https://{venue}.ontap.pl/")) if not is_non_beer(it))
     return items, len(ONTAP_VENUES)
 
 

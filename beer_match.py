@@ -195,7 +195,44 @@ def _brewery_matches_query(result: dict, query_brewery_name: str) -> bool:
 MAX_SUPERSET_EXTRA_TOKENS = 5
 
 
-def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "") -> dict | None:
+def _collapse_repeats(token: str) -> str:
+    return re.sub(r"(.)\1+", r"\1", token)
+
+
+def _one_adjacent_swap(a: str, b: str) -> bool:
+    if len(a) != len(b) or len(a) < 5:
+        return False
+    diff = [i for i in range(len(a)) if a[i] != b[i]]
+    return len(diff) == 2 and diff[1] == diff[0] + 1 and a[diff[0]] == b[diff[1]] and a[diff[1]] == b[diff[0]]
+
+
+def _typo_token_match(a: str, b: str) -> bool:
+    """Two different words a shop typo could confuse: they differ only by a
+    doubled letter ("Dass"/"Das", "Kwass"/"Kwas") or by one adjacent swap of
+    two letters in a word of 5+ ("Mouteka"/"Motueka"). Deliberately narrow -
+    never a general edit distance, which would equate real siblings like
+    "Gose"/"Rose" - and never for words with digits ("10"/"100")."""
+    if a == b or any(ch.isdigit() for ch in a + b):
+        return False
+    return _collapse_repeats(a) == _collapse_repeats(b) or _one_adjacent_swap(a, b)
+
+
+def _typo_equal(query_tokens: frozenset, candidate_tokens: frozenset) -> bool:
+    """Same name apart from shop typos: after dropping the shared words, every
+    leftover query word pairs 1:1 with a leftover candidate word it could be a
+    typo of."""
+    only_q, only_c = query_tokens - candidate_tokens, list(candidate_tokens - query_tokens)
+    if not only_q or len(only_q) != len(only_c):
+        return False
+    for tok in only_q:
+        hit = next((c for c in only_c if _typo_token_match(tok, c)), None)
+        if hit is None:
+            return False
+        only_c.remove(hit)
+    return True
+
+
+def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "", exact_only: bool = False) -> dict | None:
     """search_beers ranks by its own relevance score, which is not reliable
     enough to trust blindly: it can rank a DIFFERENT same-brewery beer
     ABOVE the actual correct match, both for a short/generic detected name
@@ -322,6 +359,19 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "")
         ]
         if len(raw_exact) == 1:
             return raw_exact[0]
+
+    # A shop typo of an otherwise identical name ("In Mouteka We Trust" for
+    # the catalog's "In Motueka We Trust"): accepted only when the candidate's
+    # brewery really matches and exactly one candidate fits.
+    typo = [
+        r for r in results
+        if _brewery_matches_query(r, brewery_name) and _typo_equal(query_tokens, _token_set(r.get("beerName") or ""))
+    ]
+    if len(typo) == 1:
+        return typo[0]
+
+    if exact_only:
+        return None
 
     def _within_superset_cap(name: str) -> bool:
         # The cap only ever counts extra tokens within the candidate's own
@@ -1213,6 +1263,21 @@ async def _resolve_identity(token: str, beer_name: str, brewery_name: str) -> di
                 break
         if match is not None:
             break
+
+    if match is None:
+        # The cleaned name drops grammatical Polish connectors ("z", "i") and
+        # noise words, which is right for finding the beer but can turn an
+        # exact name into an ambiguous superset: shop "Wujek z Ameryki" was
+        # cleaned to "Wujek Ameryki", which fits "Wujek z Ameryki", "Podwójny
+        # Wujek z Ameryki" and "Wujek Z Ameryki 2024" alike - while the shop's
+        # own, uncleaned text equals exactly one of them. Retried against the
+        # results already in hand (no extra search call), exact matches only.
+        for source in (first_results, last_nonempty_results):
+            if source:
+                match = pick_best_match(source, beer_name, brewery_name, exact_only=True)
+                if match is not None:
+                    query = beer_name
+                    break
 
     if match is None:
         source = first_results if first_results else last_nonempty_results

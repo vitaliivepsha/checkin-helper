@@ -168,3 +168,12 @@ async def test_run_shop_crawl_records_outcomes_and_stops_on_a_rate_limit(tmp_pat
     assert ws._shop_crawl_running is False and shop_crawl.load_state()["running"] is False
     report = await lens_log.report()
     assert report["total"] == 3 and report["outcomes"] == {"matched": 3}
+
+
+def test_non_beer_taplist_entries_are_recognised_without_touching_real_beers():
+    for brewery, name in [("Frizzante Brewery", "Frizzante"), ("FRIZZANTE MACCARI Brewery", "GLERA VENETO"),
+                          ("Graciarnia Brewery", "Whisky z Colą"), ("Cuba Libre Brewery", "Cuba Libre")]:
+        assert shop_crawl.is_non_beer({"brewery": brewery, "name": name})
+    for brewery, name in [("Browar X", "Whisky Barrel Aged Stout"), ("Y", "Barley Wine"), ("PINTA", "Spritzer Sour"),
+                          ("PINTA Brewery", "Pierwsza Pomoc")]:
+        assert not shop_crawl.is_non_beer({"brewery": brewery, "name": name})
