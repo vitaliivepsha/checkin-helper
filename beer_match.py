@@ -195,6 +195,13 @@ def _brewery_matches_query(result: dict, query_brewery_name: str) -> bool:
 MAX_SUPERSET_EXTRA_TOKENS = 5
 
 
+_CLONE_KIT_RE = re.compile(r"\bclone\s+kit\b", re.IGNORECASE)
+
+# Words that make a catalog entry a DIFFERENT product (a barrel-aged or nitro
+# version): a superset match must not add any of them to the shop's name.
+_VARIANT_MARKER_TOKENS = frozenset({"barrel", "aged", "nitro"})
+
+
 def _collapse_repeats(token: str) -> str:
     return re.sub(r"(.)\1+", r"\1", token)
 
@@ -206,15 +213,30 @@ def _one_adjacent_swap(a: str, b: str) -> bool:
     return len(diff) == 2 and diff[1] == diff[0] + 1 and a[diff[0]] == b[diff[1]] and a[diff[1]] == b[diff[0]]
 
 
+def _one_edit_apart(a: str, b: str) -> bool:
+    """Exactly one inserted, deleted or substituted letter."""
+    if a == b or abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        return sum(x != y for x, y in zip(a, b)) == 1
+    short, long_ = sorted((a, b), key=len)
+    return any(long_[:i] + long_[i + 1:] == short for i in range(len(long_)))
+
+
 def _typo_token_match(a: str, b: str) -> bool:
     """Two different words a shop typo could confuse: they differ only by a
-    doubled letter ("Dass"/"Das", "Kwass"/"Kwas") or by one adjacent swap of
-    two letters in a word of 5+ ("Mouteka"/"Motueka"). Deliberately narrow -
-    never a general edit distance, which would equate real siblings like
-    "Gose"/"Rose" - and never for words with digits ("10"/"100")."""
+    doubled letter ("Dass"/"Das", "Kwass"/"Kwas"), by one adjacent swap of two
+    letters in a word of 5+ ("Mouteka"/"Motueka"), or - only for long words of
+    8+ letters, where one wrong letter can't make a different word - by one
+    inserted/missing/wrong letter ("Collsion"/"Collision", "Biologigue"/
+    "Biologique"). Deliberately narrow - never a general edit distance on short
+    words, which would equate real siblings like "Gose"/"Rose" - and never for
+    words with digits ("10"/"100")."""
     if a == b or any(ch.isdigit() for ch in a + b):
         return False
-    return _collapse_repeats(a) == _collapse_repeats(b) or _one_adjacent_swap(a, b)
+    if _collapse_repeats(a) == _collapse_repeats(b) or _one_adjacent_swap(a, b):
+        return True
+    return min(len(a), len(b)) >= 8 and _one_edit_apart(a, b)
 
 
 def _typo_equal(query_tokens: frozenset, candidate_tokens: frozenset) -> bool:
@@ -289,6 +311,10 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
     own brewery name and so wasn't an exact match at all until "pinta" was
     dropped from the query's side of the comparison.
     """
+    # Homebrew "clone kits" are catalogued under real beers' names ("All Grain
+    # Clone Kit - Verdant Even Sharks Need Water") and are never what a shop
+    # shelf or a festival tap is.
+    results = [r for r in results if not _CLONE_KIT_RE.search(r.get("beerName") or "")]
     raw_query_tokens = _token_set(beer_name)
     if not raw_query_tokens:
         return None
@@ -386,7 +412,16 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
         # so its extra tokens are still fully counted and still refused.
         core = _core_token_set(name)
         extra_in_core = core - raw_query_tokens
-        return len(extra_in_core) <= MAX_SUPERSET_EXTRA_TOKENS
+        # A short query has little to identify it, so it may only grow by a
+        # little: one word -> 2 extra, two words -> 4 (the documented "Velvet"
+        # vs "Gelato XTREME: Blue Velvet" case, and a lone "Red" fitting "English
+        # Barley Wine Red Wine BA").
+        cap = {1: 2, 2: 4}.get(len(raw_query_tokens), MAX_SUPERSET_EXTRA_TOKENS)
+        # "Komes Barley Wine" must not become "Komes Wymrażany Barley Wine Cognac
+        # BA": a barrel-aged/nitro catalog beer is another product than the plain one.
+        if extra_in_core & _VARIANT_MARKER_TOKENS:
+            return False
+        return len(extra_in_core) <= min(cap, MAX_SUPERSET_EXTRA_TOKENS)
 
     supersets = [
         r for r in results
@@ -1101,9 +1136,21 @@ def _query_name_variants(clean_name: str, *brewery_cores: str) -> list[str]:
     base_variants.extend(_compounds(non_alco_strips))
     base_variants.extend(non_alco_strips)
 
+    # A shortened (trailing-word-dropped) variant must still be a real name:
+    # at least two words that aren't the brewery's own. Left with one, it
+    # superset-matches whichever other beer happens to contain that word -
+    # found in the lens log: "Grybów Pilsvar Lach" -> "Grybów" -> the generic
+    # "Pilsvar Grybów", "Trzech Kumpli Bezalko Oatmeal Stout" -> "Bezalko" ->
+    # BezalkØ's IPA, "Duvel Triple Hop Citra" -> "Triple" -> "Duvel Spiced
+    # Triple", "Red IPA" -> "Red" -> a barley wine.
+    brewery_words = frozenset().union(*(_token_set(c) for c in cores)) if cores else frozenset()
+
+    def _enough_content(variant: str) -> bool:
+        return len(_token_set(variant) - brewery_words) >= 2
+
     variants = list(base_variants)
     for base in base_variants:
-        variants.extend(_drop_trailing_words(base))
+        variants.extend(v for v in _drop_trailing_words(base) if _enough_content(v))
 
     # A degenerate variant - one that IS the brewery's own name and
     # nothing else - carries zero product-identifying information, but can

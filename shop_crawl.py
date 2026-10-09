@@ -141,6 +141,19 @@ def is_non_beer(item: dict) -> bool:
     return bool(_NON_BEER_RE.search(f"{item.get('brewery', '')} {item.get('name', '')}"))
 
 
+# Merchandise that slipped past a shop's own product-type filter - found in the
+# lens log: WRCLW's "Pszeniczny T-Shirt" matched the beer "WRCLW Pszeniczny".
+_MERCH_RE = re.compile(
+    r"\b(?:t-?shirt|koszulk\w*|bluz\w*|hoodie|czapk\w*|kubek|szklank\w*|kufel|tumbler|plakat|naklejk\w*|sticker|bidon)\b",
+    re.IGNORECASE,
+)
+
+
+def is_not_a_beer(item: dict) -> bool:
+    """Wine/cocktail taplist entries or merchandise - nothing to look up."""
+    return is_non_beer(item) or bool(_MERCH_RE.search(item.get("name", "")))
+
+
 def parse_hopincraftbier(html: str) -> list[dict]:
     """"Brewery - Beer name" titles. Titles without that separator are shop
     items that aren't beers (gift card, can clips) - skipped here, unlike the

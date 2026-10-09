@@ -177,3 +177,11 @@ def test_non_beer_taplist_entries_are_recognised_without_touching_real_beers():
     for brewery, name in [("Browar X", "Whisky Barrel Aged Stout"), ("Y", "Barley Wine"), ("PINTA", "Spritzer Sour"),
                           ("PINTA Brewery", "Pierwsza Pomoc")]:
         assert not shop_crawl.is_non_beer({"brewery": brewery, "name": name})
+
+
+def test_merch_slips_are_recognised_but_beers_are_not():
+    assert shop_crawl.is_not_a_beer({"brewery": "WRCLW", "name": "Pszeniczny T-Shirt"})
+    assert shop_crawl.is_not_a_beer({"brewery": "Arpus", "name": "Tumbler 0.4"})
+    assert shop_crawl.is_not_a_beer({"brewery": "Frizzante Brewery", "name": "Frizzante"})
+    assert not shop_crawl.is_not_a_beer({"brewery": "WRCLW", "name": "Pszeniczny"})
+    assert not shop_crawl.is_not_a_beer({"brewery": "Browar X", "name": "Szklanka Stout"} | {"name": "Czarny Stout"})

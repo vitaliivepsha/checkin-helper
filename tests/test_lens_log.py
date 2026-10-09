@@ -123,7 +123,7 @@ async def test_lookup_handler_logs_and_report_endpoint_needs_the_token(tmp_path,
         assert [e["queryName"] for e in report["unmatched"]] == ["Mystery Beer"]
 
 
-async def test_unmatched_to_recheck_skips_crawled_items_drops_junk_and_keeps_counters(tmp_path):
+async def test_entries_to_recheck_skips_crawled_items_drops_junk_and_keeps_counters(tmp_path):
     lens_log.init(str(tmp_path))
     userscript_only = {"name": "Wujek z Ameryki", "brewery": "Browar Zakładowy"}
     in_todays_crawl = {"name": "Mini Maxi", "brewery": "PINTA"}
@@ -133,12 +133,29 @@ async def test_unmatched_to_recheck_skips_crawled_items_drops_junk_and_keeps_cou
     await lens_log.record([userscript_only], [unmatched(["a", "b"])])  # opened twice: ranks first
 
     import shop_crawl
-    todo = await lens_log.unmatched_to_recheck([in_todays_crawl], 10, shop_crawl.is_non_beer)
+    todo = await lens_log.entries_to_recheck([in_todays_crawl], 10, shop_crawl.is_non_beer)
     assert todo == [{"name": "Wujek z Ameryki", "brewery": "Browar Zakładowy"}]  # crawled / matched / junk are out
     assert (await lens_log.report())["total"] == 3  # the junk entry was dropped from the log
-    assert await lens_log.unmatched_to_recheck([], 0) == []
+    assert await lens_log.entries_to_recheck([], 0) == []
 
     # a recheck updates the outcome but is not another person looking at it
     await lens_log.record(todo, [matched("Wujek z Ameryki", "Browar Zakładowy", 2403878)], source="recheck")
     entry = next(e for e in (await lens_log.report())["changed"] if e["queryName"] == "Wujek z Ameryki")
     assert entry["outcome"] == "matched" and entry["count"] == 2 and entry["previous"]["outcome"] == "ambiguous"
+
+
+async def test_entries_to_recheck_also_covers_questionable_matches_and_drops_merch(tmp_path):
+    lens_log.init(str(tmp_path))
+    import shop_crawl
+    wrong = {"name": "GRYBÓW PILSVAR LACH", "brewery": "Pilsvar"}
+    fine = {"name": "Hazy Morning", "brewery": "PINTA"}
+    shirt = {"name": "Pszeniczny T-Shirt", "brewery": "WRCLW"}
+    gone = {"name": "Nothing Here", "brewery": "Nobody"}
+    await lens_log.record(
+        [wrong, fine, shirt, gone],
+        [matched("Pilsvar Grybów", "Pilsvar", 1), matched("Hazy Morning", "PINTA", 2), matched("WRCLW Pszeniczny", "WRCLW", 3), unmatched()],
+    )
+    todo = await lens_log.entries_to_recheck([], 10, shop_crawl.is_not_a_beer)
+    names = [t["name"] for t in todo]
+    assert names == ["Nothing Here", "GRYBÓW PILSVAR LACH"]   # unmatched first, then the questionable match
+    assert (await lens_log.report())["total"] == 3          # the t-shirt left the log

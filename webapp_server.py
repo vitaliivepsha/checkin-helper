@@ -4836,7 +4836,7 @@ async def _run_shop_crawl() -> dict:
             get_text, get_json = shop_crawl.make_http_getters(client)
             crawl = await shop_crawl.crawl_shops(get_text, get_json)
         state["shops"] = shop_crawl.summarize(crawl)
-        items = shop_crawl.dedupe([it for r in crawl.values() for it in r["items"]])
+        items = shop_crawl.dedupe([it for r in crawl.values() for it in r["items"] if not shop_crawl.is_not_a_beer(it)])
         state["products"] = len(items)
 
         owner_id = int(AUTO_TOAST_OWNER_ID) if AUTO_TOAST_OWNER_ID else None
@@ -4852,7 +4852,7 @@ async def _run_shop_crawl() -> dict:
                 # Then the unmatched entries the crawl itself didn't list (e.g. only
                 # the userscript ever saw them) - so a matcher fix shows up without
                 # anyone reopening that page. Not-a-beer entries are dropped here.
-                recheck = await lens_log.unmatched_to_recheck(items, SHOP_CRAWL_RECHECK_MAX, shop_crawl.is_non_beer)
+                recheck = await lens_log.entries_to_recheck(items, SHOP_CRAWL_RECHECK_MAX, shop_crawl.is_not_a_beer)
                 state["rechecked"] = await _resolve_and_record(token, owner_id, recheck, "recheck", state)
         else:
             state["skipped"] = "no owner Untappd token - products listed but not resolved"

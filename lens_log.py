@@ -144,31 +144,50 @@ async def due_for_crawl(items: list[dict]) -> list[dict]:
     return buckets[0] + buckets[1] + buckets[2]
 
 
-async def unmatched_to_recheck(crawled_items: list[dict], limit: int, is_junk=None) -> list[dict]:
-    """Logged products that are still unmatched but weren't among today's
-    crawled items (so the crawl itself never re-resolves them - e.g. ones only
-    the userscript ever saw): [{"name", "brewery"}], most-looked-at first, at
-    most `limit`. Lets a matcher fix show up in the report without waiting
-    for someone to open that page again. Entries `is_junk` calls not-a-beer
-    (wine, cocktails) are dropped from the log instead of re-resolved."""
+def _needs_recheck_rank(entry: dict) -> int | None:
+    """0 = still unmatched, 1 = matched but questionable (the report's
+    "suspicious" set), None = nothing to re-check."""
+    if entry.get("outcome") in ("no_results", "ambiguous"):
+        return 0
+    if entry.get("outcome") == "matched" and (
+        entry.get("matchKind") == "different"
+        or (entry.get("matchKind") in ("candidate_longer", "query_longer") and entry.get("delta", 0) >= SUSPICIOUS_DELTA)
+    ):
+        return 1
+    return None
+
+
+async def entries_to_recheck(crawled_items: list[dict], limit: int, is_junk=None) -> list[dict]:
+    """Logged products worth resolving again that today's crawl did NOT list
+    (so it never re-resolves them itself - e.g. ones only the userscript ever
+    saw): [{"name", "brewery"}], at most `limit` - still-unmatched ones first
+    (most-looked-at first), then questionable matches (largest name
+    difference first). Lets a matcher fix show up in the report - a found
+    beer, or a wrong match that is now refused - without waiting for someone
+    to open that page again. Entries `is_junk` calls not-a-beer (wine,
+    cocktails, merchandise) are dropped from the log instead."""
     seen = {_key(it.get("brewery") or "", it.get("name") or "") for it in crawled_items}
     async with _lock:
         data = _load()
-        out, dropped = [], False
-        for key, e in sorted(data.items(), key=lambda kv: (-kv[1].get("count", 0), -kv[1].get("lastSeen", 0))):
-            if e.get("outcome") not in ("no_results", "ambiguous") or key in seen:
+        ranked, dropped = [], False
+        for key, e in data.items():
+            rank = _needs_recheck_rank(e)
+            if rank is None or key in seen or not e.get("queryName"):
                 continue
             item = {"name": e.get("queryName") or "", "brewery": e.get("queryBrewery") or ""}
-            if not item["name"]:
-                continue
             if is_junk is not None and is_junk(item):
-                del data[key]
-                dropped = True
+                del_keys = key
+                ranked.append((None, del_keys, item))
                 continue
-            out.append(item)
+            order = (-e.get("count", 0), -e.get("lastSeen", 0)) if rank == 0 else (-e.get("delta", 0), -e.get("count", 0))
+            ranked.append(((rank,) + order, key, item))
+        for sort_key, key, item in [r for r in ranked if r[0] is None]:
+            del data[key]
+            dropped = True
         if dropped:
             _save()
-    return out[:limit]
+    keep = sorted((r for r in ranked if r[0] is not None), key=lambda r: r[0])
+    return [item for _, _, item in keep][:limit]
 
 
 async def mark_crawled(items: list[dict]) -> None:
