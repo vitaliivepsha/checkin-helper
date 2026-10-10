@@ -4339,6 +4339,37 @@
     $(wrapId).classList.remove("hidden");
   }
 
+  // Tapping the direct-quota badge shows who has been spending that pool (owner only).
+  let directCallStats = null;
+  $("direct-usage-wrap").addEventListener("click", async () => {
+    const box = $("direct-usage-breakdown");
+    if (!box.classList.contains("hidden")) { box.classList.add("hidden"); return; }
+    const { ok, data } = await apiPost("/api/checkin/usage", {}); // fresh numbers on every open
+    if (ok && data.directCalls) directCallStats = data.directCalls;
+    const stats = directCallStats || {};
+    const labels = Object.keys(stats).filter((k) => !k.startsWith("_")).sort((a, b) => stats[b].lastHour - stats[a].lastHour);
+    const since = stats._since ? new Date(stats._since * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+    box.innerHTML = "";
+    const title = document.createElement("div");
+    title.className = "direct-breakdown-title";
+    title.textContent = T("app_direct_calls_title", { time: since });
+    box.appendChild(title);
+    if (!labels.length) {
+      const none = document.createElement("div");
+      none.textContent = T("app_direct_calls_none");
+      box.appendChild(none);
+    }
+    labels.forEach((label) => {
+      const row = document.createElement("div");
+      const known = `app_direct_caller_${label}`;
+      row.textContent = T("app_direct_calls_row", {
+        label: I18N[known] != null ? T(known) : label, hour: stats[label].lastHour, total: stats[label].total,
+      });
+      box.appendChild(row);
+    });
+    box.classList.remove("hidden");
+  });
+
   Promise.all([apiPost("/api/checkin/usage", {}), i18nReady]).then(([{ ok, data }]) => {
     if (ok && data.remaining != null) {
       renderUsageBadge("usage-wrap", "usage-badge", "usage-ring-fill", data.remaining, data.limit, T("app_usage_api"));
@@ -4350,6 +4381,7 @@
         "direct-usage-wrap", "direct-usage-badge", "direct-usage-ring-fill",
         data.directUsage.remaining, data.directUsage.limit, T("app_usage_direct"),
       );
+      directCallStats = data.directCalls || null;
     }
     if (ok && data.lastVenue) {
       state.lastVenue = data.lastVenue;

@@ -663,7 +663,8 @@ async def _get_had_it(user_id: int, beer_id, token: str) -> dict | None:
         if not (DIRECT_TOKEN and OWNER_TELEGRAM_ID and str(user_id) == OWNER_TELEGRAM_ID):
             return None
         try:
-            result = await untappd_direct.check_i_had_beer(DIRECT_TOKEN, beer_id)
+            with untappd_direct.caller("had_it_live"):
+                result = await untappd_direct.check_i_had_beer(DIRECT_TOKEN, beer_id)
         except untappd_mcp.UntappdMCPError as e:
             logger.warning("check_i_had_beer(%s) direct-API fallback failed: %s", beer_id, e)
             return None
@@ -1475,6 +1476,8 @@ async def handle_usage(request: web.Request) -> web.Response:
         "lastVenue": (profile or {}).get("last_venue"),
         "isAutoToastOwner": is_owner,
         "directUsage": direct_usage,
+        # Who spent the direct pool (per caller label, last hour + since start).
+        "directCalls": untappd_direct.get_call_stats() if is_owner else None,
     })
 
 
@@ -2991,7 +2994,8 @@ async def handle_festival_watch_set_location(request: web.Request) -> web.Respon
     foursquare_id = body.get("foursquareId")
     if foursquare_id and DIRECT_TOKEN:
         try:
-            resolved = await untappd_direct.lookup_venue_by_foursquare(DIRECT_TOKEN, foursquare_id)
+            with untappd_direct.caller("venue_lookup"):
+                resolved = await untappd_direct.lookup_venue_by_foursquare(DIRECT_TOKEN, foursquare_id)
         except untappd_mcp.UntappdMCPError as e:
             logger.warning("festival_watch venue resolution failed for %s: %s", foursquare_id, e)
             resolved = None
@@ -3022,7 +3026,8 @@ async def handle_festival_watch_add_extra_venue(request: web.Request) -> web.Res
     if not DIRECT_TOKEN:
         return _json_error("no_direct_token", 503)
     try:
-        resolved = await untappd_direct.lookup_venue_by_foursquare(DIRECT_TOKEN, foursquare_id)
+        with untappd_direct.caller("venue_lookup"):
+            resolved = await untappd_direct.lookup_venue_by_foursquare(DIRECT_TOKEN, foursquare_id)
     except untappd_mcp.UntappdRateLimited:
         return _json_error("rate_limited", 429)
     except untappd_mcp.UntappdMCPError as e:
@@ -3749,6 +3754,7 @@ async def _had_it_backfill_loop() -> None:
     the clock window blocked all progress for the other 23h/day regardless
     of how much quota sat unused (see _venue_backfill_loop's own note - same
     change, same reasoning, its own independent quota consumer)."""
+    untappd_direct.set_caller("had_it_backfill")
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:
@@ -3840,6 +3846,7 @@ async def _venue_backfill_loop() -> None:
     large, heavily-checked-in account (53k+ check-ins between two users)
     across many days, with badge discovery (badge_index.record, called
     from this same walk below) stalled the entire time."""
+    untappd_direct.set_caller("venue_backfill")
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:
@@ -4194,6 +4201,7 @@ async def _auto_toast_loop() -> None:
     it only records the current newest check-in id as a baseline (see
     auto_toast.peek_owner_turn's docstring) - so turning this on doesn't
     retroactively toast years of everyone's history in one burst."""
+    untappd_direct.set_caller("auto_toast")
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:
@@ -4418,6 +4426,7 @@ async def _comment_watch_loop() -> None:
     real quota-costing call per enabled owner per tick - modest, since
     there's only ever one "target" per owner (their own check-ins), unlike
     auto-toast's many watched friends."""
+    untappd_direct.set_caller("comment_watch")
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:
@@ -4513,11 +4522,13 @@ async def _poll_festival_friends(owner_id: int) -> None:
     cursor/bootstrap/stale-min_id handling as the venue polls above."""
     min_id = (await festival_watch.get_config(owner_id))["friendsLastCheckinId"]
     try:
-        page = await untappd_direct.get_my_friend_feed(DIRECT_TOKEN, limit=50, min_id=min_id)
+        with untappd_direct.caller("festival_friends"):
+            page = await untappd_direct.get_my_friend_feed(DIRECT_TOKEN, limit=50, min_id=min_id)
     except untappd_mcp.UntappdMCPError as e:
         if min_id is None or "min_id" not in str(e).lower():
             raise
-        page = await untappd_direct.get_my_friend_feed(DIRECT_TOKEN, limit=50)
+        with untappd_direct.caller("festival_friends"):
+            page = await untappd_direct.get_my_friend_feed(DIRECT_TOKEN, limit=50)
         min_id = None
     items = (page.get("checkins") or {}).get("items", [])
     if not items:
@@ -4558,6 +4569,7 @@ async def _festival_watch_venue_loop() -> None:
     rest on the next tick from the same cursor, same as a normal
     lower-than-limit page would leave nothing missed - min_id already
     bounds the query so nothing in between is skipped either way."""
+    untappd_direct.set_caller("festival_venue")
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         # Default floor - overwritten below once `targets` is known; stays
@@ -4887,6 +4899,7 @@ async def _badge_index_sync_loop() -> None:
     every connected user's badge list, not just the owner's. A no-op
     forever if DIRECT_TOKEN isn't configured, same guard as
     _festival_watch_venue_loop."""
+    untappd_direct.set_caller("badge_sync")
     await asyncio.sleep(5)  # let the server finish binding first
     while True:
         try:

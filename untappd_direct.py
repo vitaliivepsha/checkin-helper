@@ -31,6 +31,9 @@ change to how a watch point is set), not a same-shape fallback for the
 existing loops - see README's staged plan.
 """
 
+import collections
+import contextlib
+import contextvars
 import logging
 import time
 
@@ -56,6 +59,54 @@ _client: httpx.AsyncClient | None = None
 _last_remaining: int | None = None
 _last_limit: int | None = None
 _last_seen_at: float | None = None
+
+# Who spends this pool. The real API only reports what is LEFT, never who used
+# it, so every call is counted under a label the caller sets: a loop sets its
+# own once (set_caller, at its start - a loop is one asyncio task), a one-off
+# wraps its call in `with caller("...")`. Unlabelled calls count as "other".
+# In memory only (resets when the process restarts, i.e. on every deploy).
+_caller_var: contextvars.ContextVar[str] = contextvars.ContextVar("untappd_direct_caller", default="other")
+_call_times: dict[str, collections.deque] = {}
+_call_totals: dict[str, int] = {}
+_stats_since = time.time()
+_LOG_EVERY_CALLS = 25
+
+
+def set_caller(label: str) -> None:
+    """Labels every direct call made from the current asyncio task from now on."""
+    _caller_var.set(label)
+
+
+@contextlib.contextmanager
+def caller(label: str):
+    token = _caller_var.set(label)
+    try:
+        yield
+    finally:
+        _caller_var.reset(token)
+
+
+def _record_call() -> None:
+    label = _caller_var.get()
+    now = time.time()
+    times = _call_times.setdefault(label, collections.deque())
+    times.append(now)
+    _call_totals[label] = _call_totals.get(label, 0) + 1
+    if sum(_call_totals.values()) % _LOG_EVERY_CALLS == 0:
+        logger.info("direct API calls by caller: %s", get_call_stats())
+
+
+def get_call_stats() -> dict:
+    """{label: {"lastHour": n, "total": n}} for every caller seen since the
+    process started, plus the start time under "_since". Free (no network)."""
+    cutoff = time.time() - 3600
+    out: dict = {}
+    for label, times in _call_times.items():
+        while times and times[0] < cutoff:
+            times.popleft()
+        out[label] = {"lastHour": len(times), "total": _call_totals.get(label, 0)}
+    out["_since"] = int(_stats_since)
+    return out
 
 
 def _get_client() -> httpx.AsyncClient:
@@ -99,6 +150,7 @@ async def _call_api(method: str, path: str, token: str, params: dict | None = No
     query["access_token"] = token
     client = _get_client()
     url = f"{_BASE_URL}/{path}"
+    _record_call()  # counted when sent, whatever the answer turns out to be
     try:
         resp = await client.request(method, url, params=query)
     except httpx.HTTPError as e:
