@@ -3100,6 +3100,10 @@
     "Browar Monsters": "Monsters",
     "Sick Boy Brewing": "Sick Boy",
     "Browar Monsters / Sick Boy Brewing": "Monsters/Sick Boy",
+    "Browar Dziki Wschód": "Dziki Wschód",
+    "Quantum Satis Mead": "Quantum Satis",
+    "Browar Zakładowy": "Zakładowy",
+    "Browar Za Miastem": "Za Miastem",
   };
 
   function makeBreweryPill(brewery, draggable, islandAlign) {
