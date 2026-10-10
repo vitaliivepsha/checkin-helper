@@ -3656,6 +3656,7 @@
   // the old floating pill/placeholder on screen forever and leaving its
   // listeners attached).
   function cancelMapDrag() {
+    cancelPendingPress();
     document.querySelectorAll(".map-zone.drag-over").forEach((el) => el.classList.remove("drag-over"));
     if (mapDrag) {
       mapDrag.pill.remove();
@@ -3716,6 +3717,43 @@
     return { side: MAP_SIDES.find((s) => container.classList.contains(`perimeter-${s}`)), islandId: null };
   }
 
+  // On a touch screen a stand pill is NOT picked up on first touch - the map is
+  // mostly pills, so that left almost nowhere to put a finger to scroll. A
+  // pill is picked up after a short press (a haptic tick says so); a swipe
+  // that starts on it scrolls the page, and a quick tap on an island stand
+  // cycles its alignment. Mouse/pen still pick up immediately.
+  const MAP_LONG_PRESS_MS = 220;
+  const MAP_PRESS_SLOP_PX = 8;
+  let mapPendingPress = null; // { pill, pointerId, x, y, last, timer }
+
+  function cancelPendingPress() {
+    if (!mapPendingPress) return;
+    clearTimeout(mapPendingPress.timer);
+    document.removeEventListener("pointermove", onPendingPressMove);
+    document.removeEventListener("pointerup", onPendingPressUp);
+    document.removeEventListener("pointercancel", cancelPendingPress);
+    mapPendingPress = null;
+  }
+
+  function onPendingPressMove(e) {
+    if (!mapPendingPress || e.pointerId !== mapPendingPress.pointerId) return;
+    mapPendingPress.last = { clientX: e.clientX, clientY: e.clientY };
+    if (Math.hypot(e.clientX - mapPendingPress.x, e.clientY - mapPendingPress.y) > MAP_PRESS_SLOP_PX) {
+      cancelPendingPress(); // the finger is swiping: let the page scroll
+    }
+  }
+
+  function onPendingPressUp(e) {
+    if (!mapPendingPress || e.pointerId !== mapPendingPress.pointerId) return;
+    const { pill } = mapPendingPress;
+    cancelPendingPress();
+    // A quick tap: on an island stand that cycles its alignment (what a
+    // mouse click does through the drag path's "not moved" branch).
+    const loc = containerLocation(pill.parentElement);
+    const zoneCard = pill.closest(".map-zone");
+    if (loc.side === "island" && zoneCard) cycleIslandAlign(zoneCard.dataset.zone, loc.islandId, pill.dataset.brewery);
+  }
+
   function onMapPillPointerDown(e) {
     if (!festivalMapEditMode) return;
     // A previous drag that never got a matching pointerup/pointercancel
@@ -3724,8 +3762,36 @@
     // non-null. Self-heal instead: treat a fresh pointerdown as proof the
     // old gesture is over and clean it up before starting the new one.
     if (mapDrag) cancelMapDrag();
-    e.preventDefault();
+    cancelPendingPress();
     const pill = e.currentTarget;
+    if (e.pointerType !== "touch") {
+      e.preventDefault();
+      startMapPillDrag(pill, e, false);
+      return;
+    }
+    const press = {
+      pill, pointerId: e.pointerId, x: e.clientX, y: e.clientY,
+      last: { clientX: e.clientX, clientY: e.clientY }, timer: null,
+    };
+    press.timer = setTimeout(() => {
+      if (mapPendingPress !== press) return;
+      const at = press.last;
+      cancelPendingPress();
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+      startMapPillDrag(pill, { clientX: at.clientX, clientY: at.clientY, pointerId: press.pointerId }, true);
+    }, MAP_LONG_PRESS_MS);
+    mapPendingPress = press;
+    document.addEventListener("pointermove", onPendingPressMove);
+    document.addEventListener("pointerup", onPendingPressUp);
+    document.addEventListener("pointercancel", cancelPendingPress);
+  }
+
+  // Once a pill is picked up the finger must move it, not the page.
+  document.addEventListener("touchmove", (ev) => {
+    if (mapDrag && ev.cancelable) ev.preventDefault();
+  }, { passive: false });
+
+  function startMapPillDrag(pill, e, fromLongPress) {
     const rect = pill.getBoundingClientRect();
     const originalContainer = pill.parentElement;
     const originalZone = originalContainer.closest(".map-zone").dataset.zone;
@@ -3765,6 +3831,7 @@
       moved: false,
       originIsland: originalLoc.side === "island" ? originalLoc.islandId : null,
       originZone: originalZone,
+      fromLongPress,
     };
     document.addEventListener("pointermove", onMapPillPointerMove);
     document.addEventListener("pointerup", onMapPillPointerUp);
@@ -3948,9 +4015,9 @@
       await dropMapGap(drop);
       return;
     }
-    const { brewery, lastZone, lastSide, lastIslandId, lastIndex, moved, originIsland, originZone } = mapDrag;
+    const { brewery, lastZone, lastSide, lastIslandId, lastIndex, moved, originIsland, originZone, fromLongPress } = mapDrag;
     cancelMapDrag();
-    if (!moved && originIsland) {
+    if (!moved && originIsland && !fromLongPress) {
       renderFestivalMap(); // the pill was lifted out of its island for the (never started) drag
       await cycleIslandAlign(originZone, originIsland, brewery);
       return;
