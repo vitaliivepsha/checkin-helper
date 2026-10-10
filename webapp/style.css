@@ -753,15 +753,6 @@ body.festival-mode-active .festival-banner { display: flex; }
 }
 .back-btn:active { transform: scale(0.96); opacity: 0.7; }
 
-/* Same "‹" glyph/weight as .back-btn's own arrow, for a back-style action
-   that isn't a compact top-of-screen pill (festival map's "Усі зони" is a
-   full-width .secondary-btn bar) - keeps the arrow itself consistent across
-   the app instead of each spot spelling its own "←" text glyph, which reads
-   visibly thinner/lower than .back-btn's. */
-.back-arrow-btn::before {
-  content: "‹"; font-size: 20px; font-weight: 700; line-height: 1; margin-right: 4px;
-}
-
 .beer-card {
   padding: 16px; border-radius: 22px; background: var(--secondary-bg);
   margin-bottom: 16px;
@@ -1425,7 +1416,7 @@ body.map-edit-mode #festival-map-search-results { display: none; }
    hide everything personal/interactive that has no meaning without a login. */
 body.public-map .bottom-nav,
 body.public-map #festival-map-edit-btn,
-body.public-map #screen-festival-map > .back-btn,
+body.public-map:not(.map-detail-open) #screen-festival-map > .back-btn,
 body.public-map .add-queue-btn,
 body.public-map .row-menu-btn { display: none !important; }
 .public-beer-result { display: flex; align-items: center; gap: 8px; }

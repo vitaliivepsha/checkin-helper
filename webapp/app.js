@@ -430,8 +430,22 @@
     });
   }
 
+  // A back button that has an inner level first: the festival map's zone detail
+  // is left to "all zones" before the map screen itself is left.
+  const BACK_INTERCEPTORS = {
+    "festival-map-back-btn": () => {
+      if (!festivalMapDetailZone) return false;
+      closeFestivalMapDetail();
+      return true;
+    },
+  };
+
   document.querySelectorAll("[data-back]").forEach((btn) => {
-    btn.addEventListener("click", () => showScreen(btn.dataset.back));
+    btn.addEventListener("click", () => {
+      const intercept = BACK_INTERCEPTORS[btn.id];
+      if (intercept && intercept()) return;
+      showScreen(btn.dataset.back);
+    });
   });
 
   async function apiPost(path, body) {
@@ -3426,6 +3440,9 @@
     $("festival-map-overview").classList.add("hidden");
     $("festival-map-edit-btn").classList.add("hidden");
     $("festival-map-detail").classList.remove("hidden");
+    // The screen's own top back button becomes "all zones" while a zone is open.
+    $("festival-map-back-btn").textContent = T("app_map_all_zones");
+    document.body.classList.add("map-detail-open");
     renderFestivalMapDetail();
     if (highlightBrewery) {
       highlightBreweryPill(highlightBrewery);
@@ -3438,9 +3455,9 @@
     $("festival-map-detail").classList.add("hidden");
     $("festival-map-overview").classList.remove("hidden");
     $("festival-map-edit-btn").classList.remove("hidden");
+    $("festival-map-back-btn").textContent = T("app_back");
+    document.body.classList.remove("map-detail-open");
   }
-
-  $("festival-map-detail-back").addEventListener("click", closeFestivalMapDetail);
 
   // A search result stays marked as the "active" pick (a persistent ring,
   // not the fading flash below) until a different brewery is searched or
