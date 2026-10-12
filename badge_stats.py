@@ -81,6 +81,22 @@ _STYLE_ALIASES: dict[str, str | None] = {
     "Other": None,
 }
 
+# Non-beer categories of Untappd's style list. Wheel of Styles is a beer badge:
+# with these left in, an export of the owner's full history gave 294 distinct
+# styles against the 285-289 Untappd reports (level 57), and 288 without them
+# (every Wine/Spirit/Makgeolli style the account has). Inferred from that
+# arithmetic, not from Untappd's own rule - re-check if the numbers drift.
+_NON_BEER_STYLE_PREFIXES = ("Wine - ", "Spirit - ", "Makgeolli - ", "Sake - ", "THC Drink - ")
+
+
+def _wheel_style(raw: str) -> str | None:
+    """The style a beer counts as for Wheel of Styles, or None if it counts as none."""
+    style = " ".join(raw.split())  # the export carries e.g. "Lager - Fruited  "
+    style = _STYLE_ALIASES.get(style, style)
+    if style is None or style.startswith(_NON_BEER_STYLE_PREFIXES):
+        return None
+    return style
+
 
 def _tier(current: int, count: int, levels: int, first_level_count: int | None = None) -> tuple[int, int, int | None]:
     """(achieved_level, level_start, next_threshold) for a repeating "N
@@ -253,7 +269,7 @@ def compute_distinct_progress(beers: dict) -> list[dict]:
             # _STYLE_ALIASES's own note.
             values = {
                 v for b in beers.values()
-                if (raw := b.get(field)) and (v := _STYLE_ALIASES.get(raw, raw)) is not None
+                if (raw := b.get(field)) and (v := _wheel_style(raw)) is not None
             }
         else:
             values = {v for b in beers.values() if (v := b.get(field))}

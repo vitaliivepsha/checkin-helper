@@ -3215,14 +3215,27 @@ async def scan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 IMPORT_HISTORY_MAX_FILE_SIZE = 20 * 1024 * 1024  # Telegram's own bot-download ceiling
 
 
-def _parse_import_entries(file_name: str, text: str) -> tuple[list[tuple[int, float | None]], int]:
-    """Returns (entries, skipped_count). entries are (beerId, rating) pairs
-    pulled from the export's `bid`/`rating_score` fields - same field names
-    for both formats, since it's the same underlying Untappd export.
+def _parse_import_entries(file_name: str, text: str) -> tuple[list[dict], int]:
+    """Returns (entries, skipped_count). Each entry is a dict with the
+    export's `bid`/`rating_score` plus, when the row has them, its current
+    beer_name/beer_type/brewery_name/brewery_country/brewery_state/beer_abv/
+    beer_ibu (see had_it_index.seed_from_export for how they are merged) -
+    same field names for both formats, since it's the same underlying
+    Untappd export.
     Malformed/unrecognized rows are skipped and counted, never raised -
     a parsing surprise should degrade to "fewer rows imported than
     expected", not a crash."""
-    def _row_entry(row: dict) -> tuple[int, float | None] | None:
+    def _text(row: dict, key: str) -> str | None:
+        value = row.get(key)
+        return " ".join(value.split()) if isinstance(value, str) and value.strip() else None
+
+    def _number(row: dict, key: str) -> float | None:
+        try:
+            return float(row.get(key)) if row.get(key) not in (None, "") else None
+        except (TypeError, ValueError):
+            return None
+
+    def _row_entry(row: dict) -> dict | None:
         try:
             bid = int(row.get("bid"))
         except (TypeError, ValueError):
@@ -3232,9 +3245,14 @@ def _parse_import_entries(file_name: str, text: str) -> tuple[list[tuple[int, fl
             rating = float(rating_raw) if rating_raw not in (None, "") else None
         except (TypeError, ValueError):
             rating = None
-        return bid, rating
+        return {
+            "bid": bid, "rating": rating,
+            "name": _text(row, "beer_name"), "style": _text(row, "beer_type"),
+            "brewery": _text(row, "brewery_name"), "country": _text(row, "brewery_country"),
+            "state": _text(row, "brewery_state"), "abv": _number(row, "beer_abv"), "ibu": _number(row, "beer_ibu"),
+        }
 
-    entries: list[tuple[int, float | None]] = []
+    entries: list[dict] = []
     skipped = 0
 
     if file_name.endswith(".csv"):
@@ -3297,7 +3315,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     clear_pending_import_history(context, user_id, chat_id)
     file = await context.bot.get_file(document.file_id)
     raw_bytes = await file.download_as_bytearray()
-    text = bytes(raw_bytes).decode("utf-8", errors="replace")
+    text = bytes(raw_bytes).decode("utf-8-sig", errors="replace")
 
     entries, skipped = _parse_import_entries(file_name, text)
     if not entries:

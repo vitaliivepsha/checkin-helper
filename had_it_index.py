@@ -326,19 +326,40 @@ async def record_checkin(user_id: int, beer_id, rating) -> None:
         _save()
 
 
-async def seed_from_export(user_id: int, username: str, entries: list[tuple[int, float | None]]) -> int:
+_EXPORT_FIELDS = ("name", "style", "brewery", "country", "state", "abv", "ibu")
+
+
+async def seed_from_export(user_id: int, username: str, entries: list) -> int:
     """Bulk-seeds from an official Untappd data export (CSV/JSON uploaded via
     bot.py's /import_history) - bypasses the paginated backfill entirely.
     Merges into any existing beers (never removes a previously-known one,
     same convention as record_page) and marks fully_synced immediately,
     since a full account export is trusted to cover the whole history -
     next_turn will then skip this user until the normal resync cooldown.
-    Returns how many (beerId, rating) entries were recorded."""
+
+    An entry is a dict ({"bid", "rating", and optionally the export's own
+    name/style/brewery/country/state/abv/ibu}) or the older (bid, rating)
+    tuple. The export's values are CURRENT (the style Untappd has today), so
+    they overwrite what the index remembers - that is how a style renamed or
+    merged since a beer was first synced (e.g. the retired non-alcoholic
+    styles) gets refreshed - but a field the export leaves empty never erases
+    what is already known, and an unrated later check-in doesn't erase a
+    previous rating. Existing records are updated in place, not replaced:
+    replacing them with a bare rating used to wipe every style/country the
+    badges are computed from. Returns how many entries were recorded."""
     async with _lock:
         entry = _entry(user_id)
         entry["username"] = username
-        for bid, rating in entries:
-            entry["beers"][str(bid)] = {"rating": rating}
+        for item in entries:
+            if isinstance(item, tuple):
+                item = {"bid": item[0], "rating": item[1]}
+            record = entry["beers"].setdefault(str(item["bid"]), {})
+            if item.get("rating") is not None or "rating" not in record:
+                record["rating"] = item.get("rating")
+            for field in _EXPORT_FIELDS:
+                value = item.get(field)
+                if value is not None:
+                    record[field] = value
         entry["fully_synced"] = True
         entry["last_synced_at"] = time.time()
         entry["last_fetch_at"] = time.time()
