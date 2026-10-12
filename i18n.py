@@ -182,8 +182,9 @@ EXTRA_STRINGS = {
         "cmd_import_history": "📥 Import Untappd history",
         "import_history_group_hint": "Please message me privately to import your Untappd history.",
         "import_history_not_connected": "Connect your Untappd account first with /connect_untappd, then try /import_history again.",
-        "import_history_prompt": "Send me the CSV or JSON file from Untappd's \"Export Your Data\" feature (Insider-only — see help.untappd.com if you don't see it in your settings). This seeds your \"already had it\" badge instantly, instead of waiting for the slow background sync.\n_(or /cancel to abort)_",
-        "import_history_invalid_file": "❌ Couldn't read that as a valid Untappd export (.csv or .json) — double check the file and try again, or /cancel.",
+        "import_history_prompt": "Send me the CSV or JSON file from Untappd's \"Export Your Data\" feature (Insider-only — see help.untappd.com if you don't see it in your settings). Telegram lets bots take files up to 20 MB, so a bigger export goes as a ZIP (it shrinks about 5-10x). This seeds your \"already had it\" badge instantly, instead of waiting for the slow background sync.\n_(or /cancel to abort)_",
+        "import_history_invalid_file": "❌ Couldn't read that as a valid Untappd export (.csv, .json, or either one in a .zip/.gz) — double check the file and try again, or /cancel.",
+        "import_history_too_big": "❌ That file is over 20 MB, which is the most Telegram lets a bot download. Pack the export into a ZIP (right-click → Send to → Compressed folder) and send that — it shrinks about 5-10x. Or /cancel.",
         "import_history_done": "✅ Imported {count} beers from your export{skipped_note} — your \"already had it\" badge now covers your whole history immediately.",
         "import_history_skipped_note": " ({skipped} rows skipped — couldn't read them)",
 
@@ -362,8 +363,9 @@ EXTRA_STRINGS = {
         "cmd_import_history": "📥 Імпорт історії Untappd",
         "import_history_group_hint": "Напиши мені в приваті, щоб імпортувати історію Untappd.",
         "import_history_not_connected": "Спершу підключи Untappd через /connect_untappd, потім спробуй /import_history ще раз.",
-        "import_history_prompt": "Надішли CSV або JSON файл із функції Untappd \"Export Your Data\" (лише для Insider — дивись help.untappd.com, якщо не бачиш цього в налаштуваннях). Це миттєво наповнить бейдж \"вже пив\" усією твоєю історією, замість очікування повільної фонової синхронізації.\n_(або /cancel щоб скасувати)_",
-        "import_history_invalid_file": "❌ Не вдалося прочитати це як експорт Untappd (.csv чи .json) — перевір файл і спробуй ще раз, або /cancel.",
+        "import_history_prompt": "Надішли CSV або JSON файл із функції Untappd \"Export Your Data\" (лише для Insider — дивись help.untappd.com, якщо не бачиш цього в налаштуваннях). Telegram дозволяє ботам файли до 20 МБ, тож більший експорт надсилай у ZIP (він стискається в 5–10 разів). Це миттєво наповнить бейдж \"вже пив\" усією твоєю історією, замість очікування повільної фонової синхронізації.\n_(або /cancel щоб скасувати)_",
+        "import_history_invalid_file": "❌ Не вдалося прочитати це як експорт Untappd (.csv, .json або один із них у .zip/.gz) — перевір файл і спробуй ще раз, або /cancel.",
+        "import_history_too_big": "❌ Цей файл більший за 20 МБ — це максимум, який Telegram дозволяє завантажити боту. Запакуй експорт у ZIP (правою кнопкою → Надіслати → Стиснута ZIP-папка) і надішли його: він стискається в 5–10 разів. Або /cancel.",
         "import_history_done": "✅ Імпортовано {count} пив з експорту{skipped_note} — бейдж \"вже пив\" тепер одразу покриває всю твою історію.",
         "import_history_skipped_note": " ({skipped} рядків пропущено — не вдалося прочитати)",
 

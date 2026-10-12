@@ -55,3 +55,41 @@ def test_wheel_of_styles_counts_beer_styles_only_and_normalises():
         ["IPA - American", "IPA - American", "Lager - Pale", "Lager - Euro Pale", "Other", "Wine - Other", "Spirit - Liqueur - Other"])}
     wheel = next(r for r in badge_stats.compute_distinct_progress(beers) if r.get("name") == "Wheel of Styles")
     assert wheel["current"] == 2
+
+
+def test_zip_and_gz_exports_unpack_and_hostile_ones_are_refused(monkeypatch):
+    import gzip
+    import io
+    import zipfile
+    bot = _bot()
+    csv_bytes = (CSV_HEADER + "Nostalgia,Zakładowy,IPA - American,6.5,0,3.75,6986514,Poland,\n").encode("utf-8")
+    # a plain file passes through untouched
+    assert bot._unpack_import_file("Untappd-Checkins.CSV", csv_bytes) == ("untappd-checkins.csv", csv_bytes)
+    # zip: the CSV inside is found, whatever else is in the archive
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("readme.txt", "hi")
+        z.writestr("export/untappd-checkins.csv", csv_bytes)
+    assert bot._unpack_import_file("export.zip", buf.getvalue()) == ("export/untappd-checkins.csv", csv_bytes)
+    # gz
+    assert bot._unpack_import_file("untappd-checkins.csv.gz", gzip.compress(csv_bytes)) == ("untappd-checkins.csv", csv_bytes)
+    # unreadable, no export inside, or too big once unpacked
+    assert bot._unpack_import_file("broken.zip", b"not a zip") is None
+    empty = io.BytesIO()
+    with zipfile.ZipFile(empty, "w") as z:
+        z.writestr("photo.png", b"x")
+    assert bot._unpack_import_file("nothing.zip", empty.getvalue()) is None
+    monkeypatch.setattr(bot, "IMPORT_HISTORY_MAX_UNPACKED_SIZE", 50)
+    assert bot._unpack_import_file("big.csv.gz", gzip.compress(csv_bytes)) is None
+    big_zip = io.BytesIO()
+    with zipfile.ZipFile(big_zip, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("big.csv", csv_bytes)
+    assert bot._unpack_import_file("big.zip", big_zip.getvalue()) is None
+
+
+def test_parsing_bytes_gives_the_same_entries_as_text():
+    bot = _bot()
+    text = CSV_HEADER + "Nostalgia,Zakładowy,IPA - American,6.5,0,3.75,6986514,Poland,\n"
+    from_text, _ = bot._parse_import_entries("x.csv", text)
+    from_bytes, _ = bot._parse_import_entries("x.csv", ("﻿" + text).encode("utf-8"))
+    assert from_text == from_bytes and from_text[0]["bid"] == 6986514

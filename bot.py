@@ -5,10 +5,12 @@ load_dotenv()  # must run before any local module that reads env vars at import 
 import shutil
 import json
 import csv
+import gzip
 import io
 import re
 import time
 import unicodedata
+import zipfile
 import base64
 import html
 import logging
@@ -3213,9 +3215,44 @@ async def scan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 IMPORT_HISTORY_MAX_FILE_SIZE = 20 * 1024 * 1024  # Telegram's own bot-download ceiling
+# What a .zip/.gz may unpack to: a CSV shrinks ~5-10x, so the 20 MB ceiling above
+# covers a history several times longer when the file is packed. Capped so a
+# hostile "zip bomb" can't eat the small VM's memory.
+IMPORT_HISTORY_MAX_UNPACKED_SIZE = 150 * 1024 * 1024
 
 
-def _parse_import_entries(file_name: str, text: str) -> tuple[list[dict], int]:
+def _unpack_import_file(file_name: str, data: bytes) -> tuple[str, bytes] | None:
+    """(inner_file_name, bytes) of the CSV/JSON export in an upload - the file
+    itself, or the first .csv/.json inside a .zip, or the content of a .gz.
+    None when the archive is unreadable, holds no such file, or would unpack
+    past IMPORT_HISTORY_MAX_UNPACKED_SIZE."""
+    name = file_name.lower()
+    limit = IMPORT_HISTORY_MAX_UNPACKED_SIZE
+    try:
+        if name.endswith(".zip"):
+            with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                member = next(
+                    (m for m in archive.infolist() if not m.is_dir() and m.filename.lower().endswith((".csv", ".json"))),
+                    None,
+                )
+                if member is None or member.file_size > limit:
+                    return None
+                with archive.open(member) as inner:
+                    content = inner.read(limit + 1)
+                return (member.filename.lower(), content) if len(content) <= limit else None
+        if name.endswith(".gz"):
+            with gzip.GzipFile(fileobj=io.BytesIO(data)) as inner:
+                content = inner.read(limit + 1)
+            if len(content) > limit:
+                return None
+            inner_name = name[:-3]
+            return (inner_name if inner_name.endswith((".csv", ".json")) else inner_name + ".csv", content)
+    except (zipfile.BadZipFile, OSError, EOFError, ValueError):
+        return None
+    return name, data
+
+
+def _parse_import_entries(file_name: str, text: str | bytes) -> tuple[list[dict], int]:
     """Returns (entries, skipped_count). Each entry is a dict with the
     export's `bid`/`rating_score` plus, when the row has them, its current
     beer_name/beer_type/brewery_name/brewery_country/brewery_state/beer_abv/
@@ -3256,7 +3293,13 @@ def _parse_import_entries(file_name: str, text: str) -> tuple[list[dict], int]:
     skipped = 0
 
     if file_name.endswith(".csv"):
-        for row in csv.DictReader(io.StringIO(text)):
+        # Bytes are streamed through a text wrapper instead of being decoded into a
+        # second full-size string: an unpacked export can be over 100 MB.
+        stream = (
+            io.TextIOWrapper(io.BytesIO(text), encoding="utf-8-sig", errors="replace", newline="")
+            if isinstance(text, bytes) else io.StringIO(text)
+        )
+        for row in csv.DictReader(stream):
             parsed = _row_entry(row)
             if parsed is None:
                 skipped += 1
@@ -3270,7 +3313,7 @@ def _parse_import_entries(file_name: str, text: str) -> tuple[list[dict], int]:
     # key - degrades to "0 imported" rather than crashing if this guess
     # about the shape is wrong.
     try:
-        parsed_json = json.loads(text)
+        parsed_json = json.loads(text.decode("utf-8-sig", errors="replace") if isinstance(text, bytes) else text)
     except json.JSONDecodeError:
         return [], 0
     if isinstance(parsed_json, list):
@@ -3305,17 +3348,24 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lng = lang(update)
     document = update.message.document
     file_name = (document.file_name or "").lower()
-    if not (file_name.endswith(".csv") or file_name.endswith(".json")):
+    if not file_name.endswith((".csv", ".json", ".zip", ".gz")):
         await update.message.reply_text(t(lng, "import_history_invalid_file"))
         return  # keep pending state so they can just try again
     if document.file_size and document.file_size > IMPORT_HISTORY_MAX_FILE_SIZE:
-        await update.message.reply_text(t(lng, "import_history_invalid_file"))
+        # Telegram won't let a bot download more than 20 MB - a packed file gets under it.
+        await update.message.reply_text(t(lng, "import_history_too_big"))
         return
 
     clear_pending_import_history(context, user_id, chat_id)
     file = await context.bot.get_file(document.file_id)
     raw_bytes = await file.download_as_bytearray()
-    text = bytes(raw_bytes).decode("utf-8-sig", errors="replace")
+    unpacked = _unpack_import_file(file_name, bytes(raw_bytes))
+    if unpacked is None:
+        await update.message.reply_text(t(lng, "import_history_invalid_file"))
+        return
+    file_name, content = unpacked
+    del raw_bytes
+    text = content  # bytes: _parse_import_entries streams them
 
     entries, skipped = _parse_import_entries(file_name, text)
     if not entries:
