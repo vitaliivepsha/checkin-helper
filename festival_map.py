@@ -369,6 +369,23 @@ def _rebuild_from_template(template: dict, zones: list[str], known_breweries: li
     return fresh
 
 
+def _rebuild_zone(loaded: dict, template: dict, zone_name: str, zones: list[str], known_breweries: list[str]) -> None:
+    """Rebuilds ONE zone from the template, leaving every other zone (and the
+    edits made in them) alone. A zone's template entry carries its own
+    "version"; bump it when that zone's plan changes - e.g. a floor plan that
+    arrives later than the others. Only breweries not placed in another zone
+    are candidates, so nothing is pulled out of a floor that already has it."""
+    elsewhere = {
+        b
+        for name, zone in loaded.items() if name != zone_name
+        for lst in [zone[side] for side in SIDES] + _island_lists(zone)
+        for b in lst if b is not None
+    }
+    candidates = [b for b in known_breweries if b not in elsewhere]
+    single = {"zones": {zone_name: template["zones"][zone_name]}}
+    loaded[zone_name] = _rebuild_from_template(single, zones, candidates)[zone_name]
+
+
 def _place_from_template(loaded: dict, template: dict, zones: list[str], brewery: str) -> bool:
     """Puts a not-yet-placed `brewery` at its plan position, if a template
     label names it: inside the container (side or island) that label lives
@@ -418,11 +435,25 @@ async def get_layout(
         known = set(known_breweries)
         pruned = False
         bucket_meta = dict(all_data.get(bucket) or {})
+        rebuilt_everything = False
         if template and bucket_meta.get("templateVersion") != template.get("version"):
+            rebuilt_everything = True
             bucket_meta["previousZones"] = copy.deepcopy(loaded)  # kept so a rebuild can be undone by hand
             bucket_meta["templateVersion"] = template.get("version")
             loaded = _rebuild_from_template(template, zones, known_breweries)
             pruned = True
+        if template:
+            zone_versions = dict(bucket_meta.get("zoneVersions") or {})
+            for zone_name, spec in (template.get("zones") or {}).items():
+                want = spec.get("version")
+                if want is None or zone_name not in loaded or zone_versions.get(zone_name) == want:
+                    continue
+                if not rebuilt_everything:
+                    bucket_meta.setdefault("previousZones", {})[zone_name] = copy.deepcopy(loaded[zone_name])
+                    _rebuild_zone(loaded, template, zone_name, zones, known_breweries)
+                zone_versions[zone_name] = want
+                bucket_meta["zoneVersions"] = zone_versions
+                pruned = True
         if template and _adopt_arrivals(loaded, template, known):
             pruned = True
         for zone in loaded.values():

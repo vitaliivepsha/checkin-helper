@@ -1,7 +1,18 @@
 {
   "version": 2,
-  "source": "22. Warszawski Festiwal Piwa, Stadion Legii, 15-17 X 2026 - official floor plans of the 2nd and 3rd floors (the two plan sheets of the 2nd floor form one zone). Area 1 = 1st floor (no plan yet - stands listed in the data only), Area 2 = 2nd floor, Area 3 = 3rd floor. Labels are the plan's stand names (matched to the data's brewery names by whole words, ignoring case and diacritics); non-brewery exhibitors (green boxes), the relax zone, DKMS and the craft-fair area are not listed.",
+  "source": "22. Warszawski Festiwal Piwa, Stadion Legii, 15-17 X 2026 - official floor plans of the 2nd and 3rd floors (the two plan sheets of the 2nd floor form one zone). Area 1 = 1st floor / ground floor (\"PARTER\": two rows of two stands, left column Hop Brook (the plan says HOPBROOK) then Sulewski, right column Traditional British Beers then T.E.A. Time), Area 2 = 2nd floor, Area 3 = 3rd floor. Labels are the plan's stand names (matched to the data's brewery names by whole words, ignoring case and diacritics); non-brewery exhibitors (green boxes), the relax zone, DKMS and the craft-fair area are not listed.",
   "zones": {
+    "Area 1": {
+      "version": 1,
+      "left": [
+        "Hop Brook",
+        "Sulewski"
+      ],
+      "right": [
+        "Traditional British Beers",
+        "T.E.A. Time"
+      ]
+    },
     "Area 2": {
       "top": [
         "Mazurski",
@@ -110,7 +121,7 @@
     "Bałtów",
     "Hopkultura",
     "Alchemik",
-    "Hopbrook",
+    "Hop Brook",
     "Nieczajna",
     "Piwne Podziemie",
     "Lubrow"

@@ -220,3 +220,41 @@ async def test_zone_order_is_saved_validated_and_applied(tmp_path):
     await festival_map.get_layout("wfp", [], {}, zones)
     await festival_map.move_brewery("wfp", "X", "Area 1", "top", 0, zones)
     assert await festival_map.get_zone_order("wfp") == ["Area 3", "Area 1", "Area 2"]
+
+
+async def test_one_zone_can_be_rebuilt_from_a_newer_plan_without_touching_the_others(tmp_path):
+    festival_map.init(str(tmp_path))
+    old = {"version": 5, "zones": {"Area 2": TEMPLATE["zones"]["Area 2"]}}   # only the 2nd floor's plan so far
+    known = ["Browar Sulewski", "Magic Road", "Browar Kingpin"]
+    await layout(tmp_path, known=known, template=old)
+    assert await festival_map.move_brewery("wfp", "Browar Kingpin", "Area 2", "bottom", 0, ZONES)   # an editor's work on Area 2
+    await festival_map.move_brewery("wfp", "Browar Sulewski", "Area 1", "bottom", 0, ZONES)  # ...and a stray placement in Area 1
+    before_area2 = (await layout(tmp_path, known=known, template=old))["Area 2"]
+
+    new = {"version": 5, "zones": {
+        "Area 1": {"version": 1, "left": ["Hopbrook", "Sulewski"], "right": ["Traditional British Beers", "T.E.A. Time"]},
+        "Area 2": TEMPLATE["zones"]["Area 2"],
+    }}
+    planned = festival_map.planned_stands(new, known)
+    result = await layout(tmp_path, known=known + planned, template=new)
+    assert result["Area 1"]["left"] == ["Hopbrook", "Browar Sulewski"]
+    assert result["Area 1"]["right"] == ["Traditional British Beers", "T.E.A. Time"]
+    assert result["Area 1"]["bottom"] == [] and result["Area 1"]["top"] == []
+    # Area 2 keeps what the editor did (Kingpin moved to the bottom); only plan placeholders joined it
+    assert result["Area 2"]["bottom"] == before_area2["bottom"] == ["Browar Kingpin"]
+    assert result["Area 2"]["left"] == before_area2["left"] == ["Magic Road"]
+    meta = saved(tmp_path)
+    assert meta["zoneVersions"] == {"Area 1": 1} and "Area 1" in meta["previousZones"]
+    # and it is a one-off: an edit to Area 1 now sticks
+    await festival_map.move_brewery("wfp", "Hopbrook", "Area 1", "top", 0, ZONES)
+    again = await layout(tmp_path, known=known + planned, template=new)
+    assert again["Area 1"]["top"] == ["Hopbrook"]
+
+
+async def test_a_brand_new_bucket_does_not_rebuild_zones_twice(tmp_path):
+    festival_map.init(str(tmp_path))
+    new = {"version": 1, "zones": {"Area 1": {"version": 3, "left": ["Bednary"]}}}
+    result = await layout(tmp_path, known=["Browar Bednary"], template=new)
+    assert result["Area 1"]["left"] == ["Browar Bednary"]
+    assert saved(tmp_path)["zoneVersions"] == {"Area 1": 3}
+    assert "previousZones" in saved(tmp_path)   # from the one global rebuild, not a second zone rebuild
