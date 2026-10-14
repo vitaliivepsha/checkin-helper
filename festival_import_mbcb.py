@@ -6,9 +6,10 @@ beer-list site for MBCB 2026, whose page loads everything from one public
     python festival_import_mbcb.py            # writes mbcb_beers.json
     python festival_import_mbcb.py out.json   # or somewhere else
 
-Re-run it whenever the site updates its list. The site has no floor plan, so
-beers carry no `location` (the festival map stays empty until zones are
-defined, same as the 1928-beer test festival).
+Re-run it whenever the site updates its list. The site has no floor plan (its
+map images are leftover Copenhagen MBCC ones), so every beer goes to a single
+zone, DEFAULT_LOCATION, and the stands are arranged by hand on the festival
+map until the official plan is published.
 """
 
 import json
@@ -18,6 +19,7 @@ import httpx
 
 SOURCE_URL = "https://mbcb.jonpacker.com/latest.json"
 DEFAULT_OUTPUT = "mbcb_beers.json"
+DEFAULT_LOCATION = "Area 1"
 
 
 def build_festival_beers(latest: dict) -> tuple[dict[str, list[dict]], list[dict]]:
@@ -47,6 +49,7 @@ def build_festival_beers(latest: dict) -> tuple[dict[str, list[dict]], list[dict
             "id": beer_id,
             "name": name,
             "brewery": (row.get("brewery") or "").strip(),
+            "location": DEFAULT_LOCATION,
             "url": f"https://untappd.com/beer/{beer_id}",
         })
     return sessions, skipped

@@ -18,7 +18,7 @@ def test_groups_by_session_and_builds_untappd_url():
     ]})
     assert list(sessions) == ["yellow", "red"]
     assert sessions["yellow"] == [{
-        "id": "6496029", "name": "Dark Heart", "brewery": "Engkanto",
+        "id": "6496029", "name": "Dark Heart", "brewery": "Engkanto", "location": "Area 1",
         "url": "https://untappd.com/beer/6496029",
     }]
     assert skipped == []
@@ -49,4 +49,4 @@ def test_registered_festival_file_loads():
     entry = next(f for f in festivals if f["key"] == "mbcb2026")
     data = json.load(open(os.path.join(root, entry["file"]), encoding="utf-8"))
     assert set(data) == {"yellow", "red", "green"}
-    assert all(b["id"] and b["name"] and b["brewery"] for beers in data.values() for b in beers)
+    assert all(b["id"] and b["name"] and b["brewery"] and b["location"] == "Area 1" for beers in data.values() for b in beers)
