@@ -1,0 +1,2636 @@
+{
+  "yellow": [
+    {
+      "id": "6496029",
+      "name": "Dark Heart",
+      "brewery": "Engkanto",
+      "url": "https://untappd.com/beer/6496029"
+    },
+    {
+      "id": "6766817",
+      "name": "Proto 106 - Imperial Stout w/ Cocoa Nibs, Chili & Vanilla",
+      "brewery": "Brewski",
+      "url": "https://untappd.com/beer/6766817"
+    },
+    {
+      "id": "5084570",
+      "name": "Pilz",
+      "brewery": "Batch",
+      "url": "https://untappd.com/beer/5084570"
+    },
+    {
+      "id": "6655580",
+      "name": "Affection 5th Anniversary (2026)",
+      "brewery": "Pinta Barrel",
+      "url": "https://untappd.com/beer/6655580"
+    },
+    {
+      "id": "6561570",
+      "name": "Öö Raspberry",
+      "brewery": "Põhjala",
+      "url": "https://untappd.com/beer/6561570"
+    },
+    {
+      "id": "6349715",
+      "name": "Superlungs",
+      "brewery": "Ruse",
+      "url": "https://untappd.com/beer/6349715"
+    },
+    {
+      "id": "2375164",
+      "name": "Wonder Wall",
+      "brewery": "Ology",
+      "url": "https://untappd.com/beer/2375164"
+    },
+    {
+      "id": "6560464",
+      "name": "Mango x Pineapple x Banana Extra Ice Cream Smoothie",
+      "brewery": "Arpus",
+      "url": "https://untappd.com/beer/6560464"
+    },
+    {
+      "id": "5494422",
+      "name": "Astoria",
+      "brewery": "Willibald",
+      "url": "https://untappd.com/beer/5494422"
+    },
+    {
+      "id": "4870374",
+      "name": "DDH Finch and Thistle",
+      "brewery": "Belleflower",
+      "url": "https://untappd.com/beer/4870374"
+    },
+    {
+      "id": "6809084",
+      "name": "Maple Iscariot",
+      "brewery": "WarPigs",
+      "url": "https://untappd.com/beer/6809084"
+    },
+    {
+      "id": "7183603",
+      "name": "Jan × Lieve 2025",
+      "brewery": "Vermeersch",
+      "url": "https://untappd.com/beer/7183603"
+    },
+    {
+      "id": "39819",
+      "name": "Budvar Dark",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/39819"
+    },
+    {
+      "id": "815096",
+      "name": "Festbier 2026",
+      "brewery": "Young Master",
+      "url": "https://untappd.com/beer/815096"
+    },
+    {
+      "id": "5877092",
+      "name": "Helles",
+      "brewery": "Flatland",
+      "url": "https://untappd.com/beer/5877092"
+    },
+    {
+      "id": "6782456",
+      "name": "Did We Meet between Worlds?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6782456"
+    },
+    {
+      "id": "6107464",
+      "name": "2024 Vanilla Big Sxxxy",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/6107464"
+    },
+    {
+      "id": "6780450",
+      "name": "8-Track Throwback",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/6780450"
+    },
+    {
+      "id": "6317405",
+      "name": "Seoul Rice Lager",
+      "brewery": "Seoul",
+      "url": "https://untappd.com/beer/6317405"
+    },
+    {
+      "id": "6259586",
+      "name": "Farang Buay",
+      "brewery": "Samata",
+      "url": "https://untappd.com/beer/6259586"
+    },
+    {
+      "id": "7183110",
+      "name": "Morning Bell",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/7183110"
+    },
+    {
+      "id": "6791143",
+      "name": "Blackberry x Blueberry x Mango x Pineapple x Peanut Butter Smoothie Sour",
+      "brewery": "Arpus",
+      "url": "https://untappd.com/beer/6791143"
+    },
+    {
+      "id": "3277171",
+      "name": "Mystic Visions",
+      "brewery": "Ruse",
+      "url": "https://untappd.com/beer/3277171"
+    },
+    {
+      "id": "329658",
+      "name": "Osaru IPA",
+      "brewery": "Minoh",
+      "url": "https://untappd.com/beer/329658"
+    },
+    {
+      "id": "6861683",
+      "name": "Korea Rice Lager",
+      "brewery": "Playground",
+      "url": "https://untappd.com/beer/6861683"
+    },
+    {
+      "id": "1605198",
+      "name": "Konstantin",
+      "brewery": "Schilling",
+      "url": "https://untappd.com/beer/1605198"
+    },
+    {
+      "id": "3957906",
+      "name": "George Bourbon BA",
+      "brewery": "Mikkeller",
+      "url": "https://untappd.com/beer/3957906"
+    },
+    {
+      "id": "6844956",
+      "name": "8th Anniversary",
+      "brewery": "Funky Fluid",
+      "url": "https://untappd.com/beer/6844956"
+    },
+    {
+      "id": "6535225",
+      "name": "Easy Pilsner",
+      "brewery": "To Øl",
+      "url": "https://untappd.com/beer/6535225"
+    },
+    {
+      "id": "6828145",
+      "name": "Am I the Universe Yet?",
+      "brewery": "Uchu",
+      "url": "https://untappd.com/beer/6828145"
+    },
+    {
+      "id": "6895030",
+      "name": "Burstphobia",
+      "brewery": "Totopia",
+      "url": "https://untappd.com/beer/6895030"
+    },
+    {
+      "id": "6364955",
+      "name": "Hop Coaster IPA",
+      "brewery": "Playground",
+      "url": "https://untappd.com/beer/6364955"
+    },
+    {
+      "id": "6870584",
+      "name": "Blue Pill",
+      "brewery": "Off Script",
+      "url": "https://untappd.com/beer/6870584"
+    },
+    {
+      "id": "6908619",
+      "name": "Arbor Moderata",
+      "brewery": "Tall Trees",
+      "url": "https://untappd.com/beer/6908619"
+    },
+    {
+      "id": "5490229",
+      "name": "Chasmic Absorption through Whirlpools of Disarray",
+      "brewery": "Ghost Town",
+      "url": "https://untappd.com/beer/5490229"
+    },
+    {
+      "id": "6850767",
+      "name": "Expansionphobia",
+      "brewery": "Totopia",
+      "url": "https://untappd.com/beer/6850767"
+    },
+    {
+      "id": "3697603",
+      "name": "Cosmic Thing",
+      "brewery": "Wild West",
+      "url": "https://untappd.com/beer/3697603"
+    },
+    {
+      "id": "6471646",
+      "name": "Amber Flowing Clouds",
+      "brewery": "Peiping Machine",
+      "url": "https://untappd.com/beer/6471646"
+    },
+    {
+      "id": "6851779",
+      "name": "Mammoth Patriarch Edition",
+      "brewery": "Quadraft",
+      "url": "https://untappd.com/beer/6851779"
+    },
+    {
+      "id": "4331480",
+      "name": "Squirrel Friends",
+      "brewery": "Resident Culture",
+      "url": "https://untappd.com/beer/4331480"
+    },
+    {
+      "id": "2599663",
+      "name": "Si L Dan IPA",
+      "brewery": "Heroes",
+      "url": "https://untappd.com/beer/2599663"
+    },
+    {
+      "id": "6834772",
+      "name": "Wheelbarrow as a Chair",
+      "brewery": "Cloudwater",
+      "url": "https://untappd.com/beer/6834772"
+    },
+    {
+      "id": "6707622",
+      "name": "Mirabelle-Gewürz 2025",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6707622"
+    },
+    {
+      "id": "6457217",
+      "name": "Daze",
+      "brewery": "Batch",
+      "url": "https://untappd.com/beer/6457217"
+    },
+    {
+      "id": "6717805",
+      "name": "Petroleum Cryo Fresh #2 Simcoe",
+      "brewery": "Ebeltoft",
+      "url": "https://untappd.com/beer/6717805"
+    },
+    {
+      "id": "6819274",
+      "name": "Trading Fours",
+      "brewery": "Mikkeller",
+      "url": "https://untappd.com/beer/6819274"
+    },
+    {
+      "id": "5614617",
+      "name": "Anomalous Readings",
+      "brewery": "Moksa",
+      "url": "https://untappd.com/beer/5614617"
+    },
+    {
+      "id": "7200427",
+      "name": "Memory Lane: Macdonnell",
+      "brewery": "Heroes",
+      "url": "https://untappd.com/beer/7200427"
+    },
+    {
+      "id": "6857716",
+      "name": "Raw Power DIPA Cryo Fresh #1",
+      "brewery": "Ebeltoft",
+      "url": "https://untappd.com/beer/6857716"
+    },
+    {
+      "id": "6834638",
+      "name": "Bake-Off: Matcha Mochi",
+      "brewery": "Vault City",
+      "url": "https://untappd.com/beer/6834638"
+    },
+    {
+      "id": "4237723",
+      "name": "Lost Leaf",
+      "brewery": "Belleflower",
+      "url": "https://untappd.com/beer/4237723"
+    },
+    {
+      "id": "5053638",
+      "name": "Savinja",
+      "brewery": "Human Robot",
+      "url": "https://untappd.com/beer/5053638"
+    },
+    {
+      "id": "7183019",
+      "name": "Rauchbier",
+      "brewery": "Peiping Machine",
+      "url": "https://untappd.com/beer/7183019"
+    },
+    {
+      "id": "6612557",
+      "name": "Ba Bin Cheese Pie",
+      "brewery": "Samata",
+      "url": "https://untappd.com/beer/6612557"
+    },
+    {
+      "id": "6764026",
+      "name": "Perzik Saffraan 2025",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6764026"
+    },
+    {
+      "id": "6904185",
+      "name": "Annum III Lager",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/6904185"
+    },
+    {
+      "id": "6859818",
+      "name": "Chanpei of My Rye",
+      "brewery": "Young Master",
+      "url": "https://untappd.com/beer/6859818"
+    },
+    {
+      "id": "7021922",
+      "name": "Wukongopterus",
+      "brewery": "Quadraft",
+      "url": "https://untappd.com/beer/7021922"
+    },
+    {
+      "id": "5339481",
+      "name": "Helles",
+      "brewery": "Wagner Merkendorf",
+      "url": "https://untappd.com/beer/5339481"
+    },
+    {
+      "id": "6356472",
+      "name": "BA Condor",
+      "brewery": "Lua",
+      "url": "https://untappd.com/beer/6356472"
+    },
+    {
+      "id": "6493246",
+      "name": "Nocturne - The Dark Night (2025)",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/6493246"
+    },
+    {
+      "id": "6647189",
+      "name": "Obsession - Single Barrel Edition (Porto)",
+      "brewery": "Pinta Barrel",
+      "url": "https://untappd.com/beer/6647189"
+    },
+    {
+      "id": "6854898",
+      "name": "Really，really，really Fun",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6854898"
+    },
+    {
+      "id": "7183136",
+      "name": "Evening Drum",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/7183136"
+    },
+    {
+      "id": "5603895",
+      "name": "Western Standard Time",
+      "brewery": "ISM",
+      "url": "https://untappd.com/beer/5603895"
+    },
+    {
+      "id": "6714057",
+      "name": "BA Grazing on the Ordinary 2026",
+      "brewery": "Finback",
+      "url": "https://untappd.com/beer/6714057"
+    },
+    {
+      "id": "6763998",
+      "name": "Vertical City",
+      "brewery": "Seoul",
+      "url": "https://untappd.com/beer/6763998"
+    },
+    {
+      "id": "1339261",
+      "name": "Saftig",
+      "brewery": "Pulpit Rock",
+      "url": "https://untappd.com/beer/1339261"
+    },
+    {
+      "id": "6918147",
+      "name": "The Villes of Tennessee",
+      "brewery": "Green Cheek",
+      "url": "https://untappd.com/beer/6918147"
+    },
+    {
+      "id": "6081361",
+      "name": "Severed Survival",
+      "brewery": "Adroit Theory",
+      "url": "https://untappd.com/beer/6081361"
+    },
+    {
+      "id": "3495052",
+      "name": "Yule M#@!*?K Aged in Rum Barrels",
+      "brewery": "To Øl",
+      "url": "https://untappd.com/beer/3495052"
+    },
+    {
+      "id": "3775114",
+      "name": "Starboy",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/3775114"
+    },
+    {
+      "id": "5132828",
+      "name": "Adambier",
+      "brewery": "Bad Seed",
+      "url": "https://untappd.com/beer/5132828"
+    },
+    {
+      "id": "7183146",
+      "name": "Lychee Honey Melomel",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/7183146"
+    },
+    {
+      "id": "6707629",
+      "name": "Lady in Red 2025",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6707629"
+    },
+    {
+      "id": "7200662",
+      "name": "MBCB Gold 2026 - The Hunter Games II",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/7200662"
+    },
+    {
+      "id": "6782441",
+      "name": "Do You Hear the Empty Spaces?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6782441"
+    },
+    {
+      "id": "7198756",
+      "name": "Table Talk",
+      "brewery": "Wunderkammer",
+      "url": "https://untappd.com/beer/7198756"
+    },
+    {
+      "id": "4045363",
+      "name": "Enter the Dragon",
+      "brewery": "Red Ears",
+      "url": "https://untappd.com/beer/4045363"
+    },
+    {
+      "id": "6670039",
+      "name": "Réfractaires (Café)",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/6670039"
+    },
+    {
+      "id": "6589659",
+      "name": "Sun City Pineapple / Coconut / Lime",
+      "brewery": "Põhjala",
+      "url": "https://untappd.com/beer/6589659"
+    },
+    {
+      "id": "6143116",
+      "name": "DESTROYER [Yuzu + Passion Fruit + Hot Agave + Mezcal + Vanilla + Tajin]",
+      "brewery": "Adroit Theory",
+      "url": "https://untappd.com/beer/6143116"
+    },
+    {
+      "id": "6871167",
+      "name": "Red Pill",
+      "brewery": "Off Script",
+      "url": "https://untappd.com/beer/6871167"
+    },
+    {
+      "id": "6859197",
+      "name": "Blep",
+      "brewery": "Soma",
+      "url": "https://untappd.com/beer/6859197"
+    },
+    {
+      "id": "6862157",
+      "name": "Demoliri #0039 - Xtrm Turbo",
+      "brewery": "Messorem",
+      "url": "https://untappd.com/beer/6862157"
+    },
+    {
+      "id": "6737484",
+      "name": "Oude Honinglambik",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/6737484"
+    },
+    {
+      "id": "6170993",
+      "name": "Forelsket Vintage 2025",
+      "brewery": "Pulpit Rock",
+      "url": "https://untappd.com/beer/6170993"
+    },
+    {
+      "id": "6904188",
+      "name": "Annum III",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/6904188"
+    },
+    {
+      "id": "6859200",
+      "name": "Commuter",
+      "brewery": "Soma",
+      "url": "https://untappd.com/beer/6859200"
+    },
+    {
+      "id": "6710793",
+      "name": "Double Barrel Hug Hug Kiss Kiss",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/6710793"
+    },
+    {
+      "id": "2507566",
+      "name": "Hypa #2",
+      "brewery": "Brasserie Du Bas-Canada",
+      "url": "https://untappd.com/beer/2507566"
+    },
+    {
+      "id": "6861008",
+      "name": "Restart in Safe Mode",
+      "brewery": "Cloudwater",
+      "url": "https://untappd.com/beer/6861008"
+    },
+    {
+      "id": "6836294",
+      "name": "Space Axe",
+      "brewery": "Uchu",
+      "url": "https://untappd.com/beer/6836294"
+    },
+    {
+      "id": "50166",
+      "name": "Lagerbier Ungespundet",
+      "brewery": "Wagner Merkendorf",
+      "url": "https://untappd.com/beer/50166"
+    },
+    {
+      "id": "6816801",
+      "name": "Sweet Heart",
+      "brewery": "Willibald",
+      "url": "https://untappd.com/beer/6816801"
+    },
+    {
+      "id": "7200933",
+      "name": "Gui",
+      "brewery": "East Gate",
+      "url": "https://untappd.com/beer/7200933"
+    },
+    {
+      "id": "6514489",
+      "name": "Barbera White Label 2023",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6514489"
+    },
+    {
+      "id": "6167508",
+      "name": "Labuznik",
+      "brewery": "Fast Fashion",
+      "url": "https://untappd.com/beer/6167508"
+    },
+    {
+      "id": "3999583",
+      "name": "The Green Stand",
+      "brewery": "Mount Holly",
+      "url": "https://untappd.com/beer/3999583"
+    },
+    {
+      "id": "5533003",
+      "name": "G'suffa",
+      "brewery": "Schilling",
+      "url": "https://untappd.com/beer/5533003"
+    },
+    {
+      "id": "6819654",
+      "name": "Festbier",
+      "brewery": "Resident Culture",
+      "url": "https://untappd.com/beer/6819654"
+    },
+    {
+      "id": "6708684",
+      "name": "Zomerkriek 2025",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6708684"
+    },
+    {
+      "id": "5970627",
+      "name": "Party Pants",
+      "brewery": "Wild West",
+      "url": "https://untappd.com/beer/5970627"
+    },
+    {
+      "id": "472439",
+      "name": "Weiherer Landbier Hell",
+      "brewery": "Weiherer",
+      "url": "https://untappd.com/beer/472439"
+    },
+    {
+      "id": "6827007",
+      "name": "In Honor of Pancakes",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/6827007"
+    },
+    {
+      "id": "6852752",
+      "name": "Attitude Era",
+      "brewery": "Fast Fashion",
+      "url": "https://untappd.com/beer/6852752"
+    },
+    {
+      "id": "6922077",
+      "name": "MBCB '26 XTRM TURBO",
+      "brewery": "Messorem",
+      "url": "https://untappd.com/beer/6922077"
+    },
+    {
+      "id": "1952959",
+      "name": "Frank the Tank",
+      "brewery": "WarPigs",
+      "url": "https://untappd.com/beer/1952959"
+    },
+    {
+      "id": "6775884",
+      "name": "STAG EC18",
+      "brewery": "Flatland",
+      "url": "https://untappd.com/beer/6775884"
+    },
+    {
+      "id": "6392463",
+      "name": "Themis 3000",
+      "brewery": "Brasserie Du Bas-Canada",
+      "url": "https://untappd.com/beer/6392463"
+    },
+    {
+      "id": "6838483",
+      "name": "Kinda Awesome-Ish",
+      "brewery": "Radiant",
+      "url": "https://untappd.com/beer/6838483"
+    },
+    {
+      "id": "3313482",
+      "name": "Summerthyme",
+      "brewery": "Moksa",
+      "url": "https://untappd.com/beer/3313482"
+    },
+    {
+      "id": "6837276",
+      "name": "Magic Dragon Juice",
+      "brewery": "Dankhouse",
+      "url": "https://untappd.com/beer/6837276"
+    },
+    {
+      "id": "4442214",
+      "name": "Project Hopfisch",
+      "brewery": "Lua",
+      "url": "https://untappd.com/beer/4442214"
+    },
+    {
+      "id": "3705796",
+      "name": "Gnarly Trees",
+      "brewery": "Outer Range",
+      "url": "https://untappd.com/beer/3705796"
+    },
+    {
+      "id": "1594814",
+      "name": "Oude Geuze Cuvée Armand & Gaston",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/1594814"
+    },
+    {
+      "id": "4515845",
+      "name": "ASAP As Possible",
+      "brewery": "Green Cheek",
+      "url": "https://untappd.com/beer/4515845"
+    },
+    {
+      "id": "3651795",
+      "name": "Hallertau Pils",
+      "brewery": "Human Robot",
+      "url": "https://untappd.com/beer/3651795"
+    },
+    {
+      "id": "6471309",
+      "name": "Ease Up",
+      "brewery": "Finback",
+      "url": "https://untappd.com/beer/6471309"
+    },
+    {
+      "id": "6194136",
+      "name": "Hamburghini",
+      "brewery": "ISM",
+      "url": "https://untappd.com/beer/6194136"
+    },
+    {
+      "id": "6782450",
+      "name": "Do We Exist without Each Other?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6782450"
+    },
+    {
+      "id": "7183546",
+      "name": "45658",
+      "brewery": "Vermeersch",
+      "url": "https://untappd.com/beer/7183546"
+    },
+    {
+      "id": "5971629",
+      "name": "Dank Dive",
+      "brewery": "Ghost Town",
+      "url": "https://untappd.com/beer/5971629"
+    },
+    {
+      "id": "2982181",
+      "name": "Saruyamashikao",
+      "brewery": "Minoh",
+      "url": "https://untappd.com/beer/2982181"
+    },
+    {
+      "id": "7223005",
+      "name": "Bohemian Machine",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/7223005"
+    },
+    {
+      "id": "6846437",
+      "name": "Forward Motion",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6846437"
+    },
+    {
+      "id": "6407735",
+      "name": "15th Anniversary: Civil Disobedience",
+      "brewery": "Hill Farmstead",
+      "url": "https://untappd.com/beer/6407735"
+    },
+    {
+      "id": "6807399",
+      "name": "Fruits N Scoops: Up, Up, & Away",
+      "brewery": "Ology",
+      "url": "https://untappd.com/beer/6807399"
+    },
+    {
+      "id": "6820779",
+      "name": "Futurist",
+      "brewery": "East Gate",
+      "url": "https://untappd.com/beer/6820779"
+    },
+    {
+      "id": "6531438",
+      "name": "Sweet Recollection",
+      "brewery": "Radiant",
+      "url": "https://untappd.com/beer/6531438"
+    },
+    {
+      "id": "6284989",
+      "name": "Tamarindoh",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/6284989"
+    },
+    {
+      "id": "6780249",
+      "name": "Year 2 - 999g/l: Apricot, Mango, Guava & Pineapple",
+      "brewery": "Vault City",
+      "url": "https://untappd.com/beer/6780249"
+    },
+    {
+      "id": "5385",
+      "name": "Budvar Original",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/5385"
+    },
+    {
+      "id": "6837471",
+      "name": "Ocean Spray Paint",
+      "brewery": "Dankhouse",
+      "url": "https://untappd.com/beer/6837471"
+    },
+    {
+      "id": "6826525",
+      "name": "Mosaic Insects",
+      "brewery": "Wunderkammer",
+      "url": "https://untappd.com/beer/6826525"
+    },
+    {
+      "id": "1588981",
+      "name": "Good Morning, Vietnam",
+      "brewery": "Bad Seed",
+      "url": "https://untappd.com/beer/1588981"
+    },
+    {
+      "id": "5995563",
+      "name": "Sunbathing Owl",
+      "brewery": "Engkanto",
+      "url": "https://untappd.com/beer/5995563"
+    },
+    {
+      "id": "6074253",
+      "name": "Changing the Possible",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6074253"
+    },
+    {
+      "id": "6811582",
+      "name": "Extra Pilsner: Edelstein",
+      "brewery": "Bad Seed",
+      "url": "https://untappd.com/beer/6811582"
+    },
+    {
+      "id": "6472611",
+      "name": "Chrome Bucket",
+      "brewery": "Brewski",
+      "url": "https://untappd.com/beer/6472611"
+    },
+    {
+      "id": "327210",
+      "name": "Convivial Suarez",
+      "brewery": "Hill Farmstead",
+      "url": "https://untappd.com/beer/327210"
+    },
+    {
+      "id": "20184",
+      "name": "Weiherer Lager Hell",
+      "brewery": "Weiherer",
+      "url": "https://untappd.com/beer/20184"
+    },
+    {
+      "id": "7200754",
+      "name": "Stone Breeze",
+      "brewery": "Red Ears",
+      "url": "https://untappd.com/beer/7200754"
+    },
+    {
+      "id": "4938799",
+      "name": "Green Mountain Gold",
+      "brewery": "Mount Holly",
+      "url": "https://untappd.com/beer/4938799"
+    },
+    {
+      "id": "6792033",
+      "name": "Gelato Xtreme: Triple Scoop",
+      "brewery": "Funky Fluid",
+      "url": "https://untappd.com/beer/6792033"
+    },
+    {
+      "id": "3084699",
+      "name": "DDH Steezy",
+      "brewery": "Outer Range",
+      "url": "https://untappd.com/beer/3084699"
+    }
+  ],
+  "red": [
+    {
+      "id": "6810338",
+      "name": "Next up Volunteers",
+      "brewery": "WarPigs",
+      "url": "https://untappd.com/beer/6810338"
+    },
+    {
+      "id": "4110586",
+      "name": "Riding for the Feeling",
+      "brewery": "Resident Culture",
+      "url": "https://untappd.com/beer/4110586"
+    },
+    {
+      "id": "6915951",
+      "name": "Libation",
+      "brewery": "Soma",
+      "url": "https://untappd.com/beer/6915951"
+    },
+    {
+      "id": "6492977",
+      "name": "Crush",
+      "brewery": "Batch",
+      "url": "https://untappd.com/beer/6492977"
+    },
+    {
+      "id": "6356351",
+      "name": "Merry-Go-Wit",
+      "brewery": "Playground",
+      "url": "https://untappd.com/beer/6356351"
+    },
+    {
+      "id": "7183025",
+      "name": "Apple Sour Brut IPA",
+      "brewery": "Peiping Machine",
+      "url": "https://untappd.com/beer/7183025"
+    },
+    {
+      "id": "6918151",
+      "name": "T9 Is the New Penmanship",
+      "brewery": "Green Cheek",
+      "url": "https://untappd.com/beer/6918151"
+    },
+    {
+      "id": "6791141",
+      "name": "Never Say Never Michelada Tomato Gose",
+      "brewery": "Arpus",
+      "url": "https://untappd.com/beer/6791141"
+    },
+    {
+      "id": "6064242",
+      "name": "BA Mash Test Yummies (2024)",
+      "brewery": "To Øl",
+      "url": "https://untappd.com/beer/6064242"
+    },
+    {
+      "id": "6655581",
+      "name": "Liberty 5th Anniversary (2026)",
+      "brewery": "Pinta Barrel",
+      "url": "https://untappd.com/beer/6655581"
+    },
+    {
+      "id": "6734234",
+      "name": "Don't Fear the Reefer",
+      "brewery": "Bad Seed",
+      "url": "https://untappd.com/beer/6734234"
+    },
+    {
+      "id": "4100880",
+      "name": "Smoked Plum Sour Porter",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/4100880"
+    },
+    {
+      "id": "6856386",
+      "name": "Lisa 2025",
+      "brewery": "Vermeersch",
+      "url": "https://untappd.com/beer/6856386"
+    },
+    {
+      "id": "6850762",
+      "name": "Tinyphobia",
+      "brewery": "Totopia",
+      "url": "https://untappd.com/beer/6850762"
+    },
+    {
+      "id": "72603",
+      "name": "Framboos",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/72603"
+    },
+    {
+      "id": "6509163",
+      "name": "Tokaji Lélek 2021",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6509163"
+    },
+    {
+      "id": "5918399",
+      "name": "Barrel Aged Imperial Stout",
+      "brewery": "Minoh",
+      "url": "https://untappd.com/beer/5918399"
+    },
+    {
+      "id": "6670039",
+      "name": "Réfractaires (Café)",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/6670039"
+    },
+    {
+      "id": "3775114",
+      "name": "Starboy",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/3775114"
+    },
+    {
+      "id": "6871322",
+      "name": "Guns, Lots of Guns",
+      "brewery": "Off Script",
+      "url": "https://untappd.com/beer/6871322"
+    },
+    {
+      "id": "13488",
+      "name": "Arthur",
+      "brewery": "Hill Farmstead",
+      "url": "https://untappd.com/beer/13488"
+    },
+    {
+      "id": "6791906",
+      "name": "Moonlit Triple Nut",
+      "brewery": "Seoul",
+      "url": "https://untappd.com/beer/6791906"
+    },
+    {
+      "id": "5965708",
+      "name": "Vanishing Points",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/5965708"
+    },
+    {
+      "id": "6073065",
+      "name": "2024 Broward County Brand Stout - Vanilla Rye",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/6073065"
+    },
+    {
+      "id": "6536827",
+      "name": "Bear Favor",
+      "brewery": "Brewski",
+      "url": "https://untappd.com/beer/6536827"
+    },
+    {
+      "id": "4329452",
+      "name": "Gui Zhou Witbier",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/4329452"
+    },
+    {
+      "id": "5901369",
+      "name": "Nectar Extracto",
+      "brewery": "Ruse",
+      "url": "https://untappd.com/beer/5901369"
+    },
+    {
+      "id": "4236677",
+      "name": "Scrugsy",
+      "brewery": "Belleflower",
+      "url": "https://untappd.com/beer/4236677"
+    },
+    {
+      "id": "7200451",
+      "name": "Second Base",
+      "brewery": "Heroes",
+      "url": "https://untappd.com/beer/7200451"
+    },
+    {
+      "id": "3163175",
+      "name": "Glutinous Rice Pale Ale",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/3163175"
+    },
+    {
+      "id": "4941039",
+      "name": "Dresden Codex",
+      "brewery": "Human Robot",
+      "url": "https://untappd.com/beer/4941039"
+    },
+    {
+      "id": "6737484",
+      "name": "Oude Honinglambik",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/6737484"
+    },
+    {
+      "id": "6340353",
+      "name": "Viking Pilsner",
+      "brewery": "Playground",
+      "url": "https://untappd.com/beer/6340353"
+    },
+    {
+      "id": "5339481",
+      "name": "Helles",
+      "brewery": "Wagner Merkendorf",
+      "url": "https://untappd.com/beer/5339481"
+    },
+    {
+      "id": "6834656",
+      "name": "Bake-Off: Cranachan",
+      "brewery": "Vault City",
+      "url": "https://untappd.com/beer/6834656"
+    },
+    {
+      "id": "50166",
+      "name": "Lagerbier Ungespundet",
+      "brewery": "Wagner Merkendorf",
+      "url": "https://untappd.com/beer/50166"
+    },
+    {
+      "id": "6816796",
+      "name": "2nd Rodeo",
+      "brewery": "Willibald",
+      "url": "https://untappd.com/beer/6816796"
+    },
+    {
+      "id": "6548627",
+      "name": "Night Pusher",
+      "brewery": "Brewski",
+      "url": "https://untappd.com/beer/6548627"
+    },
+    {
+      "id": "6837420",
+      "name": "Venni Vetti Lychee",
+      "brewery": "Dankhouse",
+      "url": "https://untappd.com/beer/6837420"
+    },
+    {
+      "id": "5728406",
+      "name": "Atom Passionfruit",
+      "brewery": "Uchu",
+      "url": "https://untappd.com/beer/5728406"
+    },
+    {
+      "id": "7200925",
+      "name": "Go West 2.0",
+      "brewery": "East Gate",
+      "url": "https://untappd.com/beer/7200925"
+    },
+    {
+      "id": "7198760",
+      "name": "Music for Midwinter-Pine Tips",
+      "brewery": "Wunderkammer",
+      "url": "https://untappd.com/beer/7198760"
+    },
+    {
+      "id": "6911039",
+      "name": "Off Script Project #005",
+      "brewery": "Young Master",
+      "url": "https://untappd.com/beer/6911039"
+    },
+    {
+      "id": "6664614",
+      "name": "Why Do Dreams Exist?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6664614"
+    },
+    {
+      "id": "6915986",
+      "name": "Irrefutable Logic: Midnight Nougat",
+      "brewery": "Ology",
+      "url": "https://untappd.com/beer/6915986"
+    },
+    {
+      "id": "6494939",
+      "name": "Botanist",
+      "brewery": "East Gate",
+      "url": "https://untappd.com/beer/6494939"
+    },
+    {
+      "id": "472439",
+      "name": "Weiherer Landbier Hell",
+      "brewery": "Weiherer",
+      "url": "https://untappd.com/beer/472439"
+    },
+    {
+      "id": "5124263",
+      "name": "Pink",
+      "brewery": "Mount Holly",
+      "url": "https://untappd.com/beer/5124263"
+    },
+    {
+      "id": "6819270",
+      "name": "Boys to the Yard",
+      "brewery": "Mikkeller",
+      "url": "https://untappd.com/beer/6819270"
+    },
+    {
+      "id": "6798399",
+      "name": "Year 6 - Mango Banana Coconut Crumble Cake",
+      "brewery": "Vault City",
+      "url": "https://untappd.com/beer/6798399"
+    },
+    {
+      "id": "7200098",
+      "name": "Konformist",
+      "brewery": "Wild West",
+      "url": "https://untappd.com/beer/7200098"
+    },
+    {
+      "id": "5731315",
+      "name": "Immutable Dawn",
+      "brewery": "ISM",
+      "url": "https://untappd.com/beer/5731315"
+    },
+    {
+      "id": "6384146",
+      "name": "Space Prelude",
+      "brewery": "Uchu",
+      "url": "https://untappd.com/beer/6384146"
+    },
+    {
+      "id": "6841907",
+      "name": "Flashphobia",
+      "brewery": "Totopia",
+      "url": "https://untappd.com/beer/6841907"
+    },
+    {
+      "id": "5490082",
+      "name": "Sticky Sips",
+      "brewery": "Moksa",
+      "url": "https://untappd.com/beer/5490082"
+    },
+    {
+      "id": "6707617",
+      "name": "Moonwalk 2025",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6707617"
+    },
+    {
+      "id": "6789152",
+      "name": "Night Oats",
+      "brewery": "Ology",
+      "url": "https://untappd.com/beer/6789152"
+    },
+    {
+      "id": "6837454",
+      "name": "Blazed Method",
+      "brewery": "Dankhouse",
+      "url": "https://untappd.com/beer/6837454"
+    },
+    {
+      "id": "6895237",
+      "name": "Trace",
+      "brewery": "Soma",
+      "url": "https://untappd.com/beer/6895237"
+    },
+    {
+      "id": "3874450",
+      "name": "Nature Therapy",
+      "brewery": "Outer Range",
+      "url": "https://untappd.com/beer/3874450"
+    },
+    {
+      "id": "5864400",
+      "name": "Algorithmic Prophecy",
+      "brewery": "Flatland",
+      "url": "https://untappd.com/beer/5864400"
+    },
+    {
+      "id": "6844990",
+      "name": "Gelato Xtreme: Out of Order",
+      "brewery": "Funky Fluid",
+      "url": "https://untappd.com/beer/6844990"
+    },
+    {
+      "id": "6607320",
+      "name": "Saturday Morning Cartoons",
+      "brewery": "Flatland",
+      "url": "https://untappd.com/beer/6607320"
+    },
+    {
+      "id": "6664601",
+      "name": "Who Are We to the Universe?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6664601"
+    },
+    {
+      "id": "5847116",
+      "name": "Helles",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/5847116"
+    },
+    {
+      "id": "5282677",
+      "name": "Leshy",
+      "brewery": "Tall Trees",
+      "url": "https://untappd.com/beer/5282677"
+    },
+    {
+      "id": "639465",
+      "name": "Palmovka 12º",
+      "brewery": "Schilling",
+      "url": "https://untappd.com/beer/639465"
+    },
+    {
+      "id": "6811192",
+      "name": "Double Barrel Macaroon Phase",
+      "brewery": "Flatland",
+      "url": "https://untappd.com/beer/6811192"
+    },
+    {
+      "id": "5171283",
+      "name": "Paint Me Purple",
+      "brewery": "Engkanto",
+      "url": "https://untappd.com/beer/5171283"
+    },
+    {
+      "id": "7223005",
+      "name": "Bohemian Machine",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/7223005"
+    },
+    {
+      "id": "6907872",
+      "name": "Destructio #0018 - Xtrm Turbo",
+      "brewery": "Messorem",
+      "url": "https://untappd.com/beer/6907872"
+    },
+    {
+      "id": "1953731",
+      "name": "Rustic Ways",
+      "brewery": "Outer Range",
+      "url": "https://untappd.com/beer/1953731"
+    },
+    {
+      "id": "7200794",
+      "name": "Wonder Unfolds",
+      "brewery": "Red Ears",
+      "url": "https://untappd.com/beer/7200794"
+    },
+    {
+      "id": "5212884",
+      "name": "Darth",
+      "brewery": "Batch",
+      "url": "https://untappd.com/beer/5212884"
+    },
+    {
+      "id": "7183657",
+      "name": "Marleen 2025",
+      "brewery": "Vermeersch",
+      "url": "https://untappd.com/beer/7183657"
+    },
+    {
+      "id": "2206300",
+      "name": "Cloud 9",
+      "brewery": "Wild West",
+      "url": "https://untappd.com/beer/2206300"
+    },
+    {
+      "id": "6814088",
+      "name": "Pils Me",
+      "brewery": "To Øl",
+      "url": "https://untappd.com/beer/6814088"
+    },
+    {
+      "id": "6664609",
+      "name": "What Stays Unseen?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6664609"
+    },
+    {
+      "id": "6871446",
+      "name": "Beginning To Believe",
+      "brewery": "Off Script",
+      "url": "https://untappd.com/beer/6871446"
+    },
+    {
+      "id": "6434685",
+      "name": "Alexander",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/6434685"
+    },
+    {
+      "id": "5385",
+      "name": "Budvar Original",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/5385"
+    },
+    {
+      "id": "6828107",
+      "name": "Queenless",
+      "brewery": "Ghost Town",
+      "url": "https://untappd.com/beer/6828107"
+    },
+    {
+      "id": "6653930",
+      "name": "Aramis",
+      "brewery": "Human Robot",
+      "url": "https://untappd.com/beer/6653930"
+    },
+    {
+      "id": "6860579",
+      "name": "Wildflower IPA Cryo Fresh #1",
+      "brewery": "Ebeltoft",
+      "url": "https://untappd.com/beer/6860579"
+    },
+    {
+      "id": "6701990",
+      "name": "Golden Plum Sour",
+      "brewery": "Põhjala",
+      "url": "https://untappd.com/beer/6701990"
+    },
+    {
+      "id": "6444976",
+      "name": "Baton 010",
+      "brewery": "Minoh",
+      "url": "https://untappd.com/beer/6444976"
+    },
+    {
+      "id": "4113143",
+      "name": "Tinned Fish",
+      "brewery": "Fast Fashion",
+      "url": "https://untappd.com/beer/4113143"
+    },
+    {
+      "id": "6181008",
+      "name": "Oscillation",
+      "brewery": "Finback",
+      "url": "https://untappd.com/beer/6181008"
+    },
+    {
+      "id": "20184",
+      "name": "Weiherer Lager Hell",
+      "brewery": "Weiherer",
+      "url": "https://untappd.com/beer/20184"
+    },
+    {
+      "id": "6709749",
+      "name": "Coolship (Autumn 2022)",
+      "brewery": "Pinta Barrel",
+      "url": "https://untappd.com/beer/6709749"
+    },
+    {
+      "id": "7198761",
+      "name": "Red",
+      "brewery": "Wunderkammer",
+      "url": "https://untappd.com/beer/7198761"
+    },
+    {
+      "id": "6282151",
+      "name": "Tracing the Departed",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6282151"
+    },
+    {
+      "id": "5646529",
+      "name": "BA Smoke On the Porter, Fire In the Rye (2023)",
+      "brewery": "To Øl",
+      "url": "https://untappd.com/beer/5646529"
+    },
+    {
+      "id": "5490597",
+      "name": "Double No Quams about It",
+      "brewery": "Pulpit Rock",
+      "url": "https://untappd.com/beer/5490597"
+    },
+    {
+      "id": "3968434",
+      "name": "Scissor Hash",
+      "brewery": "Ghost Town",
+      "url": "https://untappd.com/beer/3968434"
+    },
+    {
+      "id": "6715970",
+      "name": "GLOOP Stout ‑ Biscoff Shake",
+      "brewery": "Vault City",
+      "url": "https://untappd.com/beer/6715970"
+    },
+    {
+      "id": "6514492",
+      "name": "Merlot Grand Cru 2021",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6514492"
+    },
+    {
+      "id": "6853370",
+      "name": "Integrations",
+      "brewery": "Cloudwater",
+      "url": "https://untappd.com/beer/6853370"
+    },
+    {
+      "id": "7086186",
+      "name": "Ego Death Coffee Heath Bar",
+      "brewery": "Resident Culture",
+      "url": "https://untappd.com/beer/7086186"
+    },
+    {
+      "id": "4316618",
+      "name": "Barn Hex",
+      "brewery": "Belleflower",
+      "url": "https://untappd.com/beer/4316618"
+    },
+    {
+      "id": "39819",
+      "name": "Budvar Dark",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/39819"
+    },
+    {
+      "id": "6839449",
+      "name": "Thai Tea Lava Cake",
+      "brewery": "Samata",
+      "url": "https://untappd.com/beer/6839449"
+    },
+    {
+      "id": "7200772",
+      "name": "Verdant Ridge",
+      "brewery": "Red Ears",
+      "url": "https://untappd.com/beer/7200772"
+    },
+    {
+      "id": "520685",
+      "name": "1842",
+      "brewery": "Young Master",
+      "url": "https://untappd.com/beer/520685"
+    },
+    {
+      "id": "4934274",
+      "name": "High Hive",
+      "brewery": "Engkanto",
+      "url": "https://untappd.com/beer/4934274"
+    },
+    {
+      "id": "6844944",
+      "name": "Barrel Aged Royal Cookie: Scoop",
+      "brewery": "Funky Fluid",
+      "url": "https://untappd.com/beer/6844944"
+    },
+    {
+      "id": "6275806",
+      "name": "Phases of Darkness 2025",
+      "brewery": "Ruse",
+      "url": "https://untappd.com/beer/6275806"
+    },
+    {
+      "id": "6374149",
+      "name": "Forest Friends",
+      "brewery": "Mikkeller",
+      "url": "https://untappd.com/beer/6374149"
+    },
+    {
+      "id": "6846435",
+      "name": "Awake and Unafraid",
+      "brewery": "Lua",
+      "url": "https://untappd.com/beer/6846435"
+    },
+    {
+      "id": "6099454",
+      "name": "Solo: Motueka Pale Ale",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/6099454"
+    },
+    {
+      "id": "6355501",
+      "name": "BA Shrike",
+      "brewery": "Lua",
+      "url": "https://untappd.com/beer/6355501"
+    },
+    {
+      "id": "5987303",
+      "name": "Chepedelic",
+      "brewery": "ISM",
+      "url": "https://untappd.com/beer/5987303"
+    },
+    {
+      "id": "6751222",
+      "name": "Omakase",
+      "brewery": "Fast Fashion",
+      "url": "https://untappd.com/beer/6751222"
+    },
+    {
+      "id": "3733909",
+      "name": "Pastry Mode",
+      "brewery": "Moksa",
+      "url": "https://untappd.com/beer/3733909"
+    },
+    {
+      "id": "5238122",
+      "name": "Jakobus",
+      "brewery": "Schilling",
+      "url": "https://untappd.com/beer/5238122"
+    },
+    {
+      "id": "6100773",
+      "name": "Days Losing Light",
+      "brewery": "Radiant",
+      "url": "https://untappd.com/beer/6100773"
+    },
+    {
+      "id": "7198816",
+      "name": "Blackcurrant x Raspberry x Mango x Pineapple x Coconut x Vanilla x Almond Smoothie Sour",
+      "brewery": "Arpus",
+      "url": "https://untappd.com/beer/7198816"
+    },
+    {
+      "id": "6836543",
+      "name": "Seoul Rice Lager Dark",
+      "brewery": "Seoul",
+      "url": "https://untappd.com/beer/6836543"
+    },
+    {
+      "id": "7183026",
+      "name": "Just A Taste",
+      "brewery": "Peiping Machine",
+      "url": "https://untappd.com/beer/7183026"
+    },
+    {
+      "id": "3025303",
+      "name": "OJ Did It",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/3025303"
+    },
+    {
+      "id": "6862045",
+      "name": "Images Fragmentées V.2",
+      "brewery": "Brasserie Du Bas-Canada",
+      "url": "https://untappd.com/beer/6862045"
+    },
+    {
+      "id": "6515320",
+      "name": "On Her Majesty's Secret Service 2021",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6515320"
+    },
+    {
+      "id": "6219610",
+      "name": "All Outta Angst",
+      "brewery": "Green Cheek",
+      "url": "https://untappd.com/beer/6219610"
+    },
+    {
+      "id": "7182975",
+      "name": "The Expanse Pterosaur",
+      "brewery": "Quadraft",
+      "url": "https://untappd.com/beer/7182975"
+    },
+    {
+      "id": "3121886",
+      "name": "Neu Pilsner",
+      "brewery": "Bad Seed",
+      "url": "https://untappd.com/beer/3121886"
+    },
+    {
+      "id": "7022049",
+      "name": "Memory Lane: Peel",
+      "brewery": "Heroes",
+      "url": "https://untappd.com/beer/7022049"
+    },
+    {
+      "id": "4855822",
+      "name": "Stout Darker than Death or Night",
+      "brewery": "Adroit Theory",
+      "url": "https://untappd.com/beer/4855822"
+    },
+    {
+      "id": "5504969",
+      "name": "Adroit Theory's Baby",
+      "brewery": "Adroit Theory",
+      "url": "https://untappd.com/beer/5504969"
+    },
+    {
+      "id": "6435738",
+      "name": "Mike’s Magic Mixture",
+      "brewery": "Mount Holly",
+      "url": "https://untappd.com/beer/6435738"
+    },
+    {
+      "id": "5122343",
+      "name": "Plum Harvest 2021",
+      "brewery": "Hill Farmstead",
+      "url": "https://untappd.com/beer/5122343"
+    },
+    {
+      "id": "6354584",
+      "name": "Best in Sho",
+      "brewery": "Radiant",
+      "url": "https://untappd.com/beer/6354584"
+    },
+    {
+      "id": "6846942",
+      "name": "Temporalis #0066 - Xtrm Turbo",
+      "brewery": "Messorem",
+      "url": "https://untappd.com/beer/6846942"
+    },
+    {
+      "id": "6649860",
+      "name": "Triple Barrel Coconut Select",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/6649860"
+    },
+    {
+      "id": "5490821",
+      "name": "Eight",
+      "brewery": "Pulpit Rock",
+      "url": "https://untappd.com/beer/5490821"
+    },
+    {
+      "id": "6664595",
+      "name": "Are Doors for Leaving or Arriving?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6664595"
+    },
+    {
+      "id": "6809136",
+      "name": "Breakfast Radio",
+      "brewery": "WarPigs",
+      "url": "https://untappd.com/beer/6809136"
+    },
+    {
+      "id": "6904427",
+      "name": "Annum III Double IPA",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/6904427"
+    },
+    {
+      "id": "6598448",
+      "name": "Bonfire Bänger",
+      "brewery": "Põhjala",
+      "url": "https://untappd.com/beer/6598448"
+    },
+    {
+      "id": "5833172",
+      "name": "Decade Maple",
+      "brewery": "Finback",
+      "url": "https://untappd.com/beer/5833172"
+    },
+    {
+      "id": "6346984",
+      "name": "Lod Chong Cheesecake",
+      "brewery": "Samata",
+      "url": "https://untappd.com/beer/6346984"
+    },
+    {
+      "id": "7182971",
+      "name": "Kamuysaurus",
+      "brewery": "Quadraft",
+      "url": "https://untappd.com/beer/7182971"
+    },
+    {
+      "id": "6842766",
+      "name": "Prise De Risque",
+      "brewery": "Brasserie Du Bas-Canada",
+      "url": "https://untappd.com/beer/6842766"
+    },
+    {
+      "id": "6833969",
+      "name": "Pastureland",
+      "brewery": "Willibald",
+      "url": "https://untappd.com/beer/6833969"
+    },
+    {
+      "id": "7200177",
+      "name": "Raw Power DIPA Cryo Fresh #2",
+      "brewery": "Ebeltoft",
+      "url": "https://untappd.com/beer/7200177"
+    },
+    {
+      "id": "6493246",
+      "name": "Nocturne - The Dark Night (2025)",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/6493246"
+    },
+    {
+      "id": "6672905",
+      "name": "Persistence Is Utile #VIII x LOT61",
+      "brewery": "Cloudwater",
+      "url": "https://untappd.com/beer/6672905"
+    }
+  ],
+  "green": [
+    {
+      "id": "6701992",
+      "name": "Titaan",
+      "brewery": "Põhjala",
+      "url": "https://untappd.com/beer/6701992"
+    },
+    {
+      "id": "6853329",
+      "name": "4 Inch Door Hinge",
+      "brewery": "Cloudwater",
+      "url": "https://untappd.com/beer/6853329"
+    },
+    {
+      "id": "5916282",
+      "name": "Easy 2.0",
+      "brewery": "East Gate",
+      "url": "https://untappd.com/beer/5916282"
+    },
+    {
+      "id": "5850107",
+      "name": "Match the Hatch",
+      "brewery": "Mount Holly",
+      "url": "https://untappd.com/beer/5850107"
+    },
+    {
+      "id": "6525712",
+      "name": "None Sober",
+      "brewery": "Adroit Theory",
+      "url": "https://untappd.com/beer/6525712"
+    },
+    {
+      "id": "6717803",
+      "name": "Petroleum Cryo Fresh #1 Krush",
+      "brewery": "Ebeltoft",
+      "url": "https://untappd.com/beer/6717803"
+    },
+    {
+      "id": "4396635",
+      "name": "Oude Kirsebær",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/4396635"
+    },
+    {
+      "id": "3382355",
+      "name": "Island Time",
+      "brewery": "Resident Culture",
+      "url": "https://untappd.com/beer/3382355"
+    },
+    {
+      "id": "4256650",
+      "name": "Florence Foudre",
+      "brewery": "Hill Farmstead",
+      "url": "https://untappd.com/beer/4256650"
+    },
+    {
+      "id": "5598465",
+      "name": "This Page Intentionally Left Blank",
+      "brewery": "Green Cheek",
+      "url": "https://untappd.com/beer/5598465"
+    },
+    {
+      "id": "6633098",
+      "name": "Zeta Function",
+      "brewery": "Moksa",
+      "url": "https://untappd.com/beer/6633098"
+    },
+    {
+      "id": "3919815",
+      "name": "Wheat Blanc",
+      "brewery": "Hill Farmstead",
+      "url": "https://untappd.com/beer/3919815"
+    },
+    {
+      "id": "6259789",
+      "name": "Scarlett",
+      "brewery": "Belleflower",
+      "url": "https://untappd.com/beer/6259789"
+    },
+    {
+      "id": "3682704",
+      "name": "Dreams of Organon",
+      "brewery": "Human Robot",
+      "url": "https://untappd.com/beer/3682704"
+    },
+    {
+      "id": "6860580",
+      "name": "Wildflower IPA Cryo Fresh #2",
+      "brewery": "Ebeltoft",
+      "url": "https://untappd.com/beer/6860580"
+    },
+    {
+      "id": "6513399",
+      "name": "Hellscape",
+      "brewery": "WarPigs",
+      "url": "https://untappd.com/beer/6513399"
+    },
+    {
+      "id": "6670039",
+      "name": "Réfractaires (Café)",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/6670039"
+    },
+    {
+      "id": "6707627",
+      "name": "Kutfruit 2025",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6707627"
+    },
+    {
+      "id": "3775114",
+      "name": "Starboy",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/3775114"
+    },
+    {
+      "id": "6856171",
+      "name": "Lieve 2025",
+      "brewery": "Vermeersch",
+      "url": "https://untappd.com/beer/6856171"
+    },
+    {
+      "id": "7183166",
+      "name": "Sparkling Mead with Wuye Lychee",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/7183166"
+    },
+    {
+      "id": "6581408",
+      "name": "Third Sunrise",
+      "brewery": "Mikkeller",
+      "url": "https://untappd.com/beer/6581408"
+    },
+    {
+      "id": "6150084",
+      "name": "French Mirabelle Plum Whisky Barrel Aged Imperial Stout",
+      "brewery": "Arpus",
+      "url": "https://untappd.com/beer/6150084"
+    },
+    {
+      "id": "6514488",
+      "name": "Nebbiolo White Label 2023",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6514488"
+    },
+    {
+      "id": "4872178",
+      "name": "Green Lava",
+      "brewery": "Engkanto",
+      "url": "https://untappd.com/beer/4872178"
+    },
+    {
+      "id": "6809090",
+      "name": "Fix Your Face",
+      "brewery": "WarPigs",
+      "url": "https://untappd.com/beer/6809090"
+    },
+    {
+      "id": "6569472",
+      "name": "Will the Sun Fade Too?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6569472"
+    },
+    {
+      "id": "6858872",
+      "name": "Traditions",
+      "brewery": "Fast Fashion",
+      "url": "https://untappd.com/beer/6858872"
+    },
+    {
+      "id": "6844947",
+      "name": "Barrel Aged Royal Cookie: Happy Almonds",
+      "brewery": "Funky Fluid",
+      "url": "https://untappd.com/beer/6844947"
+    },
+    {
+      "id": "6902158",
+      "name": "Angels Share 2026",
+      "brewery": "Wild West",
+      "url": "https://untappd.com/beer/6902158"
+    },
+    {
+      "id": "6811221",
+      "name": "Dream Logic",
+      "brewery": "Flatland",
+      "url": "https://untappd.com/beer/6811221"
+    },
+    {
+      "id": "6201319",
+      "name": "Cafecito",
+      "brewery": "Batch",
+      "url": "https://untappd.com/beer/6201319"
+    },
+    {
+      "id": "4783129",
+      "name": "Cold Day in Hell",
+      "brewery": "Wild West",
+      "url": "https://untappd.com/beer/4783129"
+    },
+    {
+      "id": "6493246",
+      "name": "Nocturne - The Dark Night (2025)",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/6493246"
+    },
+    {
+      "id": "5922055",
+      "name": "Tropical Nest",
+      "brewery": "Playground",
+      "url": "https://untappd.com/beer/5922055"
+    },
+    {
+      "id": "5339481",
+      "name": "Helles",
+      "brewery": "Wagner Merkendorf",
+      "url": "https://untappd.com/beer/5339481"
+    },
+    {
+      "id": "4697898",
+      "name": "Apres All Day",
+      "brewery": "Outer Range",
+      "url": "https://untappd.com/beer/4697898"
+    },
+    {
+      "id": "6320602",
+      "name": "BA Herron",
+      "brewery": "Lua",
+      "url": "https://untappd.com/beer/6320602"
+    },
+    {
+      "id": "6826568",
+      "name": "Cake Time",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/6826568"
+    },
+    {
+      "id": "6663116",
+      "name": "Nouveau Western IPA",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/6663116"
+    },
+    {
+      "id": "5093397",
+      "name": "Phelp's Park Porter",
+      "brewery": "Pulpit Rock",
+      "url": "https://untappd.com/beer/5093397"
+    },
+    {
+      "id": "6619576",
+      "name": "Kaja",
+      "brewery": "Põhjala",
+      "url": "https://untappd.com/beer/6619576"
+    },
+    {
+      "id": "3250670",
+      "name": "Snublejuice",
+      "brewery": "To Øl",
+      "url": "https://untappd.com/beer/3250670"
+    },
+    {
+      "id": "6638935",
+      "name": "Chasing The Dragon",
+      "brewery": "Brewski",
+      "url": "https://untappd.com/beer/6638935"
+    },
+    {
+      "id": "7183146",
+      "name": "Lychee Honey Melomel",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/7183146"
+    },
+    {
+      "id": "6829770",
+      "name": "After Sauna",
+      "brewery": "Mount Holly",
+      "url": "https://untappd.com/beer/6829770"
+    },
+    {
+      "id": "6569469",
+      "name": "Are Colors Real?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6569469"
+    },
+    {
+      "id": "6782966",
+      "name": "Icelandic Skyr Sour",
+      "brewery": "Seoul",
+      "url": "https://untappd.com/beer/6782966"
+    },
+    {
+      "id": "6424758",
+      "name": "The Abbey Series: Sanctus Michael Archangelus",
+      "brewery": "Radiant",
+      "url": "https://untappd.com/beer/6424758"
+    },
+    {
+      "id": "6708684",
+      "name": "Zomerkriek 2025",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6708684"
+    },
+    {
+      "id": "5807955",
+      "name": "Hell",
+      "brewery": "Willibald",
+      "url": "https://untappd.com/beer/5807955"
+    },
+    {
+      "id": "6801794",
+      "name": "For the Dreamers",
+      "brewery": "Lua",
+      "url": "https://untappd.com/beer/6801794"
+    },
+    {
+      "id": "472439",
+      "name": "Weiherer Landbier Hell",
+      "brewery": "Weiherer",
+      "url": "https://untappd.com/beer/472439"
+    },
+    {
+      "id": "6836840",
+      "name": "Chasing Trees: Strain 31",
+      "brewery": "Dankhouse",
+      "url": "https://untappd.com/beer/6836840"
+    },
+    {
+      "id": "4247655",
+      "name": "Mint Lemonade",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/4247655"
+    },
+    {
+      "id": "6214956",
+      "name": "Ossuary [Salted Fudge + Dark Chocolate Brownie]",
+      "brewery": "Adroit Theory",
+      "url": "https://untappd.com/beer/6214956"
+    },
+    {
+      "id": "6860853",
+      "name": "Golden Flock",
+      "brewery": "Heroes",
+      "url": "https://untappd.com/beer/6860853"
+    },
+    {
+      "id": "6618663",
+      "name": "Dialogue 02: About Time",
+      "brewery": "Quadraft",
+      "url": "https://untappd.com/beer/6618663"
+    },
+    {
+      "id": "7200480",
+      "name": "Mamuang Kuan",
+      "brewery": "Heroes",
+      "url": "https://untappd.com/beer/7200480"
+    },
+    {
+      "id": "6617481",
+      "name": "Rooftop Select Sour",
+      "brewery": "Ology",
+      "url": "https://untappd.com/beer/6617481"
+    },
+    {
+      "id": "5664037",
+      "name": "In Love with the Coco",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/5664037"
+    },
+    {
+      "id": "6737484",
+      "name": "Oude Honinglambik",
+      "brewery": "3 Fonteinen",
+      "url": "https://untappd.com/beer/6737484"
+    },
+    {
+      "id": "6370358",
+      "name": "Fior",
+      "brewery": "Batch",
+      "url": "https://untappd.com/beer/6370358"
+    },
+    {
+      "id": "3218390",
+      "name": "Premium",
+      "brewery": "Finback",
+      "url": "https://untappd.com/beer/3218390"
+    },
+    {
+      "id": "7223005",
+      "name": "Bohemian Machine",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/7223005"
+    },
+    {
+      "id": "6910340",
+      "name": "Curiosité #2",
+      "brewery": "Brasserie Du Bas-Canada",
+      "url": "https://untappd.com/beer/6910340"
+    },
+    {
+      "id": "50166",
+      "name": "Lagerbier Ungespundet",
+      "brewery": "Wagner Merkendorf",
+      "url": "https://untappd.com/beer/50166"
+    },
+    {
+      "id": "6569478",
+      "name": "Will Time Begin Again?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6569478"
+    },
+    {
+      "id": "6829850",
+      "name": "Double Dopesurge",
+      "brewery": "3 Sons",
+      "url": "https://untappd.com/beer/6829850"
+    },
+    {
+      "id": "6827016",
+      "name": "Ausma",
+      "brewery": "Uchu",
+      "url": "https://untappd.com/beer/6827016"
+    },
+    {
+      "id": "72461",
+      "name": "Momo Weizen",
+      "brewery": "Minoh",
+      "url": "https://untappd.com/beer/72461"
+    },
+    {
+      "id": "5815435",
+      "name": "Tomorrow, Tomorrow",
+      "brewery": "Belleflower",
+      "url": "https://untappd.com/beer/5815435"
+    },
+    {
+      "id": "5677725",
+      "name": "Plough & Harrow",
+      "brewery": "ISM",
+      "url": "https://untappd.com/beer/5677725"
+    },
+    {
+      "id": "6870815",
+      "name": "Goodbye Mr Anderson",
+      "brewery": "Off Script",
+      "url": "https://untappd.com/beer/6870815"
+    },
+    {
+      "id": "6828940",
+      "name": "Puncheon Project: Passionfruit & Guava",
+      "brewery": "Green Cheek",
+      "url": "https://untappd.com/beer/6828940"
+    },
+    {
+      "id": "7183705",
+      "name": "Marie‑joseph 2025",
+      "brewery": "Vermeersch",
+      "url": "https://untappd.com/beer/7183705"
+    },
+    {
+      "id": "3254011",
+      "name": "T.L.C.",
+      "brewery": "Honey Pot",
+      "url": "https://untappd.com/beer/3254011"
+    },
+    {
+      "id": "6819271",
+      "name": "Sticky Situation",
+      "brewery": "Mikkeller",
+      "url": "https://untappd.com/beer/6819271"
+    },
+    {
+      "id": "6663414",
+      "name": "Irrefutable Logic: Dubai Nights",
+      "brewery": "Ology",
+      "url": "https://untappd.com/beer/6663414"
+    },
+    {
+      "id": "6870830",
+      "name": "I Know Kung Fu",
+      "brewery": "Off Script",
+      "url": "https://untappd.com/beer/6870830"
+    },
+    {
+      "id": "20184",
+      "name": "Weiherer Lager Hell",
+      "brewery": "Weiherer",
+      "url": "https://untappd.com/beer/20184"
+    },
+    {
+      "id": "6209820",
+      "name": "Tyrannosaurus",
+      "brewery": "Quadraft",
+      "url": "https://untappd.com/beer/6209820"
+    },
+    {
+      "id": "6220961",
+      "name": "Sticky Sticky",
+      "brewery": "Dankhouse",
+      "url": "https://untappd.com/beer/6220961"
+    },
+    {
+      "id": "6827977",
+      "name": "Threehugger 2.0",
+      "brewery": "ISM",
+      "url": "https://untappd.com/beer/6827977"
+    },
+    {
+      "id": "6895239",
+      "name": "Infrared",
+      "brewery": "Soma",
+      "url": "https://untappd.com/beer/6895239"
+    },
+    {
+      "id": "6850796",
+      "name": "Render",
+      "brewery": "Soma",
+      "url": "https://untappd.com/beer/6850796"
+    },
+    {
+      "id": "6137738",
+      "name": "Lava Lamp Potluck",
+      "brewery": "Ruse",
+      "url": "https://untappd.com/beer/6137738"
+    },
+    {
+      "id": "6846437",
+      "name": "Forward Motion",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6846437"
+    },
+    {
+      "id": "6915810",
+      "name": "Swanphilia",
+      "brewery": "Totopia",
+      "url": "https://untappd.com/beer/6915810"
+    },
+    {
+      "id": "1036259",
+      "name": "Alexandr",
+      "brewery": "Schilling",
+      "url": "https://untappd.com/beer/1036259"
+    },
+    {
+      "id": "6773138",
+      "name": "Choco Volcano",
+      "brewery": "Samata",
+      "url": "https://untappd.com/beer/6773138"
+    },
+    {
+      "id": "5963416",
+      "name": "Mango Sticky Rice",
+      "brewery": "Samata",
+      "url": "https://untappd.com/beer/5963416"
+    },
+    {
+      "id": "6709751",
+      "name": "Coolship (Autumn 2023)",
+      "brewery": "Pinta Barrel",
+      "url": "https://untappd.com/beer/6709751"
+    },
+    {
+      "id": "6834394",
+      "name": "Reis",
+      "brewery": "Human Robot",
+      "url": "https://untappd.com/beer/6834394"
+    },
+    {
+      "id": "7111558",
+      "name": "Off Script Project #007",
+      "brewery": "Young Master",
+      "url": "https://untappd.com/beer/7111558"
+    },
+    {
+      "id": "6405486",
+      "name": "Lazarus 10 Year Anniversary Edition",
+      "brewery": "Bad Seed",
+      "url": "https://untappd.com/beer/6405486"
+    },
+    {
+      "id": "6839439",
+      "name": "Threshold IPA",
+      "brewery": "Beer Guys",
+      "url": "https://untappd.com/beer/6839439"
+    },
+    {
+      "id": "5729917",
+      "name": "Sunshine Fluff",
+      "brewery": "Moksa",
+      "url": "https://untappd.com/beer/5729917"
+    },
+    {
+      "id": "6817152",
+      "name": "Stoopid Spaceshake",
+      "brewery": "Vault City",
+      "url": "https://untappd.com/beer/6817152"
+    },
+    {
+      "id": "39819",
+      "name": "Budvar Dark",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/39819"
+    },
+    {
+      "id": "3824401",
+      "name": "Lightning Drops",
+      "brewery": "Resident Culture",
+      "url": "https://untappd.com/beer/3824401"
+    },
+    {
+      "id": "2797149",
+      "name": "Hammer Smashed Mosaic",
+      "brewery": "Ghost Town",
+      "url": "https://untappd.com/beer/2797149"
+    },
+    {
+      "id": "5385",
+      "name": "Budvar Original",
+      "brewery": "Budvar",
+      "url": "https://untappd.com/beer/5385"
+    },
+    {
+      "id": "5161682",
+      "name": "DDH Tibérius",
+      "brewery": "Brasserie Du Bas-Canada",
+      "url": "https://untappd.com/beer/5161682"
+    },
+    {
+      "id": "47240",
+      "name": "Pilsner",
+      "brewery": "Minoh",
+      "url": "https://untappd.com/beer/47240"
+    },
+    {
+      "id": "7111556",
+      "name": "Off Script Project #006",
+      "brewery": "Young Master",
+      "url": "https://untappd.com/beer/7111556"
+    },
+    {
+      "id": "6630428",
+      "name": "Irrefutable Logic: Rooftop Select (2026)",
+      "brewery": "Ology",
+      "url": "https://untappd.com/beer/6630428"
+    },
+    {
+      "id": "6663659",
+      "name": "La Crescent",
+      "brewery": "Wunderkammer",
+      "url": "https://untappd.com/beer/6663659"
+    },
+    {
+      "id": "5971630",
+      "name": "Perverse Inverse",
+      "brewery": "Ghost Town",
+      "url": "https://untappd.com/beer/5971630"
+    },
+    {
+      "id": "5938835",
+      "name": "Ffarmhouse: Blend 4",
+      "brewery": "Finback",
+      "url": "https://untappd.com/beer/5938835"
+    },
+    {
+      "id": "6791147",
+      "name": "Apple x Mango x Banana x Cinnamon Smoothie Sour",
+      "brewery": "Arpus",
+      "url": "https://untappd.com/beer/6791147"
+    },
+    {
+      "id": "6920081",
+      "name": "Temple of Citra 2026",
+      "brewery": "Tall Trees",
+      "url": "https://untappd.com/beer/6920081"
+    },
+    {
+      "id": "6895032",
+      "name": "Spherephobia",
+      "brewery": "Totopia",
+      "url": "https://untappd.com/beer/6895032"
+    },
+    {
+      "id": "6569476",
+      "name": "With Who or with Whom?",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6569476"
+    },
+    {
+      "id": "6578396",
+      "name": "Wings of Silver Sheen",
+      "brewery": "Red Ears",
+      "url": "https://untappd.com/beer/6578396"
+    },
+    {
+      "id": "1637747",
+      "name": "100 Hops Hidden Deep",
+      "brewery": "Peiping Machine",
+      "url": "https://untappd.com/beer/1637747"
+    },
+    {
+      "id": "6514490",
+      "name": "Olaszrizling 2023",
+      "brewery": "Bofkont",
+      "url": "https://untappd.com/beer/6514490"
+    },
+    {
+      "id": "6844986",
+      "name": "Gelato Xtreme: Baltic Pancake",
+      "brewery": "Funky Fluid",
+      "url": "https://untappd.com/beer/6844986"
+    },
+    {
+      "id": "5536865",
+      "name": "Wills Pils",
+      "brewery": "Wills",
+      "url": "https://untappd.com/beer/5536865"
+    },
+    {
+      "id": "6668438",
+      "name": "Great Artist",
+      "brewery": "East Gate",
+      "url": "https://untappd.com/beer/6668438"
+    },
+    {
+      "id": "6862159",
+      "name": "Demoliri #0040 - Xtrm Turbo",
+      "brewery": "Messorem",
+      "url": "https://untappd.com/beer/6862159"
+    },
+    {
+      "id": "6886081",
+      "name": "Alien Plant Farm",
+      "brewery": "Ruse",
+      "url": "https://untappd.com/beer/6886081"
+    },
+    {
+      "id": "7200849",
+      "name": "Liuyi",
+      "brewery": "Red Ears",
+      "url": "https://untappd.com/beer/7200849"
+    },
+    {
+      "id": "2002572",
+      "name": "In the Steep",
+      "brewery": "Outer Range",
+      "url": "https://untappd.com/beer/2002572"
+    },
+    {
+      "id": "6958619",
+      "name": "Harvest",
+      "brewery": "Fast Fashion",
+      "url": "https://untappd.com/beer/6958619"
+    },
+    {
+      "id": "1954460",
+      "name": "Hopsplash IPA",
+      "brewery": "Playground",
+      "url": "https://untappd.com/beer/1954460"
+    },
+    {
+      "id": "6918155",
+      "name": "Festbier ’26",
+      "brewery": "Green Cheek",
+      "url": "https://untappd.com/beer/6918155"
+    },
+    {
+      "id": "6655583",
+      "name": "Patience 5th Anniversary (2026)",
+      "brewery": "Pinta Barrel",
+      "url": "https://untappd.com/beer/6655583"
+    },
+    {
+      "id": "6548494",
+      "name": "Yutang Royal",
+      "brewery": "Peiping Machine",
+      "url": "https://untappd.com/beer/6548494"
+    },
+    {
+      "id": "6709947",
+      "name": "Decorah Light",
+      "brewery": "Pulpit Rock",
+      "url": "https://untappd.com/beer/6709947"
+    },
+    {
+      "id": "6386320",
+      "name": "Something We Return To",
+      "brewery": "Everywhere",
+      "url": "https://untappd.com/beer/6386320"
+    },
+    {
+      "id": "6654765",
+      "name": "Synesthesia",
+      "brewery": "Wunderkammer",
+      "url": "https://untappd.com/beer/6654765"
+    },
+    {
+      "id": "6798468",
+      "name": "Fatso",
+      "brewery": "Willibald",
+      "url": "https://untappd.com/beer/6798468"
+    },
+    {
+      "id": "4318423",
+      "name": "Brombajer",
+      "brewery": "To Øl",
+      "url": "https://untappd.com/beer/4318423"
+    },
+    {
+      "id": "818009",
+      "name": "Georg",
+      "brewery": "Schilling",
+      "url": "https://untappd.com/beer/818009"
+    },
+    {
+      "id": "6797144",
+      "name": "Year 7 - TDF Caterpillar Cake",
+      "brewery": "Vault City",
+      "url": "https://untappd.com/beer/6797144"
+    },
+    {
+      "id": "2621560",
+      "name": "Pale Blue Dot IPA",
+      "brewery": "Seoul",
+      "url": "https://untappd.com/beer/2621560"
+    },
+    {
+      "id": "6637481",
+      "name": "Agua Fresca Spritz",
+      "brewery": "Flatland",
+      "url": "https://untappd.com/beer/6637481"
+    },
+    {
+      "id": "6753662",
+      "name": "Deep Cut",
+      "brewery": "Brewski",
+      "url": "https://untappd.com/beer/6753662"
+    },
+    {
+      "id": "6819282",
+      "name": "Positive Education",
+      "brewery": "Cloudwater",
+      "url": "https://untappd.com/beer/6819282"
+    },
+    {
+      "id": "6907869",
+      "name": "Destructio #0017 - Xtrm Turbo",
+      "brewery": "Messorem",
+      "url": "https://untappd.com/beer/6907869"
+    },
+    {
+      "id": "6734236",
+      "name": "Siam",
+      "brewery": "Bad Seed",
+      "url": "https://untappd.com/beer/6734236"
+    },
+    {
+      "id": "6856013",
+      "name": "Moon",
+      "brewery": "Uchu",
+      "url": "https://untappd.com/beer/6856013"
+    },
+    {
+      "id": "4934239",
+      "name": "Mango Nation",
+      "brewery": "Engkanto",
+      "url": "https://untappd.com/beer/4934239"
+    },
+    {
+      "id": "4487617",
+      "name": "Extremely Well Würst",
+      "brewery": "Radiant",
+      "url": "https://untappd.com/beer/4487617"
+    },
+    {
+      "id": "5960940",
+      "name": "Adephagia",
+      "brewery": "Bad Seed",
+      "url": "https://untappd.com/beer/5960940"
+    }
+  ]
+}

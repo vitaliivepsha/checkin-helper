@@ -23,6 +23,11 @@
         "Area 2": "2-й поверх",
         "Area 3": "3-й поверх"
       }
+    },
+    {
+      "key": "mbcb2026",
+      "label": "MBCB 2026",
+      "file": "mbcb_beers.json"
     }
   ]
 }
