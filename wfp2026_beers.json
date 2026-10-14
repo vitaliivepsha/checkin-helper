@@ -7133,5 +7133,287 @@
     "location": "Area 2",
     "url": "https://untappd.com/beer/5908600",
     "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "7374657",
+    "name": "Hot Mess De Facto",
+    "brewery": "Browar De Facto",
+    "style": "Pale Ale - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7374657"
+  },
+  {
+    "id": "3483455",
+    "name": "Experience",
+    "brewery": "Browar De Facto",
+    "style": "IPA - American",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3483455"
+  },
+  {
+    "id": "7368249",
+    "name": "Szarlotta De Facto",
+    "brewery": "Browar De Facto",
+    "style": "Sour - Fruited",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7368249"
+  },
+  {
+    "id": "4675496",
+    "name": "Porter Bałtycki",
+    "brewery": "Browar De Facto",
+    "style": "Porter - Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/4675496"
+  },
+  {
+    "id": "5003358",
+    "name": "LEŚNA SZYSZKA",
+    "brewery": "Browar De Facto",
+    "style": "IPA - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5003358"
+  },
+  {
+    "id": "4484771",
+    "name": "Open Space",
+    "brewery": "Browar De Facto",
+    "style": "Non-Alcoholic - IPA",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/4484771"
+  },
+  {
+    "id": "3706622",
+    "name": "De Facto Pszeniczne",
+    "brewery": "Browar De Facto",
+    "style": "Wheat Beer - Hefeweizen",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3706622"
+  },
+  {
+    "id": "4770504",
+    "name": "Pils z Ziemi Kujawskiej",
+    "brewery": "Browar De Facto",
+    "style": "Pilsner - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/4770504"
+  },
+  {
+    "id": "4498253",
+    "name": "Sweet Lady",
+    "brewery": "Browar De Facto",
+    "style": "Sour - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/4498253"
+  },
+  {
+    "id": "6632516",
+    "name": "De Facto Miodowe Piernikowe",
+    "brewery": "Browar De Facto",
+    "style": "Spiced / Herbed Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6632516"
+  },
+  {
+    "id": "3794270",
+    "name": "De Facto Piernikowe",
+    "brewery": "Browar De Facto",
+    "style": "Spiced / Herbed Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3794270"
+  },
+  {
+    "id": "6211579",
+    "name": "Słony Ciechocinek",
+    "brewery": "Browar De Facto",
+    "style": "Pale Ale - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6211579"
+  },
+  {
+    "id": "6275197",
+    "name": "Sorbet",
+    "brewery": "Browar Łańcut",
+    "style": "Sour - Fruited",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6275197"
+  },
+  {
+    "id": "2185249",
+    "name": "PszePan",
+    "brewery": "Browar Łańcut",
+    "style": "Wheat Beer - Hefeweizen",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/2185249"
+  },
+  {
+    "id": "1765181",
+    "name": "Kurna Chata",
+    "brewery": "Browar Łańcut",
+    "style": "Stout - Smoked",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/1765181"
+  },
+  {
+    "id": "5684501",
+    "name": "Glass Go",
+    "brewery": "Browar Łańcut",
+    "style": "Scotch Ale / Wee Heavy",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/5684501"
+  },
+  {
+    "id": "2402361",
+    "name": "Anglosas",
+    "brewery": "Browar Łańcut",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/2402361"
+  },
+  {
+    "id": "1936586",
+    "name": "14",
+    "brewery": "Browar Łańcut",
+    "style": "Lager - Pale",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/1936586"
+  },
+  {
+    "id": "6776338",
+    "name": "Fresh Frozen Hops",
+    "brewery": "Browar Łańcut",
+    "style": "IPA - American",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6776338"
+  },
+  {
+    "id": "1612522",
+    "name": "Czarna Polewka",
+    "brewery": "Browar Łańcut",
+    "style": "Stout - Oatmeal",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/1612522"
+  },
+  {
+    "id": "2111509",
+    "name": "Zawisza Czarny Jack Daniel's Barrel Aged",
+    "brewery": "Browar Łańcut",
+    "style": "Stout - Russian Imperial",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/2111509"
+  },
+  {
+    "id": "2033986",
+    "name": "Zawisza Czarny",
+    "brewery": "Browar Łańcut",
+    "style": "Stout - Russian Imperial",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/2033986"
+  },
+  {
+    "id": "5991021",
+    "name": "Nocny Rejs",
+    "brewery": "Browar Łańcut",
+    "style": "Porter - Baltic",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/5991021"
+  },
+  {
+    "id": "3467428",
+    "name": "Podbipięta",
+    "brewery": "Browar Łańcut",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/3467428"
+  },
+  {
+    "id": "6839145",
+    "name": "Chmielonauta",
+    "brewery": "Browar Łańcut",
+    "style": "IPA - American",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6839145"
+  },
+  {
+    "id": "7373784",
+    "name": "Dereniowy Pszepan",
+    "brewery": "Browar Łańcut",
+    "style": "Wheat Beer - Hefeweizen",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/7373784"
+  },
+  {
+    "id": "6301869",
+    "name": "Bobromanta",
+    "brewery": "Browar Łańcut",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/6301869"
+  },
+  {
+    "id": "5640887",
+    "name": "Conieco",
+    "brewery": "Browar Łańcut",
+    "style": "Honey Beer",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/5640887"
+  },
+  {
+    "id": "2899283",
+    "name": "Rajský Plyn",
+    "brewery": "Browar Łańcut",
+    "style": "Pilsner - Czech / Bohemian",
+    "location": "Area 1",
+    "url": "https://untappd.com/beer/2899283"
+  },
+  {
+    "id": "6959423",
+    "name": "Nevermind Double Hazy IPA Nelson Sauvin Amplifire, Galaxy, Riwaka, Nectaron",
+    "brewery": "Maryensztadt",
+    "style": "IPA - Imperial / Double New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6959423",
+    "standBrewery": "Browar Maryensztadt"
+  },
+  {
+    "id": "7380802",
+    "name": "Wild & Funky REFERMENTED. BRETT ALE Regent & Riesling Grape Pomace Rioja BA",
+    "brewery": "Maryensztadt",
+    "style": "Brett Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7380802",
+    "standBrewery": "Browar Maryensztadt"
+  },
+  {
+    "id": "7377980",
+    "name": "The Black Swan ICE Cabreuva",
+    "brewery": "Browar Nieczajna",
+    "style": "Freeze-Distilled Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7377980"
+  },
+  {
+    "id": "7377766",
+    "name": "The Black Swan ICE Palo Santo",
+    "brewery": "Browar Nieczajna",
+    "style": "Freeze-Distilled Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7377766"
+  },
+  {
+    "id": "7377683",
+    "name": "The Black Swan ICE Amburana",
+    "brewery": "Browar Nieczajna",
+    "style": "Freeze-Distilled Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7377683"
+  },
+  {
+    "id": "6638703",
+    "name": "Gehenna ICE",
+    "brewery": "Browar Nieczajna",
+    "style": "Freeze-Distilled Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6638703"
   }
 ]
