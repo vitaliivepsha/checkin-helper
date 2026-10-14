@@ -6890,5 +6890,248 @@
     "location": "Area 3",
     "url": "https://untappd.com/beer/6819309",
     "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "5490929",
+    "name": "Alita",
+    "brewery": "Acid Joe",
+    "style": "Sour - Fruited",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5490929",
+    "standBrewery": "Browar Kazimierz"
+  },
+  {
+    "id": "3507618",
+    "name": "Latający Jeleń",
+    "brewery": "Browar Kazimierz",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3507618"
+  },
+  {
+    "id": "6300909",
+    "name": "Siódmy Element",
+    "brewery": "Browar Kazimierz",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6300909"
+  },
+  {
+    "id": "3865870",
+    "name": "Mr. Sherman",
+    "brewery": "Browar Kazimierz",
+    "style": "IPA - American",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3865870"
+  },
+  {
+    "id": "2608090",
+    "name": "Kazimierz Orange",
+    "brewery": "Browar Kazimierz",
+    "style": "Pale Ale - American",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/2608090"
+  },
+  {
+    "id": "6793789",
+    "name": "Old Skulowe",
+    "brewery": "Browar Kazimierz",
+    "style": "IPA - New Zealand",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6793789"
+  },
+  {
+    "id": "3136721",
+    "name": "Ela Under My Umbrella",
+    "brewery": "Browar Kazimierz",
+    "style": "Pale Ale - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3136721"
+  },
+  {
+    "id": "4646713",
+    "name": "Babcia Rózia",
+    "brewery": "Browar Kazimierz",
+    "style": "Fruit Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/4646713"
+  },
+  {
+    "id": "2780954",
+    "name": "Spichlerz Europy",
+    "brewery": "Browar Kazimierz",
+    "style": "Wheat Beer - Hefeweizen",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/2780954"
+  },
+  {
+    "id": "3237326",
+    "name": "Pilsiwko",
+    "brewery": "Browar Kazimierz",
+    "style": "Pilsner - German",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3237326"
+  },
+  {
+    "id": "5724430",
+    "name": "Full Citra",
+    "brewery": "Trzech Kumpli",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5724430",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "2591472",
+    "name": "Piwo w Stylu Grodziskie",
+    "brewery": "Trzech Kumpli",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/2591472",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "3417683",
+    "name": "Ivar",
+    "brewery": "Trzech Kumpli",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3417683",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "3507617",
+    "name": "Igrok",
+    "brewery": "Trzech Kumpli",
+    "style": "Stout - Russian Imperial",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3507617",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "3152091",
+    "name": "Floki",
+    "brewery": "Trzech Kumpli",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3152091",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "7346581",
+    "name": "WFP JESIEŃ 2026 - Barley Wine + Blueberry & Maple Syrup",
+    "brewery": "Trzech Kumpli",
+    "style": "Barleywine - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7346581",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "7347190",
+    "name": "WFP JESIEŃ 2026 - Imperial Stout + Black Currant, Date Syrup & Stout",
+    "brewery": "Trzech Kumpli",
+    "style": "Stout - Imperial / Double",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7347190",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "7347800",
+    "name": "WFP JESIEŃ 2026 - Imperial Stout + Belgian Chocolate, Forest Honey & Chokeberry Stout",
+    "brewery": "Trzech Kumpli",
+    "style": "Stout - Imperial / Double",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7347800",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "7311233",
+    "name": "Sigurd",
+    "brewery": "Trzech Kumpli",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7311233",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "4886971",
+    "name": "Piwo w Stylu Grodziskie z Grillowanymi Cytrynami i Czerwonym Pieprzem",
+    "brewery": "Trzech Kumpli",
+    "style": "Historical Beer - Grodziskie / Grätzer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/4886971",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "6768267",
+    "name": "NEW SCHOOL - Extra Hořký Pilsner",
+    "brewery": "Trzech Kumpli",
+    "style": "Pilsner - Czech / Bohemian",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6768267",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "5837622",
+    "name": "Lager Trzech Kumpli",
+    "brewery": "Trzech Kumpli",
+    "style": "Lager - Pale",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5837622",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "3809861",
+    "name": "Gose | Mango i Marakuja",
+    "brewery": "Trzech Kumpli",
+    "style": "Sour - Fruited Gose",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/3809861",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "6291166",
+    "name": "Witbier Trzech Kumpli",
+    "brewery": "Trzech Kumpli",
+    "style": "Wheat Beer - Witbier / Blanche",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6291166",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "2997287",
+    "name": "Taura",
+    "brewery": "Trzech Kumpli",
+    "style": "IPA - Imperial / Double New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/2997287",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "6916019",
+    "name": "Full Motueka",
+    "brewery": "Trzech Kumpli",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6916019",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "1000186",
+    "name": "Pan IPAni",
+    "brewery": "Trzech Kumpli",
+    "style": "IPA - White / Wheat",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/1000186",
+    "standBrewery": "Browar Trzech Kumpli"
+  },
+  {
+    "id": "5908600",
+    "name": "BezalkØ Pan IPAni",
+    "brewery": "Trzech Kumpli",
+    "style": "IPA - White / Wheat",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5908600",
+    "standBrewery": "Browar Trzech Kumpli"
   }
 ]
