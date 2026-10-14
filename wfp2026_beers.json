@@ -1770,7 +1770,8 @@
     "brewery": "Palatum",
     "style": "Pilsner - American",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6859373"
+    "url": "https://untappd.com/beer/6859373",
+    "standBrewery": "Browar Palatum"
   },
   {
     "id": "7032149",
@@ -1778,7 +1779,8 @@
     "brewery": "Palatum",
     "style": "Lager - Other",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/7032149"
+    "url": "https://untappd.com/beer/7032149",
+    "standBrewery": "Browar Palatum"
   },
   {
     "id": "6597361",
@@ -1786,7 +1788,8 @@
     "brewery": "Palatum",
     "style": "IPA - New England / Hazy",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6597361"
+    "url": "https://untappd.com/beer/6597361",
+    "standBrewery": "Browar Palatum"
   },
   {
     "id": "7031847",
@@ -1794,7 +1797,8 @@
     "brewery": "Palatum",
     "style": "IPA - Imperial / Double",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/7031847"
+    "url": "https://untappd.com/beer/7031847",
+    "standBrewery": "Browar Palatum"
   },
   {
     "id": "4352844",
@@ -1802,7 +1806,8 @@
     "brewery": "Palatum",
     "style": "Sour - Fruited",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/4352844"
+    "url": "https://untappd.com/beer/4352844",
+    "standBrewery": "Browar Palatum"
   },
   {
     "id": "7031976",
@@ -1810,7 +1815,8 @@
     "brewery": "Palatum",
     "style": "Porter - Smoked",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/7031976"
+    "url": "https://untappd.com/beer/7031976",
+    "standBrewery": "Browar Palatum"
   },
   {
     "id": "7032258",
@@ -1818,7 +1824,8 @@
     "brewery": "Palatum",
     "style": "Farmhouse Ale - Saison",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/7032258"
+    "url": "https://untappd.com/beer/7032258",
+    "standBrewery": "Browar Palatum"
   },
   {
     "id": "5253823",
@@ -1826,7 +1833,8 @@
     "brewery": "Palatum",
     "style": "Stout - Imperial / Double Coffee",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/5253823"
+    "url": "https://untappd.com/beer/5253823",
+    "standBrewery": "Browar Palatum"
   },
   {
     "id": "6658896",
@@ -2397,7 +2405,8 @@
     "brewery": "Maryensztadt",
     "style": "Sour - Fruited Gose",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6959205"
+    "url": "https://untappd.com/beer/6959205",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "6959424",
@@ -2405,7 +2414,8 @@
     "brewery": "Maryensztadt",
     "style": "Historical Beer - Grodziskie / Grätzer",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6959424"
+    "url": "https://untappd.com/beer/6959424",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "6959428",
@@ -2413,7 +2423,8 @@
     "brewery": "Maryensztadt",
     "style": "Sour - Smoothie / Pastry",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6959428"
+    "url": "https://untappd.com/beer/6959428",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "7139428",
@@ -2421,7 +2432,8 @@
     "brewery": "Maryensztadt",
     "style": "Sour - Smoothie / Pastry",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/7139428"
+    "url": "https://untappd.com/beer/7139428",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "7139185",
@@ -2429,7 +2441,8 @@
     "brewery": "Maryensztadt",
     "style": "Pale Ale - Other",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/7139185"
+    "url": "https://untappd.com/beer/7139185",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "6959416",
@@ -2437,7 +2450,8 @@
     "brewery": "Maryensztadt",
     "style": "Lager - Other",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6959416"
+    "url": "https://untappd.com/beer/6959416",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "6959323",
@@ -2445,7 +2459,8 @@
     "brewery": "Maryensztadt",
     "style": "IPA - New England / Hazy",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6959323"
+    "url": "https://untappd.com/beer/6959323",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "6961097",
@@ -2453,7 +2468,8 @@
     "brewery": "Maryensztadt",
     "style": "Sour - Flanders Red Ale",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6961097"
+    "url": "https://untappd.com/beer/6961097",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "6959427",
@@ -2461,7 +2477,8 @@
     "brewery": "Maryensztadt",
     "style": "Porter - Imperial / Double Baltic",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6959427"
+    "url": "https://untappd.com/beer/6959427",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "6959429",
@@ -2469,7 +2486,8 @@
     "brewery": "Maryensztadt",
     "style": "Brett Beer",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6959429"
+    "url": "https://untappd.com/beer/6959429",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "6959425",
@@ -2477,7 +2495,8 @@
     "brewery": "Maryensztadt",
     "style": "Porter - Imperial / Double Baltic",
     "location": "Area 2",
-    "url": "https://untappd.com/beer/6959425"
+    "url": "https://untappd.com/beer/6959425",
+    "standBrewery": "Browar Maryensztadt"
   },
   {
     "id": "7000342",
@@ -2549,7 +2568,8 @@
     "brewery": "Hop Brook",
     "style": "Pilsner - Other",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6961190"
+    "url": "https://untappd.com/beer/6961190",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6961188",
@@ -2557,7 +2577,8 @@
     "brewery": "Hop Brook",
     "style": "Pilsner - Italian",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6961188"
+    "url": "https://untappd.com/beer/6961188",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6961187",
@@ -2565,7 +2586,8 @@
     "brewery": "Hop Brook",
     "style": "Porter - Baltic",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6961187"
+    "url": "https://untappd.com/beer/6961187",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6961183",
@@ -2573,7 +2595,8 @@
     "brewery": "Hop Brook",
     "style": "Porter - Baltic",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6961183"
+    "url": "https://untappd.com/beer/6961183",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "3968822",
@@ -2838,7 +2861,8 @@
     "brewery": "Hop Brook",
     "style": "Pilsner - Czech / Bohemian",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6811992"
+    "url": "https://untappd.com/beer/6811992",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6878861",
@@ -2846,7 +2870,8 @@
     "brewery": "Hop Brook",
     "style": "IPA - American",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6878861"
+    "url": "https://untappd.com/beer/6878861",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6795023",
@@ -2854,7 +2879,8 @@
     "brewery": "Hop Brook",
     "style": "IPA - Rye",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6795023"
+    "url": "https://untappd.com/beer/6795023",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6632629",
@@ -2862,7 +2888,8 @@
     "brewery": "Hop Brook",
     "style": "IPA - New Zealand",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6632629"
+    "url": "https://untappd.com/beer/6632629",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6911347",
@@ -2870,7 +2897,8 @@
     "brewery": "Hop Brook",
     "style": "Sour - Smoothie / Pastry",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6911347"
+    "url": "https://untappd.com/beer/6911347",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6194520",
@@ -2878,7 +2906,8 @@
     "brewery": "Hop Brook",
     "style": "IPA - American",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6194520"
+    "url": "https://untappd.com/beer/6194520",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6765514",
@@ -2886,7 +2915,8 @@
     "brewery": "Hop Brook",
     "style": "IPA - New England / Hazy",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/6765514"
+    "url": "https://untappd.com/beer/6765514",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "5610421",
@@ -2894,7 +2924,8 @@
     "brewery": "Hop Brook",
     "style": "IPA - Imperial / Double",
     "location": "Area 1",
-    "url": "https://untappd.com/beer/5610421"
+    "url": "https://untappd.com/beer/5610421",
+    "standBrewery": "HopBrook"
   },
   {
     "id": "6918555",
@@ -4925,7 +4956,8 @@
     "brewery": "Hopkultura",
     "style": "IPA - American",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/6821224"
+    "url": "https://untappd.com/beer/6821224",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "6757482",
@@ -4933,7 +4965,8 @@
     "brewery": "Hopkultura",
     "style": "Sour - Fruited Gose",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/6757482"
+    "url": "https://untappd.com/beer/6757482",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "6822938",
@@ -4941,7 +4974,8 @@
     "brewery": "Hopkultura",
     "style": "Fruit Beer",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/6822938"
+    "url": "https://untappd.com/beer/6822938",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "5872309",
@@ -4949,7 +4983,8 @@
     "brewery": "Hopkultura",
     "style": "IPA - Imperial / Double",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/5872309"
+    "url": "https://untappd.com/beer/5872309",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "6609798",
@@ -4957,7 +4992,8 @@
     "brewery": "Hopkultura",
     "style": "Pilsner - New Zealand",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/6609798"
+    "url": "https://untappd.com/beer/6609798",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "6178985",
@@ -4965,7 +5001,8 @@
     "brewery": "Hopkultura",
     "style": "Non-Alcoholic - IPA",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/6178985"
+    "url": "https://untappd.com/beer/6178985",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "6920049",
@@ -4973,7 +5010,8 @@
     "brewery": "Hopkultura",
     "style": "IPA - Triple",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/6920049"
+    "url": "https://untappd.com/beer/6920049",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "6213699",
@@ -6338,7 +6376,8 @@
     "brewery": "Hopkultura",
     "style": "Stout - Imperial / Double",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/7232004"
+    "url": "https://untappd.com/beer/7232004",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "7231865",
@@ -6346,7 +6385,8 @@
     "brewery": "Hopkultura",
     "style": "Stout - Imperial / Double",
     "location": "Area 3",
-    "url": "https://untappd.com/beer/7231865"
+    "url": "https://untappd.com/beer/7231865",
+    "standBrewery": "Browar Hopkultura"
   },
   {
     "id": "6648188",
@@ -6652,5 +6692,68 @@
     "location": "Area 1",
     "url": "https://untappd.com/beer/2273899",
     "standBrewery": "T.E.A Time"
+  },
+  {
+    "id": "7004331",
+    "name": "Witbier",
+    "brewery": "Alchemik Browar & Pizza",
+    "style": "Wheat Beer - Witbier / Blanche",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7004331",
+    "standBrewery": "Browar Alchemik"
+  },
+  {
+    "id": "6444114",
+    "name": "Hazy IPA",
+    "brewery": "Alchemik Browar & Pizza",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6444114",
+    "standBrewery": "Browar Alchemik"
+  },
+  {
+    "id": "5276985",
+    "name": "Jasne Pełne",
+    "brewery": "Alchemik Browar & Pizza",
+    "style": "Blonde / Golden Ale - Other",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5276985",
+    "standBrewery": "Browar Alchemik"
+  },
+  {
+    "id": "5277013",
+    "name": "Kwiat Czarnego Bzu",
+    "brewery": "Alchemik Browar & Pizza",
+    "style": "Fruit Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5277013",
+    "standBrewery": "Browar Alchemik"
+  },
+  {
+    "id": "5277011",
+    "name": "Sesyjna IPA",
+    "brewery": "Alchemik Browar & Pizza",
+    "style": "IPA - Session",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5277011",
+    "standBrewery": "Browar Alchemik"
+  },
+  {
+    "id": "5277026",
+    "name": "Milk Stout",
+    "brewery": "Alchemik Browar & Pizza",
+    "style": "Stout - Milk / Sweet",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5277026",
+    "standBrewery": "Browar Alchemik"
+  },
+  {
+    "id": "5277023",
+    "name": "West Coast IPA",
+    "brewery": "Alchemik Browar & Pizza",
+    "style": "IPA - American",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/5277023",
+    "standBrewery": "Browar Alchemik"
   }
 ]
