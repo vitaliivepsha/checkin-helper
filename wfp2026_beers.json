@@ -6755,5 +6755,140 @@
     "location": "Area 2",
     "url": "https://untappd.com/beer/5277023",
     "standBrewery": "Browar Alchemik"
+  },
+  {
+    "id": "6611338",
+    "name": "Hey Joe",
+    "brewery": "Hopkultura",
+    "style": "Sour - Fruited",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6611338",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6611352",
+    "name": "Butterfly",
+    "brewery": "Hopkultura",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6611352",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6301649",
+    "name": "Disappear",
+    "brewery": "Hopkultura",
+    "style": "IPA - Other",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6301649",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6337789",
+    "name": "Feel Good",
+    "brewery": "Hopkultura",
+    "style": "Sour - Other",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6337789",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "3849887",
+    "name": "Czeski Metal",
+    "brewery": "Hopkultura",
+    "style": "Pilsner - Czech / Bohemian",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/3849887",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "5841141",
+    "name": "Cztery Pory Roku",
+    "brewery": "Hopkultura",
+    "style": "Lager - Helles",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/5841141",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6611377",
+    "name": "Disasterpiece",
+    "brewery": "Hopkultura",
+    "style": "Stout - Russian Imperial",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6611377",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6127969",
+    "name": "Back in Black - Amburana",
+    "brewery": "Hopkultura",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6127969",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "4062832",
+    "name": "Hard Rock",
+    "brewery": "Hopkultura",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/4062832",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6178978",
+    "name": "Ace of Spades",
+    "brewery": "Hopkultura",
+    "style": "Stout - Imperial / Double",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6178978",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6645942",
+    "name": "Seasons In the Abyss",
+    "brewery": "Hopkultura",
+    "style": "Stout - Russian Imperial",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6645942",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "7335560",
+    "name": "London Calling - Session NEIPA",
+    "brewery": "Hopkultura",
+    "style": "IPA - Session New England / Hazy",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/7335560",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6645935",
+    "name": "American Idiot",
+    "brewery": "Hopkultura",
+    "style": "IPA - Imperial / Double New England / Hazy",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6645935",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6757491",
+    "name": "Young Blood",
+    "brewery": "Hopkultura",
+    "style": "IPA - New Zealand",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6757491",
+    "standBrewery": "Browar Hopkultura"
+  },
+  {
+    "id": "6819309",
+    "name": "King For a Day",
+    "brewery": "Hopkultura",
+    "style": "IPA - New Zealand",
+    "location": "Area 3",
+    "url": "https://untappd.com/beer/6819309",
+    "standBrewery": "Browar Hopkultura"
   }
 ]
