@@ -161,3 +161,42 @@ def test_shortening_never_drops_a_numbered_edition():
     assert drops("GWAREK ZERO INON VOL.4", "ZERO INON", "Zero In On", "Gwarek")
     assert not drops("GWAREK ZERO INON VOL.4", "ZERO INON", "Zero In On Vol. 4", "Gwarek")
     assert not drops("Wonders Kiwi Banana Coconut Cream", "Wonders Kiwi Banana Coconut", "Wonders - Kiwi, Banana, Coconut Milk", "Magic Road")
+
+
+def lookalike(bid, name, brewery="Pilsvar", rating=3.7):
+    return {"bid": bid, "beerName": name, "brewery": {"id": 1, "name": brewery}, "style": "Lager", "globalRating": rating, "ratingCount": 40}
+
+
+def test_one_close_lookalike_of_the_same_brewery_is_a_probable_match():
+    probable = beer_match._probable_candidate([lookalike(1, "Pilsvar Premium")], "GRYBÓW PILSVAR PREMIUM", "Pilsvar")
+    assert probable["bid"] == 1 and probable["rating"] == 3.7 and probable["url"].endswith("/1")
+    # the catalog name inside the shop's longer text, and the other way round
+    assert beer_match._probable_candidate([lookalike(2, "Bezalko Miłosławski", "Browar Fortuna")], "Bezalko Miłosławski o smaku Cydru", "Miłosław") is None  # brewery differs
+    assert beer_match._probable_candidate([lookalike(3, "Rolator", "Brauerei Kundmüller")], "Weiherer Rolator", "Kundmüller")
+
+
+def test_probable_match_needs_one_result_the_right_brewery_and_no_conflicting_edition():
+    one = lookalike(1, "Zero In On Vol. 3", "Browar Gwarek")
+    assert beer_match._probable_candidate([one, lookalike(2, "Zero In On Vol.2", "Browar Gwarek")], "Zero In On", "Gwarek") is None   # two to choose from
+    assert beer_match._probable_candidate([one], "Zero In On Vol.4", "Gwarek") is None                                          # another edition
+    assert beer_match._probable_candidate([lookalike(4, "Hazy Morning", "Upside Down")], "Hazy Morning Pinta", "Pinta") is None  # not their beer
+    assert beer_match._probable_candidate([lookalike(5, "Komes Porter Barrel Aged", "Komes")], "Komes Porter", "Komes") is None   # barrel version
+    assert beer_match._probable_candidate([lookalike(6, "Totally Different Words", "Pilsvar")], "Grybów Pilsvar Lach", "Pilsvar") is None
+
+
+def test_with_probable_adds_it_to_an_unmatched_result_only_when_asked(monkeypatch):
+    import asyncio
+    probable = {"name": "Pilsvar Premium", "brewery": "Pilsvar", "bid": 1, "url": "u", "style": "Lager", "abv": 4.5, "rating": 3.7, "ratingCount": 40}
+
+    async def fake_identity(token, name, brewery, rejected=frozenset()):
+        return {"matched": False, "candidates": [{"name": "Pilsvar Premium", "bid": 1}], "probable": probable}
+
+    async def fake_had_it(token, user_id, bid, live_fallback):
+        return True
+
+    monkeypatch.setattr(beer_match, "_resolve_identity", fake_identity)
+    monkeypatch.setattr(beer_match, "_had_it", fake_had_it)
+    without = asyncio.run(beer_match.resolve_beer("t", 1, "Grybów Pilsvar Premium", "Pilsvar"))
+    assert without["matched"] is False and "probable" not in without
+    with_it = asyncio.run(beer_match.resolve_beer("t", 1, "Grybów Pilsvar Premium", "Pilsvar", with_probable=True))
+    assert with_it["probable"]["name"] == "Pilsvar Premium" and with_it["probable"]["hadIt"] is True

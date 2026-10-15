@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.7.2
+// @version      2.8.0
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -449,8 +449,20 @@
     const statusCorner = adapter.statusCorner || "top-left";
     const altCorner = adapter.altCorner || "top-right";
 
-    let icon, tooltip, borderColor;
-    if (result.matched) {
+    let icon, tooltip, borderColor, borderStyle = "solid";
+    const probable = !result.matched && result.probable ? result.probable : null;
+    if (probable) {
+      // Search found exactly one close lookalike by the same brewery but the matcher is not sure
+      // it is the shop's beer: shown as "probably this one" (dashed), with the candidate's own
+      // rating/link, until the user rejects it.
+      icon = "🤔";
+      const had = probable.hadIt === true ? "Вже пив" : probable.hadIt === false ? "Ще не пив" : "Невідомо, чи пив";
+      tooltip = `Ймовірно: ${probable.name}${probable.brewery ? " (" + probable.brewery + ")" : ""}
+${had}
+Не певний збіг - перевір`;
+      borderColor = probable.hadIt === true ? "#2e7d32" : probable.hadIt === false ? "#1565c0" : "#e6a800";
+      borderStyle = "dashed";
+    } else if (result.matched) {
       if (result.hadIt === true) { icon = "✅"; tooltip = "Вже пив"; borderColor = "#2e7d32"; }
       else if (result.hadIt === false) { icon = "🆕"; tooltip = "Ще не пив"; borderColor = "#1565c0"; }
       else { icon = "❓"; tooltip = "Невідомо, чи пив"; borderColor = "#bbb"; }
@@ -470,7 +482,7 @@
     // needed since the chip is otherwise just informational in this case.
     const statusChip = document.createElement(!result.matched && result.searchUrl ? "a" : "span");
     statusChip.className = "lens-status-chip";
-    statusChip.style.cssText = CHIP_STYLE + `${cornerStyle(statusCorner)}border:2px solid ${borderColor};text-decoration:none;`;
+    statusChip.style.cssText = CHIP_STYLE + `${cornerStyle(statusCorner)}border:2px ${borderStyle} ${borderColor};text-decoration:none;`;
     statusChip.textContent = icon;
     if (!result.matched && result.searchUrl) {
       statusChip.href = result.searchUrl;
@@ -481,9 +493,9 @@
     } else {
       statusChip.title = tooltip;
     }
-    // A matched card gets a small ✕ inside the status chip (shown while hovering the
-    // card): "this is not that beer".
-    if (result.matched && result.bid != null) {
+    // A matched (or probable) card gets a small ✕ inside the status chip (shown while hovering
+    // the card): "this is not that beer".
+    if ((result.matched && result.bid != null) || probable) {
       const rejectBtn = document.createElement("button");
       rejectBtn.type = "button";
       rejectBtn.className = "lens-reject-btn";
@@ -498,7 +510,23 @@
     }
     wrapper.appendChild(statusChip);
 
-    if (result.rating && !adapter.hideRating) {
+    if (probable) {
+      const probableChip = document.createElement("a");
+      probableChip.className = "lens-rating-chip";
+      probableChip.title = `Відкрити на Untappd: ${probable.name}`;
+      probableChip.style.cssText =
+        CHIP_STYLE + `${cornerStyle(altCorner)}text-decoration:none;cursor:pointer;border:2px dashed #999;`;
+      probableChip.textContent = probable.rating && !adapter.hideRating
+        ? `≈ ⭐ ${probable.rating.toFixed(2)}${probable.ratingCount ? ` (${probable.ratingCount})` : ""}`
+        : "≈ Untappd";
+      if (probable.url) {
+        probableChip.href = probable.url;
+        probableChip.target = "_blank";
+        probableChip.rel = "noopener";
+        probableChip.addEventListener("click", (e) => e.stopPropagation());
+      }
+      wrapper.appendChild(probableChip);
+    } else if (result.rating && !adapter.hideRating) {
       const ratingChip = document.createElement(result.url ? "a" : "span");
       ratingChip.className = "lens-rating-chip";
       ratingChip.title = "Відкрити на Untappd";
@@ -663,13 +691,14 @@
   async function rejectMatch(card, result, button) {
     const brewery = card.dataset.lensBrewery || "";
     const name = card.dataset.lensName || "";
+    const target = result.matched ? result : result.probable; // the matched or the probable beer
     button.disabled = true;
     try {
-      const fresh = await apiReject(brewery, name, result.bid, false);
+      const fresh = await apiReject(brewery, name, target.bid, false);
       redrawCard(card, fresh);
-      showToast(`Відхилено: ${result.name}.`, "Скасувати", async () => {
+      showToast(`Відхилено: ${target.name}.`, "Скасувати", async () => {
         try {
-          redrawCard(card, await apiReject(brewery, name, result.bid, true));
+          redrawCard(card, await apiReject(brewery, name, target.bid, true));
         } catch (e) {
           console.error("[UntappdLens] undo failed:", e);
           showToast("Не вдалося скасувати: " + e.message);

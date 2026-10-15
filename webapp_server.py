@@ -2071,7 +2071,7 @@ async def _lens_resolve_item(token: str, owner_id: int, item, wishlist_bids: set
         # пив" results, not genuinely unknown data.
         result = await beer_match.resolve_beer(
             token, owner_id, name, brewery, need_country=False, live_fallback=False,
-            rejected_bids=lens_rejections.rejected_bids(brewery, name),
+            rejected_bids=lens_rejections.rejected_bids(brewery, name), with_probable=True,
         )
         result["inWishlist"] = result.get("bid") in wishlist_bids
         result["inSheetList"] = result.get("bid") in my_list_bids

@@ -1371,6 +1371,45 @@ def _drops_edition_number(clean_name: str, variant: str, matched_name: str, brew
     return bool(dropped & _EDITION_WORDS) and any(t.isdigit() for t in dropped) and not dropped <= _token_set(matched_name)
 
 
+_GENERIC_BREWERY_WORDS = frozenset({"browar", "brewery", "brewing", "brasserie", "pivovar", "co", "company", "the", "bryggeri"})
+
+
+def _probable_candidate(results: list[dict], clean_name: str, brewery_name: str) -> dict | None:
+    """The one search result worth showing as a PROBABLE match when pick_best_match refused it:
+    exactly one result (so there is nothing to choose between), from the query's brewery, whose
+    name is close to the shop's - one name inside the other or at least half of the words shared -
+    with no edition number the shop has but the result lacks ("Vol.4" vs "Vol. 3", "Vintage 2020")
+    and no barrel/nitro variant marker on either side. The lens shows it as "probably this one"
+    (🤔) instead of a bare search link; the user can still reject it."""
+    if len(results) != 1:
+        return None
+    result = results[0]
+    cand_brewery = (result.get("brewery") or {}).get("name") or ""
+    brewery_words = _token_set(brewery_name) | _token_set(cand_brewery)
+    q = frozenset(_token_list(clean_name)) - brewery_words
+    c = frozenset(_token_list(result.get("beerName") or "")) - brewery_words
+    if not q or not c:
+        return None
+    if brewery_name.strip():
+        if not _brewery_matches_query(result, brewery_name):
+            return None
+    elif not (_token_set(cand_brewery) - _GENERIC_BREWERY_WORDS) & _token_set(clean_name):
+        return None   # no brewery on the shop side: the name itself must mention it
+    if not (q <= c or c <= q or len(q & c) / len(q | c) >= 0.5):
+        return None
+    if {t for t in q if any(ch.isdigit() for ch in t)} - c:
+        return None
+    if (q ^ c) & _VARIANT_MARKER_TOKENS:
+        return None
+    bid = result.get("bid")
+    return {
+        "name": result.get("beerName"), "brewery": cand_brewery or None, "bid": bid,
+        "url": f"https://untappd.com/beer/{bid}" if bid is not None else None,
+        "style": result.get("style") or "", "abv": result.get("abv"),
+        "rating": result.get("globalRating"), "ratingCount": result.get("ratingCount"),
+    }
+
+
 async def _resolve_identity(
     token: str, beer_name: str, brewery_name: str, rejected_bids: frozenset[int] = frozenset(),
 ) -> dict:
@@ -1476,6 +1515,9 @@ async def _resolve_identity(
     if match is None:
         source = first_results if first_results else last_nonempty_results
         identity = {"matched": False, "candidates": [_as_candidate(r) for r in source[:3]]}
+        probable = _probable_candidate(source, clean_name, brewery_name)
+        if probable:
+            identity["probable"] = probable
     else:
         bid = match.get("bid")
         logger.info("resolve_beer: query=%r -> %r (bid=%s)", query, match.get("beerName"), bid)
@@ -1493,10 +1535,37 @@ async def _resolve_identity(
     return identity
 
 
+async def _had_it(token: str, user_id: int, bid, live_fallback: bool):
+    """True/False/None: has this account had beer `bid` (see resolve_beer's live_fallback)."""
+    had_it = None
+    had_it_result = await had_it_index.lookup_had_it(user_id, bid)
+    if had_it_result is None:
+        if live_fallback:
+            try:
+                live = await untappd_mcp.check_i_had_beer(token, bid)
+                had_it_result = {"hadIt": bool(live.get("hadIt"))}
+            except untappd_mcp.UntappdMCPError as exc:
+                logger.warning(f"resolve_beer: check_i_had_beer failed for bid={bid}: {exc}")
+        else:
+            # No live quota call allowed - fall back to a direct
+            # membership check instead of leaving this "unknown".
+            # Safe even mid-resync: had_it_index's beers dict only ever
+            # grows (record_page never removes a previously-known
+            # beer), so "not present" is still a solid negative signal,
+            # just possibly a little stale for something tried very
+            # recently, right before the current backfill pass reached
+            # it.
+            beers = await had_it_index.get_all_beers(user_id)
+            had_it_result = {"hadIt": str(bid) in beers}
+    if had_it_result is not None:
+        had_it = had_it_result.get("hadIt")
+    return had_it
+
+
 async def resolve_beer(
     token: str, user_id: int, beer_name: str, brewery_name: str, *,
     need_country: bool = True, live_fallback: bool = True,
-    rejected_bids: frozenset[int] = frozenset(),
+    rejected_bids: frozenset[int] = frozenset(), with_probable: bool = False,
 ) -> dict:
     """Look up one beer by name/brewery on Untappd: clean up the query (see
     the module-level cleanup rules), search, accept only a confident match
@@ -1543,15 +1612,24 @@ async def resolve_beer(
 
     rejected_bids: Untappd ids the caller knows are wrong for this text (the
     lens's "this is not that beer", see lens_rejections) - never returned, not
-    even as a candidate."""
+    even as a candidate.
+
+    with_probable: when nothing is confident but search found exactly one close
+    lookalike by the same brewery (see _probable_candidate), add it to the
+    unmatched result as "probable" ({name, brewery, bid, url, style, abv, rating,
+    ratingCount, hadIt}) - the lens shows it as a "probably this one"."""
     identity = await _resolve_identity(token, beer_name, brewery_name, rejected_bids)
 
     if not identity["matched"]:
-        return {
+        unmatched = {
             "matched": False, "query_name": beer_name, "query_brewery": brewery_name,
             "candidates": identity["candidates"],
             "searchUrl": _not_found_search_url(beer_name, brewery_name),
         }
+        probable = identity.get("probable")
+        if with_probable and probable:
+            unmatched["probable"] = {**probable, "hadIt": await _had_it(token, user_id, probable["bid"], live_fallback)}
+        return unmatched
 
     bid = identity["bid"]
 
@@ -1572,29 +1650,7 @@ async def resolve_beer(
             except untappd_mcp.UntappdMCPError as exc:
                 logger.warning(f"resolve_beer: get_beer failed for bid={bid}: {exc}")
 
-    had_it = None
-    if bid is not None:
-        had_it_result = await had_it_index.lookup_had_it(user_id, bid)
-        if had_it_result is None:
-            if live_fallback:
-                try:
-                    live = await untappd_mcp.check_i_had_beer(token, bid)
-                    had_it_result = {"hadIt": bool(live.get("hadIt"))}
-                except untappd_mcp.UntappdMCPError as exc:
-                    logger.warning(f"resolve_beer: check_i_had_beer failed for bid={bid}: {exc}")
-            else:
-                # No live quota call allowed - fall back to a direct
-                # membership check instead of leaving this "unknown".
-                # Safe even mid-resync: had_it_index's beers dict only ever
-                # grows (record_page never removes a previously-known
-                # beer), so "not present" is still a solid negative signal,
-                # just possibly a little stale for something tried very
-                # recently, right before the current backfill pass reached
-                # it.
-                beers = await had_it_index.get_all_beers(user_id)
-                had_it_result = {"hadIt": str(bid) in beers}
-        if had_it_result is not None:
-            had_it = had_it_result.get("hadIt")
+    had_it = await _had_it(token, user_id, bid, live_fallback) if bid is not None else None
 
     return {
         "matched": True,
