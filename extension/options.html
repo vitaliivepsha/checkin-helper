@@ -1,0 +1,14 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Untappd Had-It Overlay</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
+  input { width: 100%; padding: 8px; box-sizing: border-box; margin: 8px 0; }
+  button { padding: 8px 16px; }
+  #status { margin-left: 12px; color: #2e7d32; }
+</style>
+<h1>LENS_API_TOKEN</h1>
+<p>Paste the bot's <code>LENS_API_TOKEN</code> (from the VM's <code>.env</code>). It is kept only in this browser's extension storage, never in the repository.</p>
+<input id="token" type="password" autocomplete="off" placeholder="LENS_API_TOKEN">
+<button id="save">Save</button><span id="status"></span>
+<script src="options.js"></script>

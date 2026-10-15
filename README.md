@@ -32,6 +32,11 @@ Telegram бот для розпізнавання пива на фото та п
 виправлення матчера). У userscript власний кеш на 6 годин; кнопка оновлення
 на сторінці його скидає.
 
+**Токен лінзи не лежить у git.** Розширення Chrome бере `LENS_API_TOKEN` з `chrome.storage.local`: вставити його один раз 
+на сторінці налаштувань розширення (`chrome://extensions` → Details → Extension options); userscript питає його через prompt 
+і тримає в сховищі Tampermonkey. Колись токен був закомічений у `extension/background.js` (історія git) і замінений новим; 
+змінити його: рядок `LENS_API_TOKEN=` у `.env` на VM + `sudo systemctl restart checkin-helper`, далі вставити в обидва клієнти.
+
 **«Це не те пиво».** На картці з упізнаним пивом при наведенні курсора в статус-чипі з'являється ✕ 
 (userscript v2.7.0). Клік викликає `POST /api/lens/reject` (`{brewery, name, bid}`, той самий `X-Lens-Token`): 
 `lens_rejections.py` запам'ятовує, що для цього тексту магазину `bid` хибний (ключ — як у `lens_log`, тож ним 

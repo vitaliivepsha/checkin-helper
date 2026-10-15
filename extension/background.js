@@ -9,10 +9,13 @@
 // is reachable) - update this AND manifest.json's host_permissions if that
 // ever changes (e.g. the VM's IP changes and the sslip.io hostname with it).
 const API_BASE = "https://35-211-15-162.sslip.io";
-// API_TOKEN: the LENS_API_TOKEN value from the bot's .env. Treat this like
-// a password - anyone with it can read your Untappd history through this
-// endpoint.
-const API_TOKEN = "e9jqZfhZlKqRgeJ4qeK6-XX62uyTkheSwflb7zKV20I";
+// The LENS_API_TOKEN value from the bot's .env is NOT stored in this file (it is committed to git):
+// open the extension's options page (chrome://extensions -> Details -> Extension options) and paste
+// it there once; it is kept in chrome.storage.local. Treat it like a password - anyone with it can
+// read your Untappd history through this endpoint.
+function getApiToken() {
+  return new Promise((resolve) => chrome.storage.local.get("lensApiToken", (v) => resolve((v && v.lensApiToken) || "")));
+}
 // --------------------------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -21,9 +24,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // One retry after a few seconds: the bot restarts on every deploy and the proxy in front
   // of it answers an empty body meanwhile ("Unexpected end of JSON input").
   async function lookupOnce() {
+    const token = await getApiToken();
+    if (!token) throw new Error("no_token: open the extension options and paste LENS_API_TOKEN");
     const res = await fetch(API_BASE + "/api/lens/lookup", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Lens-Token": API_TOKEN },
+      headers: { "Content-Type": "application/json", "X-Lens-Token": token },
       body: JSON.stringify({ items: message.items }),
     });
     return res.json();
@@ -35,6 +40,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         data = await lookupOnce();
       } catch (e) {
+        if (String(e.message).startsWith("no_token")) throw e;
         await new Promise((resolve) => setTimeout(resolve, 4000));
         data = await lookupOnce();
       }

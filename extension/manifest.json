@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Untappd Had-It Overlay",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.",
   "permissions": ["storage"],
+  "options_ui": { "page": "options.html", "open_in_tab": true },
   "host_permissions": [
     "https://35-211-15-162.sslip.io/*"
   ],
