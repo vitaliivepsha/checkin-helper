@@ -131,3 +131,33 @@ def test_brewery_names_compare_across_apostrophe_styles_and_accents():
 def test_a_missing_letter_in_a_seven_letter_word_is_a_typo():
     cocktail = beer(102, "The Cocktail Collection: Rio Vibes", "Nepo Brewing")
     assert beer_match.pick_best_match([cocktail], "The Coctail Collection Rio Vibes", "Nepo Brewing")["bid"] == 102
+
+
+def test_trademark_marks_are_not_part_of_the_name():
+    rhapzody = beer(30, "Limited Exhibition - Rhapzody™", "TankBusters.Co")
+    assert beer_match.pick_best_match([rhapzody], "Limited Exhibition Rhapzody", "TankBusters")["bid"] == 30
+
+
+def test_the_same_words_split_differently_still_match_exactly():
+    wifi = beer(31, "There's No Wi-Fi In My Garden", "TankBusters.Co")
+    assert beer_match.pick_best_match([wifi], "There's No Wifi In My Garden", "TankBusters")["bid"] == 31
+    glass_go = beer(32, "Glass Go", "Browar Łańcut")
+    assert beer_match.pick_best_match([glass_go], "GLASSGO", "Łańcut")["bid"] == 32
+    # gluing is only for names long enough not to coincide by accident
+    assert beer_match.pick_best_match([beer(33, "A B", "Browar X")], "AB", "X") is None
+
+
+def test_a_shop_typo_is_found_even_when_the_catalog_name_repeats_the_brewery():
+    krush = beer(34, "Duvel Tripel Hop Krush", "Duvel Moortgat")
+    assert beer_match.pick_best_match([krush], "DUVEL TRIPLE HOP KRUSH", "Duvel Moortgat")["bid"] == 34
+
+
+def test_double_ipa_abbreviations_are_dropped_as_style_words():
+    assert "Nebuchadnezzar" in beer_match._query_name_variants("Nebuchadnezzar IIPA", "Omnipollo")
+
+
+def test_shortening_never_drops_a_numbered_edition():
+    drops = beer_match._drops_edition_number
+    assert drops("GWAREK ZERO INON VOL.4", "ZERO INON", "Zero In On", "Gwarek")
+    assert not drops("GWAREK ZERO INON VOL.4", "ZERO INON", "Zero In On Vol. 4", "Gwarek")
+    assert not drops("Wonders Kiwi Banana Coconut Cream", "Wonders Kiwi Banana Coconut", "Wonders - Kiwi, Banana, Coconut Milk", "Magic Road")

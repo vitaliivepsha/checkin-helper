@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Bumped whenever the matching rules change in a way that can alter outcomes: the
 # lens log stores the version each entry was resolved with, and the daily crawl
 # re-resolves still-unmatched and questionable entries of an older version once.
-MATCHER_VERSION = 5
+MATCHER_VERSION = 6
 
 SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # exact-name match past position 5 among a brewery's many similarly-styled
@@ -151,6 +151,9 @@ def scan_norm(text: str) -> str:
 _EXTRA_FOLD = str.maketrans({
     "æ": "ae", "Æ": "AE", "ø": "o", "Ø": "O", "œ": "oe", "Œ": "OE", "ß": "ss",
     "đ": "d", "Đ": "D", "ð": "d", "þ": "th",
+    # Trademark marks are decoration ("Limited Exhibition - Rhapzody™"); left in, the
+    # NFKD folding would turn "™" into a glued "tm" ("rhapzodytm").
+    "™": None, "®": None, "©": None,
 })
 _LETTER_DIGIT_BOUNDARY_RE = re.compile(r"(?<=[a-z])(?=[0-9])|(?<=[0-9])(?=[a-z])")
 
@@ -366,9 +369,19 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
         # brewery will do.
         query_tokens = raw_query_tokens
 
+    # The same words split differently - a shop's "Wifi" for the catalog's "Wi-Fi",
+    # "Hop Brook" for "HopBrook" - differ as token sets but not once glued together.
+    # Only for a name long enough that gluing can't make two short words coincide.
+    brewery_token_set = _token_set(brewery_name)
+    query_glued = "".join(t for t in _token_list(beer_name) if name_is_brewery or t not in brewery_token_set)
+
+    def _same_name(candidate: str, tokens: frozenset, glued: str) -> bool:
+        words = _token_list(candidate)
+        return frozenset(words) == tokens or (len(glued) >= 5 and "".join(words) == glued)
+
     exact = [
         r for r in results
-        if _token_set(r.get("beerName") or "") == query_tokens
+        if _same_name(r.get("beerName") or "", query_tokens, query_glued)
         and (not name_is_brewery or _brewery_matches_query(r, brewery_name))
     ]
     if len(exact) > 1:
@@ -417,7 +430,7 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
         # one for that case).
         raw_exact = [
             r for r in results
-            if _token_set(r.get("beerName") or "") == raw_query_tokens
+            if _same_name(r.get("beerName") or "", raw_query_tokens, "".join(_token_list(beer_name)))
             and _brewery_matches_query(r, brewery_name)
         ]
         if len(raw_exact) == 1:
@@ -426,9 +439,15 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
     # A shop typo of an otherwise identical name ("In Mouteka We Trust" for
     # the catalog's "In Motueka We Trust"): accepted only when the candidate's
     # brewery really matches and exactly one candidate fits.
+    # The catalog name may repeat the brewery ("Duvel Tripel Hop Krush" for the shop's
+    # "Triple Hop Krush" by Duvel Moortgat), which the query side has already dropped.
     typo = [
         r for r in results
-        if _brewery_matches_query(r, brewery_name) and _typo_equal(query_tokens, _token_set(r.get("beerName") or ""))
+        if _brewery_matches_query(r, brewery_name)
+        and any(
+            _typo_equal(query_tokens, words)
+            for words in (_token_set(r.get("beerName") or ""), _token_set(r.get("beerName") or "") - brewery_token_set)
+        )
     ]
     if len(typo) == 1:
         return typo[0]
@@ -831,7 +850,7 @@ _NON_ALCO_TRIGGER_RE = re.compile(
 _STYLE_WORDS_RE = re.compile(
     r"\b(stout|porter|ipa|lager|pils(?:ner)?|ale|sour|gose|saison|wheat|kriek|lambic|"
     r"witbier|weisse|bock|barleywine|quad(?:rupel)?|tripel|dubbel|munich helles|helles|"
-    r"grodziskie|gr[ae]tzer|west[\s-]coast)\b",
+    r"grodziskie|gr[ae]tzer|west[\s-]coast|iipa|dipa|tipa|neipa)\b",
     re.IGNORECASE,
 )
 
@@ -1334,6 +1353,24 @@ def _not_found_search_url(beer_name: str, brewery_name: str) -> str:
     return build_search_url(brewery_variants[-1], url_name)
 
 
+_EDITION_WORDS = frozenset({"vol", "volume", "part", "batch", "no", "nr", "edition"})
+
+
+def _drops_edition_number(clean_name: str, variant: str, matched_name: str, brewery_variant: str) -> bool:
+    """True when `variant` is `clean_name` with trailing words dropped, the dropped
+    words are a numbered edition ("Vol.4", "Batch 7") and the match does not carry
+    them: "Zero In On Vol.4" shortened to "Zero In On" is another beer, not the one
+    asked for. (Other dropped words are left alone on purpose - dropping "Cream" for
+    the catalog's "Milk" is the documented purpose of the shortened variants.)"""
+    brewery_words = _token_set(brewery_variant)   # a brewery prefix may have been stripped from the variant
+    full = [t for t in _token_list(clean_name) if t not in brewery_words]
+    short = [t for t in _token_list(variant) if t not in brewery_words]
+    if len(short) >= len(full) or full[:len(short)] != short:
+        return False
+    dropped = frozenset(full[len(short):])
+    return bool(dropped & _EDITION_WORDS) and any(t.isdigit() for t in dropped) and not dropped <= _token_set(matched_name)
+
+
 async def _resolve_identity(
     token: str, beer_name: str, brewery_name: str, rejected_bids: frozenset[int] = frozenset(),
 ) -> dict:
@@ -1382,6 +1419,11 @@ async def _resolve_identity(
         name_variants = _query_name_variants(clean_name, brewery_variant, original_brewery_core)
         for candidate_name in name_variants:
             match, query, results = await _search_and_match(token, brewery_variant, candidate_name, rejected_bids)
+            if match is not None and _drops_edition_number(
+                clean_name, candidate_name, match.get("beerName") or "", brewery_variant,
+            ):
+                logger.info("resolve_beer: %r lacks the edition number of %r, not a match", match.get("beerName"), clean_name)
+                match = None
             if first_results is None:
                 first_results = results
             if results:
