@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.7.1
+// @version      2.7.2
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -14,6 +14,7 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_registerMenuCommand
 // @connect      35-211-15-162.sslip.io
 // ==/UserScript==
 
@@ -40,6 +41,16 @@
     return token;
   }
   const API_TOKEN = getApiToken();
+  // Tampermonkey icon -> this script -> "Change LENS_API_TOKEN": replace the stored token without
+  // touching the Storage tab (which only shows in Advanced config mode).
+  GM_registerMenuCommand("Untappd Lens: change LENS_API_TOKEN", () => {
+    const token = (prompt("Untappd Lens: paste the new LENS_API_TOKEN") || "").trim();
+    if (token) {
+      GM_setValue("lensApiToken", token);
+      GM_setValue("lensCache", "{}");
+      location.reload();
+    }
+  });
   // ------------------------------------------------------------------------
 
   const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h - had_it_index changes slowly; avoids re-querying every page view
