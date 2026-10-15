@@ -46,7 +46,7 @@ SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # that's genuinely personal per user_id and computed fresh below, outside
 # this cache, every call.
 _IDENTITY_CACHE_TTL_SECONDS = float(os.environ.get("BEER_MATCH_CACHE_TTL_SECONDS", str(6 * 60 * 60)))
-_identity_cache: dict[tuple[str, str], tuple[float, dict]] = {}
+_identity_cache: dict[tuple[str, str, tuple[int, ...]], tuple[float, dict]] = {}
 _country_cache: dict[int, tuple[float, str]] = {}
 
 
@@ -1244,9 +1244,13 @@ def _query_name_variants(clean_name: str, *brewery_cores: str) -> list[str]:
     return deduped[:10]
 
 
-async def _search_and_match(token: str, brewery: str, beer_name: str) -> tuple[dict | None, str, list[dict]]:
+async def _search_and_match(
+    token: str, brewery: str, beer_name: str, rejected_bids: frozenset[int] = frozenset(),
+) -> tuple[dict | None, str, list[dict]]:
     query = f"{brewery} {beer_name}".strip()
     results = await untappd_mcp.search_beers(token, query, limit=SEARCH_RESULT_LIMIT)
+    if rejected_bids:
+        results = [r for r in results if r.get("bid") not in rejected_bids]
     if not results:
         logger.info(f"resolve_beer: no results for query={query!r}")
         return None, query, []
@@ -1330,7 +1334,9 @@ def _not_found_search_url(beer_name: str, brewery_name: str) -> str:
     return build_search_url(brewery_variants[-1], url_name)
 
 
-async def _resolve_identity(token: str, beer_name: str, brewery_name: str) -> dict:
+async def _resolve_identity(
+    token: str, beer_name: str, brewery_name: str, rejected_bids: frozenset[int] = frozenset(),
+) -> dict:
     """Which Untappd beer (if any) this (name, brewery) text resolves to -
     the expensive, impersonal part of resolve_beer, cached process-wide
     (see the module-level cache comment). Returns EITHER
@@ -1340,8 +1346,12 @@ async def _resolve_identity(token: str, beer_name: str, brewery_name: str) -> di
     call's exact text, not whatever casing first populated the cache -
     see _not_found_search_url) and never country/hadIt (see resolve_beer:
     country is cached separately by bid, hadIt is genuinely personal and
-    never cached at all)."""
-    cache_key = (beer_name.strip().lower(), brewery_name.strip().lower())
+    never cached at all).
+
+    `rejected_bids` are beers the user marked as wrong for this text (see
+    lens_rejections): dropped from the search results before matching, so the
+    next best candidate - or "no match" - comes back; part of the cache key."""
+    cache_key = (beer_name.strip().lower(), brewery_name.strip().lower(), tuple(sorted(rejected_bids)))
     cached = _cache_get(_identity_cache, cache_key)
     if cached is not None:
         return cached
@@ -1371,7 +1381,7 @@ async def _resolve_identity(token: str, beer_name: str, brewery_name: str) -> di
         # still duplicates what the shop actually printed, not the override.
         name_variants = _query_name_variants(clean_name, brewery_variant, original_brewery_core)
         for candidate_name in name_variants:
-            match, query, results = await _search_and_match(token, brewery_variant, candidate_name)
+            match, query, results = await _search_and_match(token, brewery_variant, candidate_name, rejected_bids)
             if first_results is None:
                 first_results = results
             if results:
@@ -1444,6 +1454,7 @@ async def _resolve_identity(token: str, beer_name: str, brewery_name: str) -> di
 async def resolve_beer(
     token: str, user_id: int, beer_name: str, brewery_name: str, *,
     need_country: bool = True, live_fallback: bool = True,
+    rejected_bids: frozenset[int] = frozenset(),
 ) -> dict:
     """Look up one beer by name/brewery on Untappd: clean up the query (see
     the module-level cleanup rules), search, accept only a confident match
@@ -1486,8 +1497,12 @@ async def resolve_beer(
     ran at once). That identity search (which beer this text even refers
     to) is itself cached process-wide across ALL callers and users - see
     _resolve_identity - so a repeat or concurrent lookup of the same
-    (name, brewery) text spends no quota at all beyond the first time."""
-    identity = await _resolve_identity(token, beer_name, brewery_name)
+    (name, brewery) text spends no quota at all beyond the first time.
+
+    rejected_bids: Untappd ids the caller knows are wrong for this text (the
+    lens's "this is not that beer", see lens_rejections) - never returned, not
+    even as a candidate."""
+    identity = await _resolve_identity(token, beer_name, brewery_name, rejected_bids)
 
     if not identity["matched"]:
         return {

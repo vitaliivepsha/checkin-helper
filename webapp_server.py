@@ -56,6 +56,7 @@ import pending_checkins
 import wishlist_items
 import httpx
 import lens_log
+import lens_rejections
 import shop_crawl
 import wishlist_sheets
 
@@ -2038,6 +2039,70 @@ async def handle_style_info(request: web.Request) -> web.Response:
     return web.json_response({"matched": True, **match})
 
 
+async def _lens_list_flags(owner_id: int, token: str) -> tuple[set, set]:
+    """(classic-wishlist bids, "Мій список" bids). Fetched ONCE per batch, not
+    per item - it's the same account's lists for every card on the page, and
+    _get_wishlist_beers already shares the 15-min-TTL _wishlist_cache with the
+    checkin webapp's own wishlist-priority search, so this is usually a cache
+    hit (0 extra quota) rather than a fresh get_my_wishlist call."""
+    wishlist_beers = await _get_wishlist_beers(owner_id, token)
+    wishlist_bids = {b.get("bid") for b in wishlist_beers if b.get("bid") is not None}
+    my_list_bids = {it["beerId"] for it in await _get_my_list_items(owner_id) if it.get("beerId")}
+    return wishlist_bids, my_list_bids
+
+
+async def _lens_resolve_item(token: str, owner_id: int, item, wishlist_bids: set, my_list_bids: set) -> dict:
+    """One shop product through the lens resolver (never raises: a failed
+    lookup comes back as an `error` result), plus the list flags. Shared by the
+    batch lookup and the "not that beer" re-resolve."""
+    name = (item.get("name") or "").strip() if isinstance(item, dict) else ""
+    brewery = (item.get("brewery") or "").strip() if isinstance(item, dict) else ""
+    if not name:
+        return {"matched": False, "query_name": name, "query_brewery": brewery, "candidates": []}
+    try:
+        # need_country=False: no badge computation here, no use for
+        # country. live_fallback=False: never call check_i_had_beer
+        # either - trust had_it_index's own (monotonically-growing)
+        # data instead. Together these make this endpoint spend NO
+        # Untappd quota at all beyond the free search_beers lookup -
+        # a handful of concurrent get_beer/check_i_had_beer calls
+        # was observed live to 429 almost every one of them, which
+        # is what was actually causing most of the "невідомо, чи
+        # пив" results, not genuinely unknown data.
+        result = await beer_match.resolve_beer(
+            token, owner_id, name, brewery, need_country=False, live_fallback=False,
+            rejected_bids=lens_rejections.rejected_bids(brewery, name),
+        )
+        result["inWishlist"] = result.get("bid") in wishlist_bids
+        result["inSheetList"] = result.get("bid") in my_list_bids
+        return result
+    except untappd_mcp.UntappdMCPError as exc:
+        logger.warning("lens lookup failed for %r %r: %s", brewery, name, exc)
+        return {
+            "matched": False, "query_name": name, "query_brewery": brewery,
+            "candidates": [], "searchUrl": beer_match.build_search_url(brewery, name), "error": True,
+        }
+    except Exception:
+        # ANY other exception here (a beer_match bug tripped by one
+        # unlucky name/brewery string, a transient local-index read
+        # issue, anything not already an UntappdMCPError) must NOT
+        # propagate past this one item - proven live: asyncio.gather
+        # has no return_exceptions=True, so a single unhandled
+        # exception for ONE item on a shop's page previously killed
+        # the entire batch response (a generic 500, "Server got
+        # itself in trouble"), leaving EVERY OTHER beer on that same
+        # page - unrelated to whatever actually failed - with no
+        # overlay at all. logger.exception (not .warning) captures
+        # the full traceback, since this is by definition an
+        # unexpected code path worth investigating, unlike the
+        # already-understood UntappdMCPError case above.
+        logger.exception("lens lookup: unexpected error for %r %r", brewery, name)
+        return {
+            "matched": False, "query_name": name, "query_brewery": brewery,
+            "candidates": [], "searchUrl": beer_match.build_search_url(brewery, name), "error": True,
+        }
+
+
 async def handle_lens_lookup(request: web.Request) -> web.Response:
     """Batch beer lookup for a browser userscript (see LENS_API_TOKEN's own
     comment above): given raw {name, brewery} pairs scraped from a shop's
@@ -2073,59 +2138,13 @@ async def handle_lens_lookup(request: web.Request) -> web.Response:
     # shares the 15-min-TTL _wishlist_cache with the checkin webapp's own
     # wishlist-priority search, so this is usually a cache hit (0 extra
     # quota) rather than a fresh get_my_wishlist call.
-    wishlist_beers = await _get_wishlist_beers(owner_id, token)
-    wishlist_bids = {b.get("bid") for b in wishlist_beers if b.get("bid") is not None}
-    my_list_bids = {it["beerId"] for it in await _get_my_list_items(owner_id) if it.get("beerId")}
+    wishlist_bids, my_list_bids = await _lens_list_flags(owner_id, token)
 
     semaphore = asyncio.Semaphore(LENS_LOOKUP_CONCURRENCY)
 
     async def _resolve_one(item) -> dict:
-        name = (item.get("name") or "").strip() if isinstance(item, dict) else ""
-        brewery = (item.get("brewery") or "").strip() if isinstance(item, dict) else ""
-        if not name:
-            return {"matched": False, "query_name": name, "query_brewery": brewery, "candidates": []}
         async with semaphore:
-            try:
-                # need_country=False: no badge computation here, no use for
-                # country. live_fallback=False: never call check_i_had_beer
-                # either - trust had_it_index's own (monotonically-growing)
-                # data instead. Together these make this endpoint spend NO
-                # Untappd quota at all beyond the free search_beers lookup -
-                # a handful of concurrent get_beer/check_i_had_beer calls
-                # was observed live to 429 almost every one of them, which
-                # is what was actually causing most of the "невідомо, чи
-                # пив" results, not genuinely unknown data.
-                result = await beer_match.resolve_beer(
-                    token, owner_id, name, brewery, need_country=False, live_fallback=False,
-                )
-                result["inWishlist"] = result.get("bid") in wishlist_bids
-                result["inSheetList"] = result.get("bid") in my_list_bids
-                return result
-            except untappd_mcp.UntappdMCPError as exc:
-                logger.warning("lens lookup failed for %r %r: %s", brewery, name, exc)
-                return {
-                    "matched": False, "query_name": name, "query_brewery": brewery,
-                    "candidates": [], "searchUrl": beer_match.build_search_url(brewery, name), "error": True,
-                }
-            except Exception:
-                # ANY other exception here (a beer_match bug tripped by one
-                # unlucky name/brewery string, a transient local-index read
-                # issue, anything not already an UntappdMCPError) must NOT
-                # propagate past this one item - proven live: asyncio.gather
-                # has no return_exceptions=True, so a single unhandled
-                # exception for ONE item on a shop's page previously killed
-                # the entire batch response (a generic 500, "Server got
-                # itself in trouble"), leaving EVERY OTHER beer on that same
-                # page - unrelated to whatever actually failed - with no
-                # overlay at all. logger.exception (not .warning) captures
-                # the full traceback, since this is by definition an
-                # unexpected code path worth investigating, unlike the
-                # already-understood UntappdMCPError case above.
-                logger.exception("lens lookup: unexpected error for %r %r", brewery, name)
-                return {
-                    "matched": False, "query_name": name, "query_brewery": brewery,
-                    "candidates": [], "searchUrl": beer_match.build_search_url(brewery, name), "error": True,
-                }
+            return await _lens_resolve_item(token, owner_id, item, wishlist_bids, my_list_bids)
 
     results = await asyncio.gather(*(_resolve_one(it) for it in items))
     try:
@@ -2146,8 +2165,68 @@ async def handle_lens_report(request: web.Request) -> web.Response:
     except ValueError:
         limit = 50
     report = await lens_log.report(limit)
+    report["rejections"] = (await lens_rejections.all_entries())[:limit]
     report["crawl"] = {**shop_crawl.load_state(), "running": _shop_crawl_running}
     return web.json_response(report)
+
+
+async def _lens_rejection_request(request: web.Request) -> tuple[dict, None] | tuple[None, web.Response]:
+    """Shared validation of /api/lens/reject and /unreject: (fields, None) or
+    (None, error response). Same X-Lens-Token gate as the lookup."""
+    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+        return None, _json_error("unauthorized", 401)
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, ValueError):
+        return None, _json_error("invalid_json")
+    if not isinstance(body, dict):
+        return None, _json_error("invalid_json")
+    name, brewery, bid = body.get("name"), body.get("brewery") or "", body.get("bid")
+    if not isinstance(name, str) or not name.strip() or not isinstance(brewery, str) or len(name) > 300 or len(brewery) > 300:
+        return None, _json_error("invalid_item")
+    if isinstance(bid, bool) or not isinstance(bid, int):
+        return None, _json_error("invalid_bid")
+    return {"name": name.strip(), "brewery": brewery.strip(), "bid": bid}, None
+
+
+async def handle_lens_reject(request: web.Request) -> web.Response:
+    """The userscript's "this is not that beer": remembers `bid` as wrong for
+    this shop text (lens_rejections) and returns the item re-resolved without
+    it, so the page can redraw the card at once. No Untappd quota - the same
+    quota-free search the lookup does, and the rejection itself is a local file
+    write. The new outcome is logged like a recheck (a correction is not
+    another view of the product)."""
+    fields, err = await _lens_rejection_request(request)
+    if err:
+        return err
+    if not await lens_rejections.add(fields["brewery"], fields["name"], fields["bid"]):
+        return _json_error("rejections_full", 507)
+    return await _lens_reresolved_response(fields)
+
+
+async def handle_lens_unreject(request: web.Request) -> web.Response:
+    """Undo of /api/lens/reject; returns the item re-resolved with the beer
+    allowed again."""
+    fields, err = await _lens_rejection_request(request)
+    if err:
+        return err
+    await lens_rejections.remove(fields["brewery"], fields["name"], fields["bid"])
+    return await _lens_reresolved_response(fields)
+
+
+async def _lens_reresolved_response(fields: dict) -> web.Response:
+    owner_id = int(AUTO_TOAST_OWNER_ID)
+    token = await user_tokens.get_token(owner_id)
+    if not token:
+        return _json_error("not_connected")
+    wishlist_bids, my_list_bids = await _lens_list_flags(owner_id, token)
+    item = {"name": fields["name"], "brewery": fields["brewery"]}
+    result = await _lens_resolve_item(token, owner_id, item, wishlist_bids, my_list_bids)
+    try:
+        await lens_log.record([item], [result], source="recheck")
+    except Exception:
+        logger.exception("lens_log: failed to record a re-resolved item")
+    return web.json_response({"ok": True, "result": result})
 
 
 async def handle_lens_crawl(request: web.Request) -> web.Response:
@@ -3190,6 +3269,8 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/checkin/special_badges/dismiss", handle_special_badges_dismiss)
     app.router.add_post("/api/checkin/style_info", handle_style_info)
     app.router.add_post("/api/lens/lookup", handle_lens_lookup)
+    app.router.add_post("/api/lens/reject", handle_lens_reject)
+    app.router.add_post("/api/lens/unreject", handle_lens_unreject)
     app.router.add_get("/api/lens/report", handle_lens_report)
     app.router.add_post("/api/lens/crawl", handle_lens_crawl)
     app.router.add_post("/api/deploy/webhook", handle_deploy_webhook)
@@ -3337,6 +3418,7 @@ async def start_webapp_server(
         wishlist_sheets.init(data_dir)
         wishlist_items.init(data_dir)
         lens_log.init(data_dir)
+        lens_rejections.init(data_dir)
         shop_crawl.init(data_dir)
         pending_checkins.init(data_dir)
         special_badge_dismissals.init(data_dir)
@@ -4800,6 +4882,7 @@ async def _crawl_resolve_one(token: str, owner_id: int, item: dict, sem: asyncio
         try:
             return await beer_match.resolve_beer(
                 token, owner_id, item["name"], item["brewery"], need_country=False, live_fallback=False,
+                rejected_bids=lens_rejections.rejected_bids(item["brewery"], item["name"]),
             )
         except untappd_mcp.UntappdRateLimited:
             stop.set()

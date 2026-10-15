@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.6.0
+// @version      2.7.0
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -323,13 +323,13 @@
   const adapter = findAdapter();
   if (!adapter) return;
 
-  function apiLookup(items) {
+  function apiPost(path, payload) {
     return new Promise((resolve, reject) => {
       GM_xmlhttpRequest({
         method: "POST",
-        url: API_BASE + "/api/lens/lookup",
+        url: API_BASE + path,
         headers: { "Content-Type": "application/json", "X-Lens-Token": API_TOKEN },
-        data: JSON.stringify({ items }),
+        data: JSON.stringify(payload),
         onload(res) {
           let data;
           try {
@@ -342,7 +342,7 @@
             reject(new Error(data.error || "unknown_error"));
             return;
           }
-          resolve(data.results);
+          resolve(data);
         },
         onerror() {
           reject(new Error("network_error"));
@@ -351,9 +351,23 @@
     });
   }
 
+  async function apiLookup(items) {
+    return (await apiPost("/api/lens/lookup", { items })).results;
+  }
+
+  // "This is not that beer": the server remembers the rejection (lens_rejections.py,
+  // used by the page lookup and the daily crawl alike) and returns the item re-resolved
+  // without it; unreject is the undo.
+  async function apiReject(brewery, name, bid, undo) {
+    return (await apiPost(undo ? "/api/lens/unreject" : "/api/lens/reject", { brewery, name, bid })).result;
+  }
+
   function cacheKey(brewery, name) {
     return (brewery + "|" + name).toLowerCase();
   }
+
+  // Everything renderOverlay adds to a card - removed before a card is redrawn.
+  const LENS_CHIP_SELECTOR = ".lens-status-chip, .lens-rating-chip, .lens-list-chip, .lens-style-chip";
 
   function loadCache() {
     try {
@@ -406,6 +420,8 @@
     if (!wrapper || wrapper.querySelector(".lens-status-chip")) return; // don't double-render on re-runs
     const prevPosition = getComputedStyle(wrapper).position;
     if (prevPosition === "static") wrapper.style.position = "relative";
+    wrapper.classList.add("lens-wrap");
+    ensureLensStyles();
 
     const statusCorner = adapter.statusCorner || "top-left";
     const altCorner = adapter.altCorner || "top-right";
@@ -441,6 +457,21 @@
       statusChip.addEventListener("click", (e) => e.stopPropagation());
     } else {
       statusChip.title = tooltip;
+    }
+    // A matched card gets a small ✕ inside the status chip (shown while hovering the
+    // card): "this is not that beer".
+    if (result.matched && result.bid != null) {
+      const rejectBtn = document.createElement("button");
+      rejectBtn.type = "button";
+      rejectBtn.className = "lens-reject-btn";
+      rejectBtn.title = "Це не те пиво";
+      rejectBtn.textContent = "✕";
+      rejectBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        rejectMatch(card, result, rejectBtn);
+      });
+      statusChip.appendChild(rejectBtn);
     }
     wrapper.appendChild(statusChip);
 
@@ -554,6 +585,80 @@
     }
   }
 
+  let lensStylesAdded = false;
+  function ensureLensStyles() {
+    if (lensStylesAdded) return;
+    lensStylesAdded = true;
+    const style = document.createElement("style");
+    style.textContent =
+      ".lens-reject-btn{display:none;border:0;background:#eee;color:#555;cursor:pointer;" +
+      "width:16px;height:16px;padding:0;border-radius:50%;font-size:10px;line-height:16px;}" +
+      ".lens-reject-btn:hover{background:#c62828;color:#fff;}" +
+      ".lens-wrap:hover .lens-reject-btn{display:inline-block;}";
+    document.head.appendChild(style);
+  }
+
+  // Redraws one card with a fresh result and keeps the 6h cache in step with it.
+  function redrawCard(card, result) {
+    const wrapper = adapter.imageWrapper(card);
+    if (wrapper) wrapper.querySelectorAll(LENS_CHIP_SELECTOR).forEach((el) => el.remove());
+    renderOverlay(card, result);
+    const key = cacheKey(card.dataset.lensBrewery || "", card.dataset.lensName || "");
+    const cache = loadCache();
+    cache[key] = { at: Date.now(), result };
+    saveCache(cache);
+  }
+
+  let toastTimer = null;
+  function showToast(text, actionLabel, onAction) {
+    let toast = document.getElementById("lens-toast");
+    if (toast) toast.remove();
+    toast = document.createElement("div");
+    toast.id = "lens-toast";
+    toast.style.cssText =
+      "position:fixed;bottom:16px;left:16px;z-index:99999;max-width:340px;padding:10px 14px;" +
+      "border-radius:8px;background:#333;color:#fff;font-size:13px;line-height:1.4;" +
+      "box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;";
+    toast.append(text + " ");
+    if (actionLabel) {
+      const action = document.createElement("a");
+      action.href = "#";
+      action.textContent = actionLabel;
+      action.style.cssText = "color:#ffc300;font-weight:600;margin-left:6px;";
+      action.addEventListener("click", (e) => {
+        e.preventDefault();
+        toast.remove();
+        onAction();
+      });
+      toast.appendChild(action);
+    }
+    document.body.appendChild(toast);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.remove(), 9000);
+  }
+
+  async function rejectMatch(card, result, button) {
+    const brewery = card.dataset.lensBrewery || "";
+    const name = card.dataset.lensName || "";
+    button.disabled = true;
+    try {
+      const fresh = await apiReject(brewery, name, result.bid, false);
+      redrawCard(card, fresh);
+      showToast(`Відхилено: ${result.name}.`, "Скасувати", async () => {
+        try {
+          redrawCard(card, await apiReject(brewery, name, result.bid, true));
+        } catch (e) {
+          console.error("[UntappdLens] undo failed:", e);
+          showToast("Не вдалося скасувати: " + e.message);
+        }
+      });
+    } catch (e) {
+      console.error("[UntappdLens] reject failed:", e);
+      button.disabled = false;
+      showToast("Не вдалося відхилити: " + e.message);
+    }
+  }
+
   function addRefreshButton() {
     const btn = document.createElement("button");
     btn.textContent = "🔄 Оновити";
@@ -567,7 +672,7 @@
       const original = btn.textContent;
       btn.textContent = "…";
       saveCache({}); // wipe the 6h cache - see CACHE_TTL_MS
-      document.querySelectorAll(".lens-status-chip, .lens-rating-chip, .lens-list-chip").forEach((el) => el.remove());
+      document.querySelectorAll(LENS_CHIP_SELECTOR).forEach((el) => el.remove());
       await runExclusive();
       btn.textContent = original;
       btn.disabled = false;
@@ -629,6 +734,8 @@
       const { brewery, name } = extracted;
       if (NOT_A_BEER_RE.test(`${brewery || ""} ${name}`)) return; // merchandise, glassware, gift boxes, wine/cocktails
       const key = cacheKey(brewery, name);
+      card.dataset.lensBrewery = brewery || "";
+      card.dataset.lensName = name;
       cardsByKey.set(key, card);
       const cached = cache[key];
       if (cached && now - cached.at < CACHE_TTL_MS) {
