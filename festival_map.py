@@ -251,7 +251,12 @@ def resolve_label(label: str, candidates: list[str]) -> str | None:
             extra = len(words - wanted)
             if best is None or extra < best[0]:
                 best = (extra, brewery)
-    return best[1] if best else None
+    if best:
+        return best[1]
+    # The plan and the data may split the same name differently ("Hop Brook"
+    # vs "HopBrook"): fall back to an exact match with the spaces removed.
+    joined = "".join(_tokens(label))
+    return next((b for b in candidates if "".join(_tokens(b)) == joined), None)
 
 
 def water_stands(template: dict | None, known_breweries: list[str]) -> list[str]:

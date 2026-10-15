@@ -258,3 +258,9 @@ async def test_a_brand_new_bucket_does_not_rebuild_zones_twice(tmp_path):
     assert result["Area 1"]["left"] == ["Browar Bednary"]
     assert saved(tmp_path)["zoneVersions"] == {"Area 1": 3}
     assert "previousZones" in saved(tmp_path)   # from the one global rebuild, not a second zone rebuild
+
+
+def test_resolve_label_ignores_how_the_name_is_split():
+    assert festival_map.resolve_label("Hop Brook", ["HopBrook", "Sulewski"]) == "HopBrook"
+    assert festival_map.resolve_label("HopBrook", ["Hop Brook"]) == "Hop Brook"
+    assert festival_map.resolve_label("Hop", ["HopBrook"]) is None
