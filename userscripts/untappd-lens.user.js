@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.7.0
+// @version      2.7.1
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -323,7 +323,19 @@
   const adapter = findAdapter();
   if (!adapter) return;
 
-  function apiPost(path, payload) {
+  // One retry after a few seconds on a network error or an unreadable reply: the bot restarts
+  // on every deploy and the proxy in front of it answers an empty body meanwhile.
+  async function apiPost(path, payload) {
+    try {
+      return await apiPostOnce(path, payload);
+    } catch (e) {
+      if (!/^(bad_response|network_error)/.test(e.message)) throw e;
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      return apiPostOnce(path, payload);
+    }
+  }
+
+  function apiPostOnce(path, payload) {
     return new Promise((resolve, reject) => {
       GM_xmlhttpRequest({
         method: "POST",

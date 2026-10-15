@@ -18,14 +18,26 @@ const API_TOKEN = "e9jqZfhZlKqRgeJ4qeK6-XX62uyTkheSwflb7zKV20I";
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || message.type !== "lensLookup") return false;
 
+  // One retry after a few seconds: the bot restarts on every deploy and the proxy in front
+  // of it answers an empty body meanwhile ("Unexpected end of JSON input").
+  async function lookupOnce() {
+    const res = await fetch(API_BASE + "/api/lens/lookup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Lens-Token": API_TOKEN },
+      body: JSON.stringify({ items: message.items }),
+    });
+    return res.json();
+  }
+
   (async () => {
     try {
-      const res = await fetch(API_BASE + "/api/lens/lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Lens-Token": API_TOKEN },
-        body: JSON.stringify({ items: message.items }),
-      });
-      const data = await res.json();
+      let data;
+      try {
+        data = await lookupOnce();
+      } catch (e) {
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+        data = await lookupOnce();
+      }
       if (!data.ok) {
         sendResponse({ ok: false, error: data.error || "unknown_error" });
         return;
