@@ -7990,5 +7990,167 @@
     "location": "Area 2",
     "url": "https://untappd.com/beer/7420724",
     "standBrewery": "Piwne Podziemie"
+  },
+  {
+    "id": "7021390",
+    "name": "Origo",
+    "brewery": "Nepo Brewing",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7021390",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "7021400",
+    "name": "NOVA",
+    "brewery": "Nepo Brewing",
+    "style": "IPA - Imperial / Double",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7021400",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "7021405",
+    "name": "Senor Lucas",
+    "brewery": "Nepo Brewing",
+    "style": "Wheat Beer - Witbier / Blanche",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7021405",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "7021806",
+    "name": "JAGODZIANKA -  Smoothie Bowl Special One-Off WFP 2026",
+    "brewery": "Nepo Brewing",
+    "style": "Sour - Smoothie / Pastry",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7021806",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "7021839",
+    "name": "XTREAM MANGO LASSI -  Smoothie Bowl Special One-off WFP 2026",
+    "brewery": "Nepo Brewing",
+    "style": "Sour - Smoothie / Pastry",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7021839",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "7021842",
+    "name": "PISTACHIO HEIST Special One-Off WFP 2026",
+    "brewery": "Nepo Brewing",
+    "style": "Stout - Imperial / Double Pastry",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7021842",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "6790176",
+    "name": "Smoothie Bowl: Tropi-Berry White Bar",
+    "brewery": "Nepo Brewing",
+    "style": "Sour - Smoothie / Pastry",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6790176",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "6758191",
+    "name": "Smoothie Bowl: Piña Berry Boom",
+    "brewery": "Nepo Brewing",
+    "style": "Sour - Smoothie / Pastry",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6758191",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "7021432",
+    "name": "THE FEAR 2026",
+    "brewery": "Nepo Brewing",
+    "style": "Pumpkin / Yam Beer",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/7021432",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "6847890",
+    "name": "Black Forest",
+    "brewery": "Nepo Brewing",
+    "style": "IPA - Black / Cascadian Dark Ale",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6847890",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "6851999",
+    "name": "Monk",
+    "brewery": "Nepo Brewing",
+    "style": "IPA - New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6851999",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "6177367",
+    "name": "German Pils",
+    "brewery": "Nepo Brewing",
+    "style": "Pilsner - German",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6177367",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "6852006",
+    "name": "Chopper IPA",
+    "brewery": "Nepo Brewing",
+    "style": "IPA - Session New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6852006",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "6852014",
+    "name": "Journey To the Valley 5",
+    "brewery": "Nepo Brewing",
+    "style": "Bock - Single / Traditional",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6852014",
+    "standBrewery": "Browar NEPO"
+  },
+  {
+    "id": "6607609",
+    "name": "Blood of the Baltic",
+    "brewery": "Piwne Podziemie / Beer Underground",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6607609",
+    "standBrewery": "Piwne Podziemie"
+  },
+  {
+    "id": "6607605",
+    "name": "Anatomy of Hunger",
+    "brewery": "Piwne Podziemie / Beer Underground",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6607605",
+    "standBrewery": "Piwne Podziemie"
+  },
+  {
+    "id": "6607608",
+    "name": "Eye of the Storm",
+    "brewery": "Piwne Podziemie / Beer Underground",
+    "style": "Porter - Imperial / Double Baltic",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6607608",
+    "standBrewery": "Piwne Podziemie"
+  },
+  {
+    "id": "6599432",
+    "name": "Memento Mori",
+    "brewery": "Piwne Podziemie / Beer Underground",
+    "style": "Stout - Imperial / Double",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6599432",
+    "standBrewery": "Piwne Podziemie"
   }
 ]
