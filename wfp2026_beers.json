@@ -8152,5 +8152,14 @@
     "location": "Area 2",
     "url": "https://untappd.com/beer/6599432",
     "standBrewery": "Piwne Podziemie"
+  },
+  {
+    "id": "6809248",
+    "name": "Rocket Science",
+    "brewery": "Nepo Brewing",
+    "style": "IPA - Imperial / Double New England / Hazy",
+    "location": "Area 2",
+    "url": "https://untappd.com/beer/6809248",
+    "standBrewery": "Browar NEPO"
   }
 ]
