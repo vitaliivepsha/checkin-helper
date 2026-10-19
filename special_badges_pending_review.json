@@ -18,10 +18,5 @@
     "url": "https://untappd.com/blog/new-badge-scream-worthy-hard-cider/1968",
     "note": "Scream-Worthy Hard Cider (sponsored by Angry Orchard, Oct 17-31, 2026): requires checking in the specific product 'Angry Orchard Crisp Apple Hard Cider' - a specific-beer match, not a style or country match, so special_badges.json's reader (kind: style/country only) can't compute this.",
     "foundAt": "2026-10-17"
-  },
-  {
-    "url": "https://untappd.com/blog/new-badge-liqueur-day-2026/1962",
-    "note": "Liqueur Day (2026) (Oct 16-18, 2026): criteria is 'any one Spirit - Liqueur style plus styles whose name ends in \"Liqueur\", and Limoncello, Sambuca, Advocaat, Kräuterlikör and Chartreuse'. Checked the live style dropdown at untappd.com/beer/top_rated: there is no single 'Spirit - Liqueur' leaf - it's a 3-level subcategory ('Spirit - Liqueur - Anise/Chocolate/Coffee/Cream/Egg/Fruit/Herb-Spice/Honey/Nut/Other/Toffee', 11 leaves), plus separately-named leaves 'Spirit - Gin Liqueur' and 'Spirit - Tequila Liqueur' ending in the word, plus compound leaves ending in '.../Liqueur' ('Spirit - Gin/Rum/Tequila/Whiskey - Flavored/Liqueur') that may or may not count as 'ending in Liqueur', plus the named spirits as their own exact leaves ('Spirit - Limoncello', 'Spirit - Sambuca', 'Spirit - Advocaat/Eierlikör' (not bare 'Advocaat'), 'Spirit - Kräuterlikör', 'Spirit - Chartreuse'). Too many exact leaves and too much ambiguity over the 'Flavored/Liqueur' compound styles to be confident of an exact list - flagging rather than guessing. Window is short (closes Oct 18, 2026).",
-    "foundAt": "2026-10-17"
   }
 ]
