@@ -18,5 +18,10 @@
     "url": "https://untappd.com/blog/new-badge-scream-worthy-hard-cider/1968",
     "note": "Scream-Worthy Hard Cider (sponsored by Angry Orchard, Oct 17-31, 2026): requires checking in the specific product 'Angry Orchard Crisp Apple Hard Cider' - a specific-beer match, not a style or country match, so special_badges.json's reader (kind: style/country only) can't compute this.",
     "foundAt": "2026-10-17"
+  },
+  {
+    "url": "https://untappd.com/blog/new-badge-untappd-16th-anniversary/1969",
+    "note": "Untappd 16th Anniversary (Oct 22-31, 2026): criteria is simply 'check in any drink' during the window - no style or country restriction at all, so there's nothing for badge_stats.compute_special_badges' kind:style/kind:country matcher to filter on (every check-in would trivially qualify); this schema has no 'any' kind to encode that.",
+    "foundAt": "2026-10-23"
   }
 ]
