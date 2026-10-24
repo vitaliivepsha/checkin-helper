@@ -20,6 +20,11 @@
     "foundAt": "2026-10-17"
   },
   {
+    "url": "https://untappd.com/blog/new-badge-champagne-day-2026/1965",
+    "note": "Champagne Day (2026) (Oct 23-25, 2026): criteria is check in any one sparkling-wine style from a large 'sparkling group' - confirmed catalog leaves like 'Wine - Champagne Blend', 'Wine - Cava Blend', 'Wine - Glera (Prosecco)', 'Wine - Glera - Pinot Noir', 'Wine - Lambrusco', 'Wine - Sparkling - English Sparkling Wine', 'Wine - Sparkling - Franciacorta' exist on untappd.com/beer/top_rated, but the post also lists many further grape-variety styles (Brachetto, Crémant-type blends, and a long tail like Alphonse Lavallée/Arbane/Avana/Corvinone/Durella/etc.) whose exact current taxonomy leaf names and 'Wine - X' vs 'Wine - Sparkling - X' prefixing weren't confidently verified for every entry - risk of an incomplete or mismatched styles[] list, so not added to special_badges.json. Also only active for 2 more days (through Oct 25).",
+    "foundAt": "2026-10-24"
+  },
+  {
     "url": "https://untappd.com/blog/new-badge-untappd-16th-anniversary/1969",
     "note": "Untappd 16th Anniversary (Oct 22-31, 2026): criteria is simply 'check in any drink' during the window - no style or country restriction at all, so there's nothing for badge_stats.compute_special_badges' kind:style/kind:country matcher to filter on (every check-in would trivially qualify); this schema has no 'any' kind to encode that.",
     "foundAt": "2026-10-23"
