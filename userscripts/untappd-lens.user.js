@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.8.0
+// @version      2.9.0
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -385,6 +385,11 @@
     return (await apiPost(undo ? "/api/lens/unreject" : "/api/lens/reject", { brewery, name, bid })).result;
   }
 
+  // The opposite: "yes, this probable beer is the right one" (a confirmation the matcher then takes).
+  async function apiConfirm(brewery, name, bid, undo) {
+    return (await apiPost(undo ? "/api/lens/unconfirm" : "/api/lens/confirm", { brewery, name, bid })).result;
+  }
+
   function cacheKey(brewery, name) {
     return (brewery + "|" + name).toLowerCase();
   }
@@ -495,6 +500,19 @@ ${had}
     }
     // A matched (or probable) card gets a small ✕ inside the status chip (shown while hovering
     // the card): "this is not that beer".
+    if (probable) {
+      const confirmBtn = document.createElement("button");
+      confirmBtn.type = "button";
+      confirmBtn.className = "lens-confirm-btn";
+      confirmBtn.title = "Так, це воно";
+      confirmBtn.textContent = "✓";
+      confirmBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        confirmProbable(card, result, confirmBtn);
+      });
+      statusChip.appendChild(confirmBtn);
+    }
     if ((result.matched && result.bid != null) || probable) {
       const rejectBtn = document.createElement("button");
       rejectBtn.type = "button";
@@ -645,7 +663,10 @@ ${had}
       ".lens-reject-btn{display:none;border:0;background:#eee;color:#555;cursor:pointer;" +
       "width:16px;height:16px;padding:0;border-radius:50%;font-size:10px;line-height:16px;}" +
       ".lens-reject-btn:hover{background:#c62828;color:#fff;}" +
-      ".lens-wrap:hover .lens-reject-btn{display:inline-block;}";
+      ".lens-confirm-btn{display:none;border:0;background:#eee;color:#555;cursor:pointer;" +
+      "width:16px;height:16px;padding:0;border-radius:50%;font-size:10px;line-height:16px;}" +
+      ".lens-confirm-btn:hover{background:#2e7d32;color:#fff;}" +
+      ".lens-wrap:hover .lens-reject-btn,.lens-wrap:hover .lens-confirm-btn{display:inline-block;}";
     document.head.appendChild(style);
   }
 
@@ -686,6 +707,28 @@ ${had}
     document.body.appendChild(toast);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.remove(), 9000);
+  }
+
+  async function confirmProbable(card, result, button) {
+    const brewery = card.dataset.lensBrewery || "";
+    const name = card.dataset.lensName || "";
+    const target = result.probable;
+    button.disabled = true;
+    try {
+      redrawCard(card, await apiConfirm(brewery, name, target.bid, false));
+      showToast(`Підтверджено: ${target.name}.`, "Скасувати", async () => {
+        try {
+          redrawCard(card, await apiConfirm(brewery, name, target.bid, true));
+        } catch (e) {
+          console.error("[UntappdLens] undo failed:", e);
+          showToast("Не вдалося скасувати: " + e.message);
+        }
+      });
+    } catch (e) {
+      console.error("[UntappdLens] confirm failed:", e);
+      button.disabled = false;
+      showToast("Не вдалося підтвердити: " + e.message);
+    }
   }
 
   async function rejectMatch(card, result, button) {

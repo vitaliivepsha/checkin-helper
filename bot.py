@@ -35,6 +35,7 @@ import user_tokens
 import wishlist_sheets
 import auto_toast
 import downtime_watch
+import lens_review
 import festival_watch
 import comment_watch
 import feature_flags
@@ -2308,6 +2309,35 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await save_checkins(data_store)
         await query.answer()
         await query.edit_message_text(t(lng, "cleared", count=count))
+        return
+
+    elif data.startswith("lr:"):
+        # The lens review queue's ✅/❌/⏭ (lens_review.py) - owner only, like the questions themselves.
+        if str(user_id) != AUTO_TOAST_OWNER_ID:
+            await query.answer(t(lng, "lens_review_not_yours"), show_alert=True)
+            return
+        lng = await user_tokens.get_language(user_id) or lng
+        try:
+            _, action, item_id = data.split(":", 2)
+        except ValueError:
+            await query.answer()
+            return
+        item = await lens_review.decide(item_id, action) if action in ("ok", "no", "skip") else None
+        if item is None:
+            await query.answer(t(lng, "lens_review_expired"), show_alert=True)
+            try:
+                await query.edit_message_reply_markup(reply_markup=None)
+            except TelegramError as e:
+                logger.info(f"lens review: could not clear an old keyboard: {e}")
+            return
+        await query.answer()
+        try:
+            await query.edit_message_text(
+                f"{query.message.text_html}\n\n{t(lng, 'lens_review_done_' + action)}",
+                parse_mode="HTML", disable_web_page_preview=True,
+            )
+        except TelegramError as e:
+            logger.info(f"lens review: could not update the question: {e}")
         return
 
     elif data.startswith("scan_again:"):

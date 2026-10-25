@@ -46,7 +46,7 @@ SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # that's genuinely personal per user_id and computed fresh below, outside
 # this cache, every call.
 _IDENTITY_CACHE_TTL_SECONDS = float(os.environ.get("BEER_MATCH_CACHE_TTL_SECONDS", str(6 * 60 * 60)))
-_identity_cache: dict[tuple[str, str, tuple[int, ...]], tuple[float, dict]] = {}
+_identity_cache: dict[tuple[str, str, tuple[int, ...], int | None], tuple[float, dict]] = {}
 _country_cache: dict[int, tuple[float, str]] = {}
 
 
@@ -1265,6 +1265,7 @@ def _query_name_variants(clean_name: str, *brewery_cores: str) -> list[str]:
 
 async def _search_and_match(
     token: str, brewery: str, beer_name: str, rejected_bids: frozenset[int] = frozenset(),
+    confirmed_bid: int | None = None,
 ) -> tuple[dict | None, str, list[dict]]:
     query = f"{brewery} {beer_name}".strip()
     results = await untappd_mcp.search_beers(token, query, limit=SEARCH_RESULT_LIMIT)
@@ -1273,6 +1274,12 @@ async def _search_and_match(
     if not results:
         logger.info(f"resolve_beer: no results for query={query!r}")
         return None, query, []
+    if confirmed_bid is not None:
+        # The user confirmed this beer for this shop text (lens_confirmations): take it as soon
+        # as search lists it, before any rule gets a say.
+        confirmed = next((r for r in results if r.get("bid") == confirmed_bid), None)
+        if confirmed is not None:
+            return confirmed, query, results
     match = pick_best_match(results, beer_name, brewery)
     if match is None:
         logger.info(
@@ -1374,6 +1381,29 @@ def _drops_edition_number(clean_name: str, variant: str, matched_name: str, brew
 _GENERIC_BREWERY_WORDS = frozenset({"browar", "brewery", "brewing", "brasserie", "pivovar", "co", "company", "the", "bryggeri"})
 
 
+def _match_route(clean_name: str, variant: str, matched_name: str, brewery_variant: str) -> str:
+    """Which kind of agreement made the matcher accept `matched_name` for the shop text, for the
+    lens log (lens_log "via"): exact / glued (same words split differently) / typo / superset (the
+    catalog name has more words) / other, plus "+short" when it was a shortened variant of the
+    name. A rejected match is then attributable to a rule, so the rule that misfires is visible."""
+    brewery_words = _token_set(brewery_variant)
+    q_list = [t for t in _token_list(variant) if t not in brewery_words]
+    c_list = _token_list(matched_name)
+    q, c = frozenset(q_list), frozenset(c_list)
+    c_no_brewery = c - brewery_words
+    if c == q or c_no_brewery == q:
+        kind = "exact"
+    elif len("".join(q_list)) >= 5 and "".join(q_list) == "".join(c_list):
+        kind = "glued"
+    elif q < c:
+        kind = "superset"
+    elif _typo_equal(q, c) or _typo_equal(q, c_no_brewery):
+        kind = "typo"
+    else:
+        kind = "other"
+    return kind + ("+short" if " ".join(variant.lower().split()) != " ".join(clean_name.lower().split()) else "")
+
+
 def _probable_candidate(results: list[dict], clean_name: str, brewery_name: str) -> dict | None:
     """The one search result worth showing as a PROBABLE match when pick_best_match refused it:
     exactly one result (so there is nothing to choose between), from the query's brewery, whose
@@ -1412,6 +1442,7 @@ def _probable_candidate(results: list[dict], clean_name: str, brewery_name: str)
 
 async def _resolve_identity(
     token: str, beer_name: str, brewery_name: str, rejected_bids: frozenset[int] = frozenset(),
+    confirmed_bid: int | None = None,
 ) -> dict:
     """Which Untappd beer (if any) this (name, brewery) text resolves to -
     the expensive, impersonal part of resolve_beer, cached process-wide
@@ -1426,15 +1457,19 @@ async def _resolve_identity(
 
     `rejected_bids` are beers the user marked as wrong for this text (see
     lens_rejections): dropped from the search results before matching, so the
-    next best candidate - or "no match" - comes back; part of the cache key."""
-    cache_key = (beer_name.strip().lower(), brewery_name.strip().lower(), tuple(sorted(rejected_bids)))
+    next best candidate - or "no match" - comes back; part of the cache key.
+
+    `confirmed_bid` is the beer the user confirmed for this text (lens_confirmations): taken as the
+    match as soon as a search lists it. A matched result also carries "via", the route that
+    accepted it (see _match_route)."""
+    cache_key = (beer_name.strip().lower(), brewery_name.strip().lower(), tuple(sorted(rejected_bids)), confirmed_bid)
     cached = _cache_get(_identity_cache, cache_key)
     if cached is not None:
         return cached
 
     brewery_variants, original_brewery_core, clean_name = _query_context(beer_name, brewery_name)
 
-    match, query = None, ""
+    match, query, via = None, "", ""
     # Prefer the FIRST attempt's candidate list for the "couldn't tell
     # which one" fallback shown to the user (see _as_candidate below) - the
     # least-truncated query is also the one closest to what was actually
@@ -1457,8 +1492,8 @@ async def _resolve_identity(
         # still duplicates what the shop actually printed, not the override.
         name_variants = _query_name_variants(clean_name, brewery_variant, original_brewery_core)
         for candidate_name in name_variants:
-            match, query, results = await _search_and_match(token, brewery_variant, candidate_name, rejected_bids)
-            if match is not None and _drops_edition_number(
+            match, query, results = await _search_and_match(token, brewery_variant, candidate_name, rejected_bids, confirmed_bid)
+            if match is not None and match.get("bid") != confirmed_bid and _drops_edition_number(
                 clean_name, candidate_name, match.get("beerName") or "", brewery_variant,
             ):
                 logger.info("resolve_beer: %r lacks the edition number of %r, not a match", match.get("beerName"), clean_name)
@@ -1468,6 +1503,9 @@ async def _resolve_identity(
             if results:
                 last_nonempty_results = results
             if match is not None:
+                via = "confirmed" if match.get("bid") == confirmed_bid else _match_route(
+                    clean_name, candidate_name, match.get("beerName") or "", brewery_variant,
+                )
                 break
         if match is not None:
             break
@@ -1484,7 +1522,7 @@ async def _resolve_identity(
             if source:
                 match = pick_best_match(source, beer_name, brewery_name, exact_only=True)
                 if match is not None:
-                    query = beer_name
+                    query, via = beer_name, "exact-raw"
                     break
 
     if match is None:
@@ -1510,7 +1548,7 @@ async def _resolve_identity(
             # essentially never does.
             match = pick_best_match(source, f"{brewery_name} {clean_name}".strip(), "")
             if match is not None:
-                query = f"{brewery_name} {clean_name}".strip()
+                query, via = f"{brewery_name} {clean_name}".strip(), "brewery-merged"
 
     if match is None:
         source = first_results if first_results else last_nonempty_results
@@ -1530,6 +1568,7 @@ async def _resolve_identity(
             "abv": match.get("abv"),
             "rating": match.get("globalRating"),
             "ratingCount": match.get("ratingCount"),
+            "via": via,
         }
     _cache_set(_identity_cache, cache_key, identity)
     return identity
@@ -1566,6 +1605,7 @@ async def resolve_beer(
     token: str, user_id: int, beer_name: str, brewery_name: str, *,
     need_country: bool = True, live_fallback: bool = True,
     rejected_bids: frozenset[int] = frozenset(), with_probable: bool = False,
+    confirmed_bid: int | None = None,
 ) -> dict:
     """Look up one beer by name/brewery on Untappd: clean up the query (see
     the module-level cleanup rules), search, accept only a confident match
@@ -1614,11 +1654,13 @@ async def resolve_beer(
     lens's "this is not that beer", see lens_rejections) - never returned, not
     even as a candidate.
 
+    confirmed_bid: the beer the user confirmed for this text (see lens_confirmations).
+
     with_probable: when nothing is confident but search found exactly one close
     lookalike by the same brewery (see _probable_candidate), add it to the
     unmatched result as "probable" ({name, brewery, bid, url, style, abv, rating,
     ratingCount, hadIt}) - the lens shows it as a "probably this one"."""
-    identity = await _resolve_identity(token, beer_name, brewery_name, rejected_bids)
+    identity = await _resolve_identity(token, beer_name, brewery_name, rejected_bids, confirmed_bid)
 
     if not identity["matched"]:
         unmatched = {
@@ -1666,6 +1708,7 @@ async def resolve_beer(
         "ratingCount": identity["ratingCount"],
         "country": country,
         "hadIt": had_it,
+        "via": identity.get("via", ""),
     }
 
 

@@ -13,6 +13,7 @@ import hmac
 import html
 import io
 import datetime
+import zoneinfo
 import json
 import logging
 import os
@@ -57,6 +58,8 @@ import wishlist_items
 import httpx
 import lens_log
 import lens_rejections
+import lens_confirmations
+import lens_review
 import shop_crawl
 import wishlist_sheets
 
@@ -2072,6 +2075,7 @@ async def _lens_resolve_item(token: str, owner_id: int, item, wishlist_bids: set
         result = await beer_match.resolve_beer(
             token, owner_id, name, brewery, need_country=False, live_fallback=False,
             rejected_bids=lens_rejections.rejected_bids(brewery, name), with_probable=True,
+            confirmed_bid=lens_confirmations.confirmed_bid(brewery, name),
         )
         result["inWishlist"] = result.get("bid") in wishlist_bids
         result["inSheetList"] = result.get("bid") in my_list_bids
@@ -2165,7 +2169,13 @@ async def handle_lens_report(request: web.Request) -> web.Response:
     except ValueError:
         limit = 50
     report = await lens_log.report(limit)
-    report["rejections"] = (await lens_rejections.all_entries())[:limit]
+    rejections = await lens_rejections.all_entries()
+    report["rejections"] = rejections[:limit]
+    report["rejectionsByVia"] = {}
+    for entry in rejections:
+        for via in (entry.get("vias") or {}).values():
+            report["rejectionsByVia"][via] = report["rejectionsByVia"].get(via, 0) + 1
+    report["confirmations"] = await lens_confirmations.count()
     report["crawl"] = {**shop_crawl.load_state(), "running": _shop_crawl_running}
     return web.json_response(report)
 
@@ -2199,8 +2209,10 @@ async def handle_lens_reject(request: web.Request) -> web.Response:
     fields, err = await _lens_rejection_request(request)
     if err:
         return err
-    if not await lens_rejections.add(fields["brewery"], fields["name"], fields["bid"]):
+    via = await lens_log.entry_via(fields["brewery"], fields["name"])
+    if not await lens_rejections.add(fields["brewery"], fields["name"], fields["bid"], via):
         return _json_error("rejections_full", 507)
+    await lens_confirmations.remove(fields["brewery"], fields["name"], fields["bid"])  # a rejected beer is not confirmed
     return await _lens_reresolved_response(fields)
 
 
@@ -2211,6 +2223,27 @@ async def handle_lens_unreject(request: web.Request) -> web.Response:
     if err:
         return err
     await lens_rejections.remove(fields["brewery"], fields["name"], fields["bid"])
+    return await _lens_reresolved_response(fields)
+
+
+async def handle_lens_confirm(request: web.Request) -> web.Response:
+    """The userscript's ✓ on a probable (🤔) match: the beer is the right one for this shop text
+    (lens_confirmations). Returns the item re-resolved, now matched."""
+    fields, err = await _lens_rejection_request(request)
+    if err:
+        return err
+    if not await lens_confirmations.add(fields["brewery"], fields["name"], fields["bid"]):
+        return _json_error("confirmations_full", 507)
+    await lens_rejections.remove(fields["brewery"], fields["name"], fields["bid"])  # confirmed beats an earlier ✕
+    return await _lens_reresolved_response(fields)
+
+
+async def handle_lens_unconfirm(request: web.Request) -> web.Response:
+    """Undo of /api/lens/confirm."""
+    fields, err = await _lens_rejection_request(request)
+    if err:
+        return err
+    await lens_confirmations.remove(fields["brewery"], fields["name"], fields["bid"])
     return await _lens_reresolved_response(fields)
 
 
@@ -3271,6 +3304,9 @@ def _build_app() -> web.Application:
     app.router.add_post("/api/lens/lookup", handle_lens_lookup)
     app.router.add_post("/api/lens/reject", handle_lens_reject)
     app.router.add_post("/api/lens/unreject", handle_lens_unreject)
+    app.router.add_post("/api/lens/review", handle_lens_review_send)
+    app.router.add_post("/api/lens/confirm", handle_lens_confirm)
+    app.router.add_post("/api/lens/unconfirm", handle_lens_unconfirm)
     app.router.add_get("/api/lens/report", handle_lens_report)
     app.router.add_post("/api/lens/crawl", handle_lens_crawl)
     app.router.add_post("/api/deploy/webhook", handle_deploy_webhook)
@@ -3419,6 +3455,8 @@ async def start_webapp_server(
         wishlist_items.init(data_dir)
         lens_log.init(data_dir)
         lens_rejections.init(data_dir)
+        lens_confirmations.init(data_dir)
+        lens_review.init(data_dir)
         shop_crawl.init(data_dir)
         pending_checkins.init(data_dir)
         special_badge_dismissals.init(data_dir)
@@ -4852,10 +4890,66 @@ _shop_crawl_running = False
 
 
 def _start_shop_crawl() -> None:
-    global _shop_crawl_task
+    global _shop_crawl_task, _lens_review_task
     if _shop_crawl_task and not _shop_crawl_task.done():
         return
     _shop_crawl_task = asyncio.create_task(_shop_crawl_loop())
+    _lens_review_task = asyncio.create_task(_lens_review_loop())
+
+
+_lens_review_task = None
+LENS_REVIEW_STARTUP_DELAY_SECONDS = 600
+LENS_REVIEW_HOURS = range(9, 21)  # Warsaw local time: never wake the owner at night
+
+
+async def _send_lens_review_batch() -> int:
+    """Asks the owner about the lens matches most in doubt (see lens_review.py); returns how many
+    questions were sent."""
+    if _ptb_bot is None:
+        return 0
+    owner_id = int(AUTO_TOAST_OWNER_ID)
+    lang = await user_tokens.get_language(owner_id) or "uk"
+    items = await lens_review.pick()
+    sent = []
+    for item in items:
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(label, callback_data=data) for label, data in row]
+            for row in lens_review.keyboard_rows(item["id"], lang)
+        ])
+        try:
+            await _ptb_bot.send_message(
+                chat_id=owner_id, text=lens_review.render(item, lang), parse_mode="HTML",
+                reply_markup=keyboard, disable_web_page_preview=True,
+            )
+            sent.append(item)
+        except Exception:
+            logger.exception("lens review: could not send a question")
+            break
+    await lens_review.register(sent)
+    return len(sent)
+
+
+async def _lens_review_loop() -> None:
+    """Once a day, inside LENS_REVIEW_HOURS, sends the review queue."""
+    await asyncio.sleep(LENS_REVIEW_STARTUP_DELAY_SECONDS)
+    while True:
+        try:
+            now = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Warsaw"))
+            due = time.time() - lens_review.last_run() >= lens_review.REVIEW_INTERVAL_SECONDS
+            if due and now.hour in LENS_REVIEW_HOURS:
+                await _send_lens_review_batch()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("lens review loop failed")
+        await asyncio.sleep(1800)
+
+
+async def handle_lens_review_send(request: web.Request) -> web.Response:
+    """Sends the review queue now (same X-Lens-Token), e.g. to try it or catch up."""
+    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+        return _json_error("unauthorized", 401)
+    return web.json_response({"ok": True, "sent": await _send_lens_review_batch()})
 
 
 async def _shop_crawl_loop() -> None:
@@ -4883,6 +4977,7 @@ async def _crawl_resolve_one(token: str, owner_id: int, item: dict, sem: asyncio
             return await beer_match.resolve_beer(
                 token, owner_id, item["name"], item["brewery"], need_country=False, live_fallback=False,
                 rejected_bids=lens_rejections.rejected_bids(item["brewery"], item["name"]),
+                confirmed_bid=lens_confirmations.confirmed_bid(item["brewery"], item["name"]),
             )
         except untappd_mcp.UntappdRateLimited:
             stop.set()

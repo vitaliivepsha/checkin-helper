@@ -188,7 +188,7 @@ def test_with_probable_adds_it_to_an_unmatched_result_only_when_asked(monkeypatc
     import asyncio
     probable = {"name": "Pilsvar Premium", "brewery": "Pilsvar", "bid": 1, "url": "u", "style": "Lager", "abv": 4.5, "rating": 3.7, "ratingCount": 40}
 
-    async def fake_identity(token, name, brewery, rejected=frozenset()):
+    async def fake_identity(token, name, brewery, rejected=frozenset(), confirmed=None):
         return {"matched": False, "candidates": [{"name": "Pilsvar Premium", "bid": 1}], "probable": probable}
 
     async def fake_had_it(token, user_id, bid, live_fallback):

@@ -67,6 +67,19 @@ def _key(brewery: str, name: str) -> str:
     return f"{beer_match.scan_norm(brewery)}|{beer_match.scan_norm(name)}"
 
 
+def _probable_brief(probable: dict | None) -> dict | None:
+    if not isinstance(probable, dict) or probable.get("bid") is None:
+        return None
+    return {k: probable.get(k) for k in ("bid", "name", "brewery", "style", "rating", "ratingCount")}
+
+
+def _is_suspicious(e: dict) -> bool:
+    return e.get("outcome") == "matched" and (
+        e.get("matchKind") == "different"
+        or (e.get("matchKind") in ("candidate_longer", "query_longer") and e.get("delta", 0) >= SUSPICIOUS_DELTA)
+    )
+
+
 def _outcome(result: dict) -> str:
     if result.get("error"):
         return "error"
@@ -108,7 +121,10 @@ async def record(items: list, results: list[dict], source: str = "lens") -> None
                 "matchedBrewery": result.get("brewery") if outcome == "matched" else None,
                 "candidates": [c.get("name") for c in (result.get("candidates") or [])[:MAX_CANDIDATES_KEPT]],
                 "lastSeen": now, "resolvedAt": now, "matcherVersion": beer_match.MATCHER_VERSION,
+                "via": result.get("via") or None if outcome == "matched" else None,
+                "probable": _probable_brief(result.get("probable")) if outcome != "matched" else None,
             })
+            entry.pop("recheck", None)  # a fresh result answers a review decision (see mark_recheck)
             if source == "crawl":
                 entry["crawlSeen"] = entry.get("crawlSeen", 0) + 1
                 entry["lastCrawl"] = now
@@ -148,6 +164,8 @@ def _needs_recheck_rank(entry: dict) -> int | None:
     """0 = still unmatched, 1 = matched but questionable (the report's
     "suspicious" set) under matching rules older than the current
     beer_match.MATCHER_VERSION, None = nothing to re-check."""
+    if entry.get("recheck"):
+        return 1  # a review decision (rejected/confirmed) is waiting to be re-resolved
     if entry.get("outcome") in ("no_results", "ambiguous"):
         return 0
     if entry.get("outcome") == "matched" and entry.get("matcherVersion") != beer_match.MATCHER_VERSION and (
@@ -191,6 +209,40 @@ async def entries_to_recheck(crawled_items: list[dict], limit: int, is_junk=None
     return [item for _, _, item in keep][:limit]
 
 
+async def entry_via(brewery: str, name: str) -> str:
+    """The matcher route that accepted this product (beer_match._match_route), "" when unknown."""
+    async with _lock:
+        entry = _load().get(_key(brewery or "", name or ""))
+    return (entry or {}).get("via") or ""
+
+
+async def mark_recheck(brewery: str, name: str) -> None:
+    """Flags a product for the next crawl to re-resolve - after a review decision changed what the
+    matcher must answer for it (a rejection or a confirmation)."""
+    async with _lock:
+        entry = _load().get(_key(brewery or "", name or ""))
+        if entry is not None:
+            entry["recheck"] = True
+            _save()
+
+
+async def review_candidates(limit: int, skip=None) -> list[dict]:
+    """Products worth a human look, most-looked-at first: questionable matches (the report's
+    "suspicious" set) and probable matches (🤔). `skip(entry)` drops the ones already decided or
+    asked about. Each result is a copy with its log "key"."""
+    async with _lock:
+        data = _load()
+        picked = []
+        for key, e in data.items():
+            if not (_is_suspicious(e) or (e.get("probable") and e.get("outcome") != "matched")):
+                continue
+            if skip is not None and skip({**e, "key": key}):
+                continue
+            picked.append((-(e.get("count", 0) * 3 + e.get("crawlSeen", 0)), -e.get("delta", 0), key, e))
+        picked.sort(key=lambda p: p[:3])
+        return [{**e, "key": key} for _, _, key, e in picked[:limit]]
+
+
 async def mark_crawled(items: list[dict]) -> None:
     """Products the crawl saw again but didn't need to re-resolve."""
     now = int(time.time())
@@ -223,7 +275,7 @@ async def report(limit: int = 50) -> dict:
 
     def brief(e: dict) -> dict:
         return {k: e.get(k) for k in (
-            "queryBrewery", "queryName", "outcome", "matchKind", "delta", "bid", "matchedName",
+            "queryBrewery", "queryName", "outcome", "matchKind", "delta", "bid", "matchedName", "via", "probable",
             "candidates", "count", "crawlSeen", "shops", "lastSeen", "previous",
         ) if e.get(k) not in (None, [], 0) or k in ("queryName", "queryBrewery")}
 
@@ -239,8 +291,12 @@ async def report(limit: int = 50) -> dict:
         key=lambda e: (-e.get("delta", 0), -e.get("count", 0)),
     )
     changed = sorted((e for e in entries if e.get("previous")), key=lambda e: -e.get("lastSeen", 0))
+    vias: dict = {}
+    for e in entries:
+        if e.get("via"):
+            vias[e["via"]] = vias.get(e["via"], 0) + 1
     return {
-        "total": len(entries), "outcomes": outcomes, "matchKinds": kinds,
+        "total": len(entries), "outcomes": outcomes, "matchKinds": kinds, "viaCounts": vias,
         "unmatched": [brief(e) for e in unmatched[:limit]],
         "suspicious": [brief(e) for e in suspicious[:limit]],
         "changed": [brief(e) for e in changed[:limit]],

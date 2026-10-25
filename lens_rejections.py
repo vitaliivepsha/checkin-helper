@@ -63,9 +63,10 @@ def rejected_bids(brewery: str, name: str) -> frozenset[int]:
     return frozenset(entry["bids"]) if entry else frozenset()
 
 
-async def add(brewery: str, name: str, bid: int) -> bool:
-    """Remembers `bid` as wrong for this shop text. False when the text is blank
-    or the store is full of other products."""
+async def add(brewery: str, name: str, bid: int, via: str = "") -> bool:
+    """Remembers `bid` as wrong for this shop text (`via` = the matcher route that had accepted it,
+    see beer_match._match_route, for the report). False when the text is blank or the store is full
+    of other products."""
     brewery, name = (brewery or "").strip(), (name or "").strip()
     if not name:
         return False
@@ -79,6 +80,8 @@ async def add(brewery: str, name: str, bid: int) -> bool:
             entry = data[key] = {"queryBrewery": brewery, "queryName": name, "bids": []}
         if bid not in entry["bids"]:
             entry["bids"].append(bid)
+        if via:
+            entry.setdefault("vias", {})[str(bid)] = via
         entry["at"] = int(time.time())
         _save()
     return True

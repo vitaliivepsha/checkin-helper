@@ -61,3 +61,5 @@ venv/
 # (write to .tmp, os.replace over the real file) - shouldn't normally
 # linger, but never worth committing if one does
 *.tmp
+lens_confirmations.json
+lens_review.json
