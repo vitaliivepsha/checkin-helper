@@ -18,7 +18,8 @@ def test_piwnemosty_parses_cards_and_pager():
     items, last = shop_crawl.parse_piwnemosty(text("piwnemosty.html"))
     assert last == 49  # pages are ?counter=0..49
     assert len(items) == 4
-    assert items[0] == {"brewery": "Monsters", "name": "Lizard - puszka 500 ml"}
+    assert items[0]["brewery"] == "Monsters" and items[0]["name"] == "Lizard - puszka 500 ml"
+    assert items[0]["url"].startswith("https://www.piwnemosty.pl/product-")   # the product page, for the review queue
 
 
 def test_piwnemosty_strips_ml_packaging_and_skips_bundles():
@@ -26,7 +27,8 @@ def test_piwnemosty_strips_ml_packaging_and_skips_bundles():
               <div class="product"><a class="product__name">Brewery X: Fan Box 6 beers</a></div>
               <div class="product"><a class="product__name">Plain Name Without Brewery</a></div>"""
     items, _ = shop_crawl.parse_piwnemosty(html)
-    assert items == [{"brewery": "Brewery X", "name": "Hazy One"}, {"brewery": "", "name": "Plain Name Without Brewery"}]
+    assert [(i["brewery"], i["name"]) for i in items] == [("Brewery X", "Hazy One"), ("", "Plain Name Without Brewery")]
+    assert all("url" not in i for i in items)   # no href in the card: nothing to link
 
 
 def test_ontap_reads_the_name_between_the_br_tags():
@@ -42,8 +44,9 @@ def test_ontap_drops_a_leaked_plato_degree():
 
 def test_hopincraftbier_keeps_only_brewery_dash_beer_titles():
     items = shop_crawl.parse_hopincraftbier(text("hopincraftbier.html"))
-    assert {"brewery": "Finback", "name": "Something Mosaic"} in items
-    assert {"brewery": "Brett & Sauvage", "name": "Indigo Gem"} in items
+    names = {(i["brewery"], i["name"]) for i in items}
+    assert ("Finback", "Something Mosaic") in names and ("Brett & Sauvage", "Indigo Gem") in names
+    assert all(i["url"].startswith("https://hopincraftbier.be/") for i in items)
     assert not any("Gift card" in it["name"] or "clip" in it["name"].lower() for it in items)
 
 
@@ -65,7 +68,8 @@ def test_hoptimaal_uses_vendor_and_skips_merch():
     payload = json.loads(text("hoptimaal.json"))
     payload["products"].append({"title": "Hop T-shirt", "vendor": "Hoptimaal", "product_type": "Merch"})
     items = shop_crawl.parse_hoptimaal(payload)
-    assert {"brewery": "Hoppy Road", "name": "Hoppy Road BRUTAL MONKEY - Double NEIPA"} in items
+    assert {(i["brewery"], i["name"]) for i in items} >= {("Hoppy Road", "Hoppy Road BRUTAL MONKEY - Double NEIPA")}
+    assert all(i["url"].startswith("https://hoptimaal.com/products/") for i in items if i["name"].startswith("Hoppy"))
     assert not any("T-shirt" in it["name"] for it in items)
 
 

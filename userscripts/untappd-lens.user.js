@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.9.0
+// @version      2.9.1
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -374,8 +374,19 @@
     });
   }
 
+  // `shop` and `page` (the product's own link when the card has one) tell the bot where a shop title
+  // was seen - the review queue shows them as the source.
   async function apiLookup(items) {
     return (await apiPost("/api/lens/lookup", { items })).results;
+  }
+
+  function productLink(card) {
+    const a = card.querySelector("a[href]");
+    try {
+      return a ? new URL(a.getAttribute("href"), location.href).href : location.href;
+    } catch (e) {
+      return location.href;
+    }
   }
 
   // "This is not that beer": the server remembers the rejection (lens_rejections.py,
@@ -836,14 +847,15 @@ ${had}
       if (cached && now - cached.at < CACHE_TTL_MS) {
         renderOverlay(card, cached.result);
       } else {
-        toFetch.push({ brewery, name, key });
+        toFetch.push({ brewery, name, key, page: productLink(card) });
       }
     });
 
     if (!toFetch.length) return;
 
     try {
-      const results = await apiLookup(toFetch.map((it) => ({ name: it.name, brewery: it.brewery })));
+      const shop = location.hostname.replace(/^www[.]/, "");
+      const results = await apiLookup(toFetch.map((it) => ({ name: it.name, brewery: it.brewery, shop, page: it.page })));
       results.forEach((result, i) => {
         const { key } = toFetch[i];
         cache[key] = { at: now, result };

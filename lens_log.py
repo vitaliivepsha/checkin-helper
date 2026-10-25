@@ -67,6 +67,18 @@ def _key(brewery: str, name: str) -> str:
     return f"{beer_match.scan_norm(brewery)}|{beer_match.scan_norm(name)}"
 
 
+def _clean_url(value) -> str:
+    """A shop page link as sent by the userscript or the crawl: https only, bounded, no whitespace."""
+    if not isinstance(value, str):
+        return ""
+    value = value.strip()
+    return value if value.startswith("https://") and len(value) <= 300 and not any(c.isspace() for c in value) else ""
+
+
+def _clean_label(value) -> str:
+    return value.strip()[:60] if isinstance(value, str) else ""
+
+
 def _probable_brief(probable: dict | None) -> dict | None:
     if not isinstance(probable, dict) or probable.get("bid") is None:
         return None
@@ -132,9 +144,12 @@ async def record(items: list, results: list[dict], source: str = "lens") -> None
                 pass  # re-resolving an old entry says nothing about anyone looking at it again
             else:
                 entry["count"] = entry.get("count", 0) + 1
-            shop = item.get("shop")
+            shop = _clean_label(item.get("shop"))
             if shop and shop not in entry.setdefault("shops", []) and len(entry["shops"]) < 3:
                 entry["shops"].append(shop)
+            link = _clean_url(item.get("url") or item.get("page"))
+            if link:
+                entry["shopUrl"] = link   # where this shop title was last seen (the review queue's "source")
         if len(data) > MAX_ENTRIES:
             for k in sorted(data, key=lambda k: data[k].get("lastSeen", 0))[: len(data) - MAX_ENTRIES]:
                 del data[k]

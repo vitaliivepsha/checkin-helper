@@ -18,6 +18,7 @@ import time
 import lens_confirmations
 import lens_log
 import lens_rejections
+import shop_crawl
 from i18n import t
 
 _path: str | None = None
@@ -108,6 +109,7 @@ async def pick(limit: int = REVIEW_BATCH) -> list[dict]:
             "queryName": entry.get("queryName") or "", "bid": target["bid"], "found": target["name"],
             "foundBrewery": target["brewery"], "style": target["style"], "rating": target["rating"],
             "kind": target["kind"], "via": entry.get("via") or "",
+            "source": shop_crawl.shop_link((entry.get("shops") or [""])[0], entry.get("shopUrl")),
         })
     return out
 
@@ -137,11 +139,18 @@ def render(item: dict, lang: str) -> str:
         details += f"\n{html.escape(item['style'])}"
     if item["rating"]:
         details += f" ⭐ {item['rating']:.2f}"
-    reason = t(lang, "lens_review_reason_probable") if item["kind"] == "probable" \
-        else t(lang, "lens_review_reason_suspicious", via=html.escape(item["via"] or "?"))
+    if item["kind"] == "probable":
+        reason = t(lang, "lens_review_reason_probable")
+    elif item["via"]:
+        reason = t(lang, "lens_review_reason_suspicious", via=html.escape(item["via"]))
+    else:
+        reason = t(lang, "lens_review_reason_suspicious_plain")   # logged before the route was recorded
+    label, link = item.get("source") or ("", "")
+    source = t(lang, "lens_review_source", url=html.escape(link, quote=True), label=html.escape(label)) if link else ""
     return t(
         lang, "lens_review_item", shop=html.escape(shop),
         url=f"https://untappd.com/beer/{item['bid']}", found=html.escape(found), details=details, reason=reason,
+        source=source,
     )
 
 

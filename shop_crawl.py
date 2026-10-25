@@ -28,9 +28,30 @@ import json
 import os
 import re
 import time
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
+
+# Where each crawled shop lives - the fallback link when a product has no page of its own in the data
+# (the lens review queue shows it as the source of a shop title).
+SHOP_SITES = {
+    "piwnemosty": "https://www.piwnemosty.pl/",
+    "hoptimaal": "https://hoptimaal.com/",
+    "hopincraftbier": "https://hopincraftbier.be/",
+    "onemorebeer": "https://onemorebeer.pl/",
+}
+
+
+def shop_link(shop: str, url: str | None = None) -> tuple[str, str]:
+    """(label, link) for a shop title's source: the product page when known, else the shop's site; the label
+    is the link's host ("piwnemosty.pl"). ("", "") when neither is known."""
+    link = url or SHOP_SITES.get(shop, "")
+    if not link and shop and "." in shop:
+        link = f"https://{shop}/"
+    host = urlparse(link).netloc.removeprefix("www.") if link else ""
+    return host or shop, link
+
 
 PAGE_GAP_SECONDS = float(os.environ.get("SHOP_CRAWL_PAGE_GAP_SECONDS", "2"))
 ONTAP_VENUES = [v.strip() for v in os.environ.get("SHOP_CRAWL_ONTAP_VENUES", "pinta-wroclaw").split(",") if v.strip()]
@@ -98,7 +119,10 @@ def parse_piwnemosty(html: str) -> tuple[list[dict], int]:
         brewery, sep, name = text.partition(":")
         brewery, name = (brewery.strip(), name.strip()) if sep else ("", text)
         if name:
-            items.append({"brewery": brewery, "name": name})
+            item = {"brewery": brewery, "name": name}
+            if el.get("href"):
+                item["url"] = urljoin("https://www.piwnemosty.pl/", el["href"])
+            items.append(item)
     counters = [int(m) for m in re.findall(r"[?&]counter=(\d+)", html)]
     return items, max(counters, default=0)
 
@@ -170,7 +194,11 @@ def parse_hopincraftbier(html: str) -> list[dict]:
             continue
         brewery, _, name = text.partition(" - ")
         if name.strip():
-            items.append({"brewery": brewery.strip(), "name": name.strip()})
+            item = {"brewery": brewery.strip(), "name": name.strip()}
+            link = card.select_one("a[href]")
+            if link is not None:
+                item["url"] = urljoin("https://hopincraftbier.be/", link["href"])
+            items.append(item)
     return items
 
 
@@ -181,7 +209,10 @@ def parse_hoptimaal(payload: dict) -> list[dict]:
         title = _clean_spaces(p.get("title") or "")
         if not title or (p.get("product_type") or "").strip().lower() == "merch" or _BUNDLE_RE.search(title):
             continue
-        items.append({"brewery": _clean_spaces(p.get("vendor") or ""), "name": title})
+        item = {"brewery": _clean_spaces(p.get("vendor") or ""), "name": title}
+        if p.get("handle"):
+            item["url"] = f"https://hoptimaal.com/products/{p['handle']}"
+        items.append(item)
     return items
 
 
@@ -269,7 +300,10 @@ async def _crawl_ontap(get_text, sleep, gap) -> tuple[list[dict], int]:
     for i, venue in enumerate(ONTAP_VENUES):
         if i:
             await sleep(gap)
-        items.extend(it for it in parse_ontap(await get_text(f"https://{venue}.ontap.pl/")) if not is_non_beer(it))
+        items.extend(
+            {**it, "url": f"https://{venue}.ontap.pl/"}
+            for it in parse_ontap(await get_text(f"https://{venue}.ontap.pl/")) if not is_non_beer(it)
+        )
     return items, len(ONTAP_VENUES)
 
 

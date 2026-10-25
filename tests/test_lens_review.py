@@ -187,3 +187,23 @@ async def test_confirm_endpoints_and_daily_review_send(tmp_path, monkeypatch):
 
 async def _async(value):
     return value
+
+
+async def test_review_question_names_the_shop_as_the_source_with_a_link(tmp_path):
+    _init_all(tmp_path)
+    shop_item = {"name": "Pilsvar Premium", "brewery": "Pilsvar", "shop": "piwnemosty",
+                 "url": "https://www.piwnemosty.pl/product-pol-1-Pilsvar.html"}
+    await lens_log.record([shop_item], [probable_result(5, "Pilsvar Premium")], source="crawl")
+    user_item = {"name": "Pilsvar Lach", "brewery": "Pilsvar", "shop": "hoptimaal.com", "page": "https://hoptimaal.com/products/lach"}
+    await lens_log.record([user_item], [probable_result(6, "Pilsvar Lach")])
+    junk = {"name": "Pilsvar Exclusive", "brewery": "Pilsvar", "page": "javascript:alert(1)"}
+    await lens_log.record([junk], [probable_result(7, "Pilsvar Exclusive")])
+
+    by_bid = {i["bid"]: i for i in await lens_review.pick()}
+    text = lens_review.render(by_bid[5], "en")
+    assert 'Source: <a href="https://www.piwnemosty.pl/product-pol-1-Pilsvar.html">piwnemosty.pl</a>' in text
+    assert "https://hoptimaal.com/products/lach" in lens_review.render(by_bid[6], "uk")
+    assert "Джерело" in lens_review.render(by_bid[6], "uk")
+    assert "Source" not in lens_review.render(by_bid[7], "en")   # a non-https link is never kept
+    suspicious_old = {**by_bid[5], "kind": "suspicious", "via": ""}
+    assert "(matched by" not in lens_review.render(suspicious_old, "en")   # an entry without a route reads plainly
