@@ -2276,6 +2276,31 @@ async def handle_lens_crawl(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "started": True}, status=202)
 
 
+async def _git(*args: str, cwd: str) -> tuple[int, str]:
+    proc = await asyncio.create_subprocess_exec(
+        "git", *args, cwd=cwd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+    return proc.returncode, stdout.decode(errors="replace") + stderr.decode(errors="replace")
+
+
+async def _stash_local_changes(cwd: str) -> list[str]:
+    """Tracked files edited on this machine (e.g. special_badges.json rewritten by the bot while the
+    routines push a new version of it) make `git pull --ff-only` refuse, and the deploy silently never
+    happens - it cost a day of undeployed code once. The repository is the source for tracked files, so
+    their local edits are moved to a stash (kept, `git stash list`), never discarded; untracked and
+    ignored runtime data are not touched. Returns the stashed paths."""
+    code, out = await _git("diff", "--name-only", "HEAD", cwd=cwd)
+    paths = [line.strip() for line in out.splitlines() if line.strip()] if code == 0 else []
+    if not paths:
+        return []
+    code, out = await _git("stash", "push", "-m", "deploy-autostash", "--", *paths, cwd=cwd)
+    if code != 0:
+        logger.warning("deploy webhook: could not stash local edits of %s: %s", paths, out.strip())
+        return []
+    return paths
+
+
 async def handle_deploy_webhook(request: web.Request) -> web.Response:
     """GitHub push webhook -> `git pull` + restart, so a code change reaches
     the always-on VM without a manual SSH session every time (unlike
@@ -2311,20 +2336,16 @@ async def handle_deploy_webhook(request: web.Request) -> web.Response:
     if payload.get("ref") != "refs/heads/master":
         return web.json_response({"ok": True, "deployed": False, "reason": "not master"})
 
-    proc = await asyncio.create_subprocess_exec(
-        "git", "pull", "--ff-only", cwd=_data_dir,
-        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-    output = stdout.decode(errors="replace") + stderr.decode(errors="replace")
-    if proc.returncode != 0:
+    stashed = await _stash_local_changes(_data_dir)
+    code, output = await _git("pull", "--ff-only", cwd=_data_dir)
+    if code != 0:
         logger.error("deploy webhook: git pull failed: %s", output)
         return web.json_response({"ok": False, "error": "git_pull_failed", "output": output}, status=500)
 
     if "Already up to date" in output:
         return web.json_response({"ok": True, "deployed": False, "reason": "no changes"})
 
-    logger.info("deploy webhook: pulled new code, restarting: %s", output.strip())
+    logger.info("deploy webhook: pulled new code (stashed local edits of: %s), restarting: %s", stashed or "nothing", output.strip())
     try:
         with open(os.path.join(_data_dir, "restart_notify.json"), "w", encoding="utf-8") as f:
             json.dump({"chatId": int(AUTO_TOAST_OWNER_ID), "lang": "uk", "reason": "deploy"}, f)

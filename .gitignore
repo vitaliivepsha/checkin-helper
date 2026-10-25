@@ -63,3 +63,5 @@ venv/
 *.tmp
 lens_confirmations.json
 lens_review.json
+feature_flags.json
+user_festivals.json

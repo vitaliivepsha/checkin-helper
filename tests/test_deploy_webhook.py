@@ -70,3 +70,28 @@ async def test_disabled_when_no_secret_configured(client, monkeypatch):
         headers={"X-Hub-Signature-256": _sign(body), "Content-Type": "application/json"},
     )
     assert resp.status == 501
+
+
+@pytest.mark.asyncio
+async def test_local_edits_of_tracked_files_are_stashed_so_the_pull_can_go_ahead(tmp_path):
+    import subprocess
+
+    def git(*args):
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=tmp_path, check=True, capture_output=True)
+
+    git("init", "-q")
+    (tmp_path / "special_badges.json").write_text("[1]")
+    (tmp_path / "other.py").write_text("x = 1")
+    git("add", ".")
+    git("commit", "-qm", "init")
+    (tmp_path / "special_badges.json").write_text("[1, 2]")    # edited on the VM
+    (tmp_path / "runtime.json").write_text("{}")                 # untracked: left alone
+
+    stashed = await webapp_server._stash_local_changes(str(tmp_path))
+    assert stashed == ["special_badges.json"]
+    assert (tmp_path / "special_badges.json").read_text() == "[1]"
+    assert (tmp_path / "runtime.json").exists()
+    assert "deploy-autostash" in subprocess.run(
+        ["git", "stash", "list"], cwd=tmp_path, capture_output=True, text=True,
+    ).stdout
+    assert await webapp_server._stash_local_changes(str(tmp_path)) == []   # clean tree: nothing to do
