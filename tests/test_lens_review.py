@@ -207,3 +207,12 @@ async def test_review_question_names_the_shop_as_the_source_with_a_link(tmp_path
     assert "Source" not in lens_review.render(by_bid[7], "en")   # a non-https link is never kept
     suspicious_old = {**by_bid[5], "kind": "suspicious", "via": ""}
     assert "(matched by" not in lens_review.render(suspicious_old, "en")   # an entry without a route reads plainly
+
+
+async def test_crawl_notes_the_source_even_for_products_it_does_not_re_resolve(tmp_path):
+    _init_all(tmp_path)
+    item = {"name": "Pilsvar Premium", "brewery": "Pilsvar"}
+    await lens_log.record([item], [matched("Pilsvar Premium", "Pilsvar", 5)])          # logged before sources existed
+    await lens_log.mark_crawled([{**item, "shop": "hoptimaal", "url": "https://hoptimaal.com/products/premium"}])
+    entry = next(iter(lens_log._load().values()))
+    assert entry["shops"] == ["hoptimaal"] and entry["shopUrl"] == "https://hoptimaal.com/products/premium"

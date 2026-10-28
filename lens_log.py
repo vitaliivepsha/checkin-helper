@@ -75,6 +75,17 @@ def _clean_url(value) -> str:
     return value if value.startswith("https://") and len(value) <= 300 and not any(c.isspace() for c in value) else ""
 
 
+def _note_source(entry: dict, item: dict) -> None:
+    """Where this shop title was seen: the shop's name (up to 3 kept) and the last product link
+    (`shopUrl`) - the review queue's "source"."""
+    shop = _clean_label(item.get("shop"))
+    if shop and shop not in entry.setdefault("shops", []) and len(entry["shops"]) < 3:
+        entry["shops"].append(shop)
+    link = _clean_url(item.get("url") or item.get("page"))
+    if link:
+        entry["shopUrl"] = link
+
+
 def _clean_label(value) -> str:
     return value.strip()[:60] if isinstance(value, str) else ""
 
@@ -144,12 +155,7 @@ async def record(items: list, results: list[dict], source: str = "lens") -> None
                 pass  # re-resolving an old entry says nothing about anyone looking at it again
             else:
                 entry["count"] = entry.get("count", 0) + 1
-            shop = _clean_label(item.get("shop"))
-            if shop and shop not in entry.setdefault("shops", []) and len(entry["shops"]) < 3:
-                entry["shops"].append(shop)
-            link = _clean_url(item.get("url") or item.get("page"))
-            if link:
-                entry["shopUrl"] = link   # where this shop title was last seen (the review queue's "source")
+            _note_source(entry, item)
         if len(data) > MAX_ENTRIES:
             for k in sorted(data, key=lambda k: data[k].get("lastSeen", 0))[: len(data) - MAX_ENTRIES]:
                 del data[k]
@@ -269,6 +275,7 @@ async def mark_crawled(items: list[dict]) -> None:
             if entry is not None:
                 entry["crawlSeen"] = entry.get("crawlSeen", 0) + 1
                 entry["lastCrawl"] = entry["lastSeen"] = now
+                _note_source(entry, item)   # every product the crawl lists gets its source, resolved or not
                 touched = True
         if touched:
             _save()
@@ -290,7 +297,7 @@ async def report(limit: int = 50) -> dict:
 
     def brief(e: dict) -> dict:
         return {k: e.get(k) for k in (
-            "queryBrewery", "queryName", "outcome", "matchKind", "delta", "bid", "matchedName", "via", "probable",
+            "queryBrewery", "queryName", "outcome", "matchKind", "delta", "bid", "matchedName", "via", "probable", "shopUrl",
             "candidates", "count", "crawlSeen", "shops", "lastSeen", "previous",
         ) if e.get(k) not in (None, [], 0) or k in ("queryName", "queryBrewery")}
 
