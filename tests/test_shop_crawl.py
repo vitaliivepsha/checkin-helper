@@ -196,3 +196,11 @@ def test_packaging_and_gift_items_are_not_beers():
                  "Październikowy Mystery Box", "Advent Statiegeld", "ONEMOREBEER OTWIERACZ MAGNES", "Domyślna nazwa"]:
         assert shop_crawl.is_not_a_beer({"brewery": "", "name": name}), name
     assert not shop_crawl.is_not_a_beer({"brewery": "Browar X", "name": "Hazy Pale Ale"})
+
+
+def test_onemorebeer_and_piwnemosty_items_link_to_the_product_page():
+    payload = {"items": [{"name": "PINTA HOPZZ", "url": "/pinta-hopzz-id-x1", "characteristics": [{"characteristicName": "Producent", "value": "PINTA"}]}]}
+    items = shop_crawl.parse_onemorebeer(payload)
+    assert items[0]["url"] == "https://onemorebeer.pl/pinta-hopzz-id-x1"
+    html = '<div class="product"><a class="product__icon" href="/product-pol-7-X.html"></a><a class="product__name">Brewery X: Hazy One</a></div>'
+    assert shop_crawl.parse_piwnemosty(html)[0][0]["url"] == "https://www.piwnemosty.pl/product-pol-7-X.html"

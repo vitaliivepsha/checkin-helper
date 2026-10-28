@@ -120,8 +120,9 @@ def parse_piwnemosty(html: str) -> tuple[list[dict], int]:
         brewery, name = (brewery.strip(), name.strip()) if sep else ("", text)
         if name:
             item = {"brewery": brewery, "name": name}
-            if el.get("href"):
-                item["url"] = urljoin("https://www.piwnemosty.pl/", el["href"])
+            link = el if el.get("href") else card.select_one("a[href]")   # the name is not always the link itself
+            if link is not None and link.get("href"):
+                item["url"] = urljoin("https://www.piwnemosty.pl/", link["href"])
             items.append(item)
     counters = [int(m) for m in re.findall(r"[?&]counter=(\d+)", html)]
     return items, max(counters, default=0)
@@ -239,7 +240,10 @@ def parse_onemorebeer(payload: dict) -> list[dict]:
              if (c.get("characteristicName") or "").startswith("Producent")),
             "",
         ) or _clean_spaces((p.get("manufacturer") or {}).get("name") or "")
-        items.append({"brewery": brewery, "name": text})
+        item = {"brewery": brewery, "name": text}
+        if str(p.get("url") or "").startswith("/"):
+            item["url"] = urljoin("https://onemorebeer.pl/", p["url"])   # e.g. /pinta-...-id-pi_sum_bee_haz_ipa_but_500
+        items.append(item)
     return items
 
 
