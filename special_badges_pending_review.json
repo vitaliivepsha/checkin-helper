@@ -23,5 +23,10 @@
     "url": "https://untappd.com/blog/new-badge-untappd-16th-anniversary/1969",
     "note": "Untappd 16th Anniversary (Oct 22-31, 2026): criteria is simply 'check in any drink' during the window - no style or country restriction at all, so there's nothing for badge_stats.compute_special_badges' kind:style/kind:country matcher to filter on (every check-in would trivially qualify); this schema has no 'any' kind to encode that.",
     "foundAt": "2026-10-23"
+  },
+  {
+    "url": "https://untappd.com/blog/new-badge-amaro-day-2026/1966",
+    "note": "Amaro Day (2026) (Oct 28-31, 2026): criteria is 'check in any one (1) drink with the style Spirit - Amaro, Fernet, Genepi, Bitter or a bitter aperitivo'. The first three map cleanly to exact taxonomy leaves (Spirit - Amaro / Spirit - Fernet / Spirit - Genepi), but the trailing 'Bitter or a bitter aperitivo' phrase is ambiguous - unclear whether it means just the single leaf 'Spirit - Bitter', or also other bitter-aperitivo leaves the post doesn't name explicitly (e.g. Spirit - Campari, Spirit - Aperol, Spirit - Cynar, Spirit - Contratto Aperitif, Spirit - Ramazzotti Aperitivo Rosato) - not confident enough to guess the exact style list.",
+    "foundAt": "2026-10-29"
   }
 ]
