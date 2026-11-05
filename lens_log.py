@@ -96,6 +96,15 @@ def _probable_brief(probable: dict | None) -> dict | None:
     return {k: probable.get(k) for k in ("bid", "name", "brewery", "style", "rating", "ratingCount")}
 
 
+def _candidate_list(candidates) -> list[dict] | None:
+    """The first few lookalikes the search found (bid, name, brewery) - the review queue's options."""
+    out = [
+        {"bid": c.get("bid"), "name": c.get("name"), "brewery": c.get("brewery")}
+        for c in (candidates or [])[:3] if isinstance(c, dict) and c.get("bid") is not None and c.get("name")
+    ]
+    return out or None
+
+
 def _is_suspicious(e: dict) -> bool:
     return e.get("outcome") == "matched" and (
         e.get("matchKind") == "different"
@@ -146,6 +155,7 @@ async def record(items: list, results: list[dict], source: str = "lens") -> None
                 "lastSeen": now, "resolvedAt": now, "matcherVersion": beer_match.MATCHER_VERSION,
                 "via": result.get("via") or None if outcome == "matched" else None,
                 "probable": _probable_brief(result.get("probable")) if outcome != "matched" else None,
+                "candidateList": _candidate_list(result.get("candidates")) if outcome != "matched" else None,
             })
             entry.pop("recheck", None)  # a fresh result answers a review decision (see mark_recheck)
             if source == "crawl":
@@ -172,6 +182,8 @@ async def due_for_crawl(items: list[dict]) -> list[dict]:
         buckets: tuple[list, list, list] = ([], [], [])
         for item in items:
             entry = data.get(_key(item.get("brewery") or "", item.get("name") or ""))
+            if entry is not None and entry.get("absent"):
+                continue
             if entry is None:
                 buckets[1].append(item)
             elif entry.get("outcome") != "matched" or _needs_recheck_rank(entry) == 1:
@@ -185,6 +197,8 @@ def _needs_recheck_rank(entry: dict) -> int | None:
     """0 = still unmatched, 1 = matched but questionable (the report's
     "suspicious" set) under matching rules older than the current
     beer_match.MATCHER_VERSION, None = nothing to re-check."""
+    if entry.get("absent"):
+        return None  # marked "not on Untappd": nothing to re-resolve
     if entry.get("recheck"):
         return 1  # a review decision (rejected/confirmed) is waiting to be re-resolved
     if entry.get("outcome") in ("no_results", "ambiguous"):
@@ -235,6 +249,34 @@ async def entry_via(brewery: str, name: str) -> str:
     async with _lock:
         entry = _load().get(_key(brewery or "", name or ""))
     return (entry or {}).get("via") or ""
+
+
+async def mark_absent(brewery: str, name: str) -> None:
+    """Flags a product as not being on Untappd (the owner said so in the review queue): it leaves the
+    unmatched list and is neither re-resolved nor asked about again."""
+    async with _lock:
+        entry = _load().get(_key(brewery or "", name or ""))
+        if entry is not None:
+            entry["absent"] = True
+            entry.pop("recheck", None)
+            _save()
+
+
+async def choose_candidates(limit: int, skip=None) -> list[dict]:
+    """Unmatched products the search found lookalikes for, most-looked-at first: one answer (which of
+    the options is it) fixes every future view of that product. `skip(entry)` drops decided or recently
+    asked ones. Each result is a copy with its log "key"."""
+    async with _lock:
+        data = _load()
+        picked = []
+        for key, e in data.items():
+            if e.get("absent") or e.get("outcome") != "ambiguous" or not e.get("candidateList"):
+                continue
+            if skip is not None and skip({**e, "key": key}):
+                continue
+            picked.append((-(e.get("count", 0) * 3 + e.get("crawlSeen", 0)), key, e))
+        picked.sort(key=lambda p: p[:2])
+        return [{**e, "key": key} for _, key, e in picked[:limit]]
 
 
 async def mark_recheck(brewery: str, name: str) -> None:
@@ -297,12 +339,12 @@ async def report(limit: int = 50) -> dict:
 
     def brief(e: dict) -> dict:
         return {k: e.get(k) for k in (
-            "queryBrewery", "queryName", "outcome", "matchKind", "delta", "bid", "matchedName", "via", "probable", "shopUrl",
+            "queryBrewery", "queryName", "outcome", "matchKind", "delta", "bid", "matchedName", "via", "probable", "shopUrl", "candidateList",
             "candidates", "count", "crawlSeen", "shops", "lastSeen", "previous",
         ) if e.get(k) not in (None, [], 0) or k in ("queryName", "queryBrewery")}
 
     unmatched = sorted(
-        (e for e in entries if e["outcome"] in ("no_results", "ambiguous")),
+        (e for e in entries if e["outcome"] in ("no_results", "ambiguous") and not e.get("absent")),
         key=lambda e: (-e.get("count", 0), -e.get("crawlSeen", 0), -e.get("lastSeen", 0)),
     )
     suspicious = sorted(

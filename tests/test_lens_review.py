@@ -216,3 +216,68 @@ async def test_crawl_notes_the_source_even_for_products_it_does_not_re_resolve(t
     await lens_log.mark_crawled([{**item, "shop": "hoptimaal", "url": "https://hoptimaal.com/products/premium"}])
     entry = next(iter(lens_log._load().values()))
     assert entry["shops"] == ["hoptimaal"] and entry["shopUrl"] == "https://hoptimaal.com/products/premium"
+
+
+def ambiguous(*candidates):
+    return {"matched": False, "candidates": [{"bid": bid, "name": name, "brewery": brewery} for bid, name, brewery in candidates]}
+
+
+async def test_choose_questions_come_first_ordered_by_views_and_one_answer_fixes_the_product(tmp_path):
+    _init_all(tmp_path)
+    popular = {"name": "Pszeniczne", "brewery": "Litovel"}
+    quiet = {"name": "Special", "brewery": "Litovel"}
+    for _ in range(5):                                        # five page views
+        await lens_log.record([popular], [ambiguous((11, "Litovel Pšeničné", "Litovel"), (12, "Morava Pšeničné", "Litovel"))])
+    await lens_log.record([quiet], [ambiguous((21, "Litovel Special", "Litovel"))])
+    await lens_log.record([{"name": "Pilsvar Lach", "brewery": "Pilsvar"}], [probable_result(2, "Pilsvar Lach")])
+
+    items = await lens_review.pick()
+    assert [i["kind"] for i in items] == ["choose", "choose", "probable"]       # choose first, most-viewed first
+    first = items[0]
+    assert first["queryName"] == "Pszeniczne" and first["views"] == 5 and [o["bid"] for o in first["options"]] == [11, 12]
+
+    rows = lens_review.keyboard_rows(first["id"], "uk", len(first["options"]))
+    assert [d.split(":")[1] for _, d in rows[0]] == ["c1", "c2"] and [d.split(":")[1] for _, d in rows[1]] == ["none", "skip"]
+    assert all(len(d) <= 64 for row in rows for _, d in row)
+    for lang in ("en", "uk"):
+        text = lens_review.render(first, lang)
+        assert "https://untappd.com/beer/11" in text and "https://untappd.com/beer/12" in text and "791" not in text and "5" in text
+
+    await lens_review.register(items)
+    assert await lens_review.decide(first["id"], "ok") is None            # a check button on a choose question: refused
+    assert await lens_review.decide(first["id"], "c3") is None            # there is no third option
+    chosen = await lens_review.decide(first["id"], "c2")
+    assert chosen["chosen"] == "Morava Pšeničné"
+    assert lens_confirmations.confirmed_bid("Litovel", "Pszeniczne") == 12
+    assert lens_log._load()[lens_log._key("Litovel", "Pszeniczne")]["recheck"] is True
+    assert [i["queryName"] for i in await lens_review.pick()] == []        # everything was just asked about
+
+
+async def test_not_on_untappd_removes_a_product_from_the_unmatched_list_and_the_rechecks(tmp_path):
+    _init_all(tmp_path)
+    item = {"name": "Holba 11 Premium", "brewery": "Holba"}
+    await lens_log.record([item], [{"matched": False, "candidates": []}])
+    ambiguous_item = {"name": "Mini Maxi", "brewery": "PINTA"}
+    await lens_log.record([ambiguous_item], [ambiguous((1, "Mini Maxi IPA", "PINTA"), (2, "Mini Maxi Mango", "PINTA"))])
+    assert len((await lens_log.report())["unmatched"]) == 2
+
+    [question] = await lens_review.pick()
+    assert question["queryName"] == "Mini Maxi"
+    await lens_review.register([question])
+    assert (await lens_review.decide(question["id"], "none"))["queryName"] == "Mini Maxi"
+
+    report = await lens_log.report()
+    assert [e["queryName"] for e in report["unmatched"]] == ["Holba 11 Premium"]
+    assert [i["name"] for i in await lens_log.entries_to_recheck([], 10)] == ["Holba 11 Premium"]
+    due = await lens_log.due_for_crawl([ambiguous_item, item])
+    assert [i["name"] for i in due] == ["Holba 11 Premium"]               # the absent one is not crawled again
+    assert lens_confirmations.confirmed_bid("PINTA", "Mini Maxi") is None
+
+
+async def test_choose_options_leave_out_rejected_beers(tmp_path):
+    _init_all(tmp_path)
+    item = {"name": "Mini Maxi", "brewery": "PINTA"}
+    await lens_log.record([item], [ambiguous((1, "Mini Maxi IPA", "PINTA"), (2, "Mini Maxi Mango", "PINTA"))])
+    await lens_rejections.add("PINTA", "Mini Maxi", 1)
+    [question] = await lens_review.pick()
+    assert [o["bid"] for o in question["options"]] == [2]

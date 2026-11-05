@@ -2322,7 +2322,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             await query.answer()
             return
-        item = await lens_review.decide(item_id, action) if action in ("ok", "no", "skip") else None
+        item = await lens_review.decide(item_id, action) if action in lens_review.ACTIONS else None
         if item is None:
             await query.answer(t(lng, "lens_review_expired"), show_alert=True)
             try:
@@ -2331,9 +2331,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.info(f"lens review: could not clear an old keyboard: {e}")
             return
         await query.answer()
+        done = t(lng, "lens_review_done_" + ("choose" if action.startswith("c") else action), found=html.escape(item.get("chosen") or ""))
         try:
             await query.edit_message_text(
-                f"{query.message.text_html}\n\n{t(lng, 'lens_review_done_' + action)}",
+                f"{query.message.text_html}\n\n{done}",
                 parse_mode="HTML", disable_web_page_preview=True,
             )
         except TelegramError as e:

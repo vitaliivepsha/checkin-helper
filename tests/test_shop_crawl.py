@@ -204,3 +204,28 @@ def test_onemorebeer_and_piwnemosty_items_link_to_the_product_page():
     assert items[0]["url"] == "https://onemorebeer.pl/pinta-hopzz-id-x1"
     html = '<div class="product"><a class="product__icon" href="/product-pol-7-X.html"></a><a class="product__name">Brewery X: Hazy One</a></div>'
     assert shop_crawl.parse_piwnemosty(html)[0][0]["url"] == "https://www.piwnemosty.pl/product-pol-7-X.html"
+
+
+def test_the_daily_crawl_runs_at_night_and_retries_a_run_that_never_finished(monkeypatch):
+    import datetime
+    import webapp_server as ws
+
+    def at(day, hour, minute=0):
+        return datetime.datetime(2026, 11, day, hour, minute, tzinfo=datetime.timezone.utc).timestamp()
+
+    def due(state, now):
+        monkeypatch.setattr(ws.shop_crawl, "load_state", lambda: state)
+        return ws._shop_crawl_due(now)
+
+    done = {"finishedAt": at(4, 2, 30), "lastFinished": at(4, 2, 30), "lastRun": at(4, 2, 0)}
+    assert not due(done, at(4, 9))                 # finished hours ago
+    assert not due(done, at(5, 0, 0))              # 21.5 h later but not night yet
+    assert due(done, at(5, 2, 30))                 # ~24 h, at night: go
+    assert not due(done, at(5, 8, 17))             # ~30 h but daytime and not overdue enough: wait for the night
+    assert due(done, at(6, 9))                     # 54 h: overdue, any hour
+
+    killed = {"lastFinished": at(4, 2, 30), "lastRun": at(5, 8, 17)}   # started 08:17, killed by the 08:25 deploy
+    assert not due(killed, at(5, 8, 30))           # just started: give it time
+    assert due(killed, at(5, 9, 0))                # started but never finished, long enough ago: killed - retry now
+    done_today = {"lastFinished": at(5, 2, 30), "lastRun": at(5, 2, 0), "finishedAt": at(5, 2, 30)}
+    assert not due(done_today, at(5, 9, 0))        # done last night: nothing to retry

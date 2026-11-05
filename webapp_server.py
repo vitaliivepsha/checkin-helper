@@ -4902,6 +4902,13 @@ async def _scrape_extra_venue(job: dict, fetched: dict[int, list[dict]]) -> None
 # Daily crawl of the lens-supported shops into lens_log (see shop_crawl.py).
 SHOP_CRAWL_INTERVAL_SECONDS = float(os.environ.get("SHOP_CRAWL_INTERVAL_SECONDS", str(24 * 3600)))
 SHOP_CRAWL_STARTUP_DELAY_SECONDS = float(os.environ.get("SHOP_CRAWL_STARTUP_DELAY_SECONDS", "600"))
+# A run is due when the last COMPLETED one is older than the interval (less this slack, so the nightly
+# slot is not missed by minutes) and it is night in Warsaw - the routines push (= a deploy restart that
+# kills a running crawl) around 08:25 UTC, and a crawl that starts then is lost; a run never finished
+# (killed by such a restart) is retried right away instead of a day later; a run overdue by half an
+# interval goes ahead at any hour.
+SHOP_CRAWL_HOURS_UTC = range(1, 5)
+SHOP_CRAWL_SLACK_SECONDS = 3 * 3600
 SHOP_CRAWL_MAX_RESOLVES = int(os.environ.get("SHOP_CRAWL_MAX_RESOLVES", "600"))  # per run; the rest waits for the next one
 SHOP_CRAWL_BATCH_SIZE = 50
 SHOP_CRAWL_RECHECK_MAX = int(os.environ.get("SHOP_CRAWL_RECHECK_MAX", "200"))  # still-unmatched log entries the crawl didn't list
@@ -4935,7 +4942,7 @@ async def _send_lens_review_batch() -> int:
     for item in items:
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton(label, callback_data=data) for label, data in row]
-            for row in lens_review.keyboard_rows(item["id"], lang)
+            for row in lens_review.keyboard_rows(item["id"], lang, len(item.get("options") or []))
         ])
         try:
             await _ptb_bot.send_message(
@@ -4973,19 +4980,32 @@ async def handle_lens_review_send(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "sent": await _send_lens_review_batch()})
 
 
+def _shop_crawl_due(now: float | None = None) -> bool:
+    """Whether the daily crawl should start now (see SHOP_CRAWL_HOURS_UTC)."""
+    now = time.time() if now is None else now
+    state = shop_crawl.load_state()
+    finished = state.get("finishedAt") or state.get("lastFinished") or 0
+    age = now - finished
+    if age < SHOP_CRAWL_INTERVAL_SECONDS - SHOP_CRAWL_SLACK_SECONDS:
+        return False
+    if state.get("lastRun", 0) > finished and now - state["lastRun"] > 1800:
+        return True   # the last run started but never finished: it was killed, run it again
+    hour = datetime.datetime.fromtimestamp(now, datetime.timezone.utc).hour
+    return hour in SHOP_CRAWL_HOURS_UTC or age >= SHOP_CRAWL_INTERVAL_SECONDS * 1.5
+
+
 async def _shop_crawl_loop() -> None:
     await asyncio.sleep(SHOP_CRAWL_STARTUP_DELAY_SECONDS)
     while True:
         try:
-            wait = shop_crawl.load_state().get("lastRun", 0) + SHOP_CRAWL_INTERVAL_SECONDS - time.time()
-            if wait > 0:
-                await asyncio.sleep(wait)
-            await _run_shop_crawl()
+            if _shop_crawl_due():
+                await _run_shop_crawl()
         except asyncio.CancelledError:
             raise
         except Exception:
             logger.exception("shop crawl failed")
             await asyncio.sleep(3600)  # retry in an hour, never hot-loop on a persistent failure
+        await asyncio.sleep(900)
 
 
 async def _crawl_resolve_one(token: str, owner_id: int, item: dict, sem: asyncio.Semaphore, stop: asyncio.Event):
@@ -4997,6 +5017,7 @@ async def _crawl_resolve_one(token: str, owner_id: int, item: dict, sem: asyncio
         try:
             return await beer_match.resolve_beer(
                 token, owner_id, item["name"], item["brewery"], need_country=False, live_fallback=False,
+                with_probable=True,
                 rejected_bids=lens_rejections.rejected_bids(item["brewery"], item["name"]),
                 confirmed_bid=lens_confirmations.confirmed_bid(item["brewery"], item["name"]),
             )
@@ -5040,7 +5061,12 @@ async def _run_shop_crawl() -> dict:
     if _shop_crawl_running:
         return {}
     _shop_crawl_running = True
-    state = {"lastRun": int(time.time()), "running": True, "shops": {}}
+    previous = shop_crawl.load_state()
+    state = {
+        "lastRun": int(time.time()), "running": True, "shops": {},
+        # the last COMPLETED run, kept through this one so an interrupted run does not erase it
+        "lastFinished": previous.get("finishedAt") or previous.get("lastFinished") or 0,
+    }
     shop_crawl.save_state(state)
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=25) as client:
@@ -5071,9 +5097,9 @@ async def _run_shop_crawl() -> dict:
         await lens_log.mark_crawled([it for it in items if (it["brewery"].lower(), it["name"].lower()) not in todo_keys])
         state["resolved"] = resolved
         logger.info("shop crawl: %d products, %d resolved, shops=%s", len(items), resolved, state["shops"])
+        state["finishedAt"] = state["lastFinished"] = int(time.time())   # only a run that got here counts as done
     finally:
         state["running"] = False
-        state["finishedAt"] = int(time.time())
         shop_crawl.save_state(state)
         _shop_crawl_running = False
     return state
