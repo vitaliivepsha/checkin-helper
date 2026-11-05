@@ -3,5 +3,10 @@
     "url": "https://untappd.com/blog/new-badge-mischievously-drinkable/1959",
     "note": "Mischievously Drinkable (Elysian Brewing, Oct 1 - Dec 31, 2026): requires one of four specific Elysian Dust Series beers (Space Dust IPA, Juice Dust Juicy IPA, Phaze Dust Hazy IPA, Easy Dust Non-Alc IPA) - a brewery/specific-beer match, not a style or country match, so special_badges.json's reader (kind: style/country only) can't compute this.",
     "foundAt": "2026-09-30"
+  },
+  {
+    "url": "https://untappd.com/blog/your-next-check-in-could-make-you-a-winner-introducing-the-untappd-check-in-challenge-season-1/1971",
+    "note": "Untappd Check In Challenge, Season 1 (10 weekly badges, Nov 2 2026 - Jan 10 2027): Week 1 (Nov 2-8) criteria is simply 'check in any drink' - no style or country restriction, same 'any' case as the pruned Untappd 16th Anniversary badge that this schema's kind:style/kind:country matcher can't encode. Weeks 2-10 challenges are not yet revealed (unlock on their own start dates), so their criteria can't be read yet either. Re-check this post (or the blog) as later weeks unlock to see if any week's challenge turns out to be style/country-specific and thus computable.",
+    "foundAt": "2026-11-05"
   }
 ]
