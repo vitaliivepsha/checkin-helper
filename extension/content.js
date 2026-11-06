@@ -312,6 +312,17 @@
     }
   }
 
+  // The product's own link when the card has one, else this page - sent with the title so the bot's
+  // review questions can name the source (see the userscript's productLink).
+  function productLink(card) {
+    const a = card.querySelector("a[href]");
+    try {
+      return a ? new URL(a.getAttribute("href"), location.href).href : location.href;
+    } catch (e) {
+      return location.href;
+    }
+  }
+
   function apiLookup(items) {
     return new Promise((resolve, reject) => {
       if (!extensionContextValid()) {
@@ -639,14 +650,15 @@
       if (cached && now - cached.at < CACHE_TTL_MS) {
         renderOverlay(card, cached.result);
       } else {
-        toFetch.push({ brewery, name, key });
+        toFetch.push({ brewery, name, key, page: productLink(card) });
       }
     });
 
     if (!toFetch.length) return;
 
     try {
-      const results = await apiLookup(toFetch.map((it) => ({ name: it.name, brewery: it.brewery })));
+      const shop = location.hostname.replace(/^www[.]/, "");
+      const results = await apiLookup(toFetch.map((it) => ({ name: it.name, brewery: it.brewery, shop, page: it.page })));
       results.forEach((result, i) => {
         const { key } = toFetch[i];
         cache[key] = { at: now, result };
