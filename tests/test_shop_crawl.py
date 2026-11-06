@@ -229,3 +229,12 @@ def test_the_daily_crawl_runs_at_night_and_retries_a_run_that_never_finished(mon
     assert due(killed, at(5, 9, 0))                # started but never finished, long enough ago: killed - retry now
     done_today = {"lastFinished": at(5, 2, 30), "lastRun": at(5, 2, 0), "finishedAt": at(5, 2, 30)}
     assert not due(done_today, at(5, 9, 0))        # done last night: nothing to retry
+
+
+def test_every_crawled_shop_has_a_fallback_source_link():
+    for shop in ("piwnemosty", "hoptimaal", "hopincraftbier", "ontap", "onemorebeer"):
+        label, link = shop_crawl.shop_link(shop)
+        assert link.startswith("https://") and label, shop
+    assert shop_crawl.shop_link("ontap", "https://pinta-wroclaw.ontap.pl/x")[1].endswith("/x")   # a product link wins
+    assert shop_crawl.shop_link("hoptimaal.com")[0] == "hoptimaal.com"                           # a userscript hostname works too
+    assert shop_crawl.shop_link("") == ("", "")

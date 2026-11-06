@@ -57,6 +57,8 @@ PAGE_GAP_SECONDS = float(os.environ.get("SHOP_CRAWL_PAGE_GAP_SECONDS", "2"))
 ONTAP_VENUES = [v.strip() for v in os.environ.get("SHOP_CRAWL_ONTAP_VENUES", "pinta-wroclaw").split(",") if v.strip()]
 MAX_PAGES = {"piwnemosty": 80, "hoptimaal": 20, "onemorebeer": 40}
 ONEMOREBEER_TENANT = os.environ.get("SHOP_CRAWL_ONEMOREBEER_TENANT", "pinta")
+if ONTAP_VENUES:
+    SHOP_SITES["ontap"] = f"https://{ONTAP_VENUES[0]}.ontap.pl/"   # the taplist venue, as the source's fallback link
 ONEMOREBEER_API = (
     "https://api-prod.onecommerce.shop/api/v1/catalog/app/auth-optional/products/search/items"
     "?category=Piwa&sortCriteria=RANK_DESC&q=%2A&pageSize=100&pageNumber={page}"
