@@ -1093,6 +1093,27 @@ def _flavor_translation_variant(text: str) -> str | None:
     return translated if translated.lower() != (text or "").strip().lower() else None
 
 
+# A shop writes an edition number as "no.5" / "nr 5" / "№5"; Untappd's catalog names such beers "#5"
+# ("10th Anniversary #5: Sunset Guava Farmhouse") and search finds nothing for "no.5".
+_EDITION_MARKER_RE = re.compile(r"\b(?:no|nr|num|number)\.?\s*(\d+)\b|№\s*(\d+)", re.IGNORECASE)
+_SHOP_EDITION_NUMBER_RE = re.compile(r"(?:#|\b(?:no|nr|num|number)\.?\s*|№\s*)(\d+)", re.IGNORECASE)
+_CATALOG_EDITION_NUMBER_RE = re.compile(r"#\s*(\d+)")
+
+
+def _edition_marker_variant(text: str) -> str | None:
+    """`text` with "no.5" / "nr 5" / "№5" rewritten as "#5", or None when it has no such marker."""
+    rewritten = _EDITION_MARKER_RE.sub(lambda m: f"#{m.group(1) or m.group(2)}", text or "")
+    return rewritten if rewritten != (text or "") else None
+
+
+def edition_conflict(shop_name: str, candidate_name: str) -> bool:
+    """True when the shop title names an edition number ("no.5", "#5") and the candidate is a DIFFERENT
+    numbered edition ("#1", "#6"): such a candidate cannot be the shop's beer."""
+    wanted = set(_SHOP_EDITION_NUMBER_RE.findall(shop_name or ""))
+    found = set(_CATALOG_EDITION_NUMBER_RE.findall(candidate_name or ""))
+    return bool(wanted and found and wanted.isdisjoint(found))
+
+
 def _non_alco_variants(beer_name: str) -> list[str]:
     """If beer_name mentions "non-alcoholic" in any common spelling (or a
     bare "0%"), return rewritten variants substituting each spelling
@@ -1214,6 +1235,9 @@ def _query_name_variants(clean_name: str, *brewery_cores: str) -> list[str]:
     # substituted-but-still-brewery-duplicated variant, "Browar Jana BROWAR
     # JANA Non-Alcoholic", confidently matched a totally unrelated beer).
     base_variants = [clean_name]
+    edition_variant = _edition_marker_variant(clean_name)
+    if edition_variant:
+        base_variants.append(edition_variant)
     base_variants.extend(_compounds(safe_strips))
     for core in cores:
         brewery_prefix_stripped = _brewery_prefix_stripped_variant(clean_name, core)
@@ -1401,7 +1425,8 @@ def _match_route(clean_name: str, variant: str, matched_name: str, brewery_varia
         kind = "typo"
     else:
         kind = "other"
-    return kind + ("+short" if " ".join(variant.lower().split()) != " ".join(clean_name.lower().split()) else "")
+    unshortened = {" ".join(clean_name.lower().split()), " ".join((_edition_marker_variant(clean_name) or "").lower().split())}
+    return kind + ("+short" if " ".join(variant.lower().split()) not in unshortened else "")
 
 
 def _probable_candidate(results: list[dict], clean_name: str, brewery_name: str) -> dict | None:

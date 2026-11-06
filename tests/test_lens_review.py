@@ -281,3 +281,12 @@ async def test_choose_options_leave_out_rejected_beers(tmp_path):
     await lens_rejections.add("PINTA", "Mini Maxi", 1)
     [question] = await lens_review.pick()
     assert [o["bid"] for o in question["options"]] == [2]
+
+
+async def test_choose_options_leave_out_other_numbered_editions(tmp_path):
+    _init_all(tmp_path)
+    item = {"name": "10th Anniversary no.5", "brewery": "Dziki Wschód"}
+    await lens_log.record([item], [ambiguous((1, "10th Anniversary #1: Nitro", "Browar Dziki Wschód"), (6, "10th Anniversary #6: Gose", "Browar Dziki Wschód"),
+                                           (9, "10th Anniversary Collab", "Browar Dziki Wschód"))])
+    [question] = await lens_review.pick()
+    assert [o["bid"] for o in question["options"]] == [9]       # #1 and #6 cannot be "no.5"

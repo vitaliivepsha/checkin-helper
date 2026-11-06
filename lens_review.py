@@ -23,6 +23,7 @@ import time
 import lens_confirmations
 import lens_log
 import lens_rejections
+import beer_match
 import shop_crawl
 from i18n import t
 
@@ -122,7 +123,10 @@ async def pick(limit: int = REVIEW_BATCH) -> list[dict]:
     out = []
     for entry in await lens_log.choose_candidates(min(CHOOSE_PER_BATCH, limit), skip_choose):
         rejected = lens_rejections.rejected_bids(entry.get("queryBrewery") or "", entry.get("queryName") or "")
-        options = [o for o in entry["candidateList"] if o["bid"] not in rejected]
+        options = [
+            o for o in entry["candidateList"]
+            if o["bid"] not in rejected and not beer_match.edition_conflict(entry.get("queryName") or "", o["name"] or "")
+        ]
         if not options:
             continue
         out.append({

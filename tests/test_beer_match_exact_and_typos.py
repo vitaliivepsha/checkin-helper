@@ -200,3 +200,23 @@ def test_with_probable_adds_it_to_an_unmatched_result_only_when_asked(monkeypatc
     assert without["matched"] is False and "probable" not in without
     with_it = asyncio.run(beer_match.resolve_beer("t", 1, "Grybów Pilsvar Premium", "Pilsvar", with_probable=True))
     assert with_it["probable"]["name"] == "Pilsvar Premium" and with_it["probable"]["hadIt"] is True
+
+
+def test_a_shops_edition_marker_becomes_the_catalogs_hash_number():
+    assert beer_match._edition_marker_variant("10th Anniversary no.5") == "10th Anniversary #5"
+    assert beer_match._edition_marker_variant("Brew Nr 12 Special") == "Brew #12 Special"
+    assert beer_match._edition_marker_variant("Beer № 7") == "Beer #7"
+    assert beer_match._edition_marker_variant("Nordic Beer") is None and beer_match._edition_marker_variant("Hazy Morning") is None
+    assert "10th Anniversary #5" in beer_match._query_name_variants("10th Anniversary no.5", "Dziki Wschód")
+    sunset = beer(40, "10th Anniversary #5: Sunset Guava Farmhouse", "Browar Dziki Wschód")
+    assert beer_match.pick_best_match([sunset], "10th Anniversary #5", "Dziki Wschód")["bid"] == 40
+    assert beer_match._match_route("10th Anniversary no.5", "10th Anniversary #5", sunset["beerName"], "Dziki Wschód") == "superset"
+
+
+def test_another_numbered_edition_can_never_be_the_shops_beer():
+    conflict = beer_match.edition_conflict
+    assert conflict("10th Anniversary no.5", "10th Anniversary #1: Nitro Bitter Citrus Zest")
+    assert conflict("10th Anniversary #5", "10th Anniversary #6: Cucumber Gose")
+    assert not conflict("10th Anniversary no.5", "10th Anniversary #5: Sunset Guava Farmhouse")
+    assert not conflict("Hazy Morning", "Hazy Morning #3")          # the shop names no number
+    assert not conflict("10th Anniversary no.5", "10th Anniversary Collab")   # the candidate is not numbered
