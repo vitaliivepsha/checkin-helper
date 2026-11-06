@@ -238,3 +238,17 @@ def test_every_crawled_shop_has_a_fallback_source_link():
     assert shop_crawl.shop_link("ontap", "https://pinta-wroclaw.ontap.pl/x")[1].endswith("/x")   # a product link wins
     assert shop_crawl.shop_link("hoptimaal.com")[0] == "hoptimaal.com"                           # a userscript hostname works too
     assert shop_crawl.shop_link("") == ("", "")
+
+
+async def test_a_shop_that_lists_nothing_is_reported_as_an_error_not_as_fine(monkeypatch):
+    async def empty_page(url, headers=None):
+        return "<html><body>products are rendered by javascript</body></html>"
+
+    async def no_json(url, headers=None):
+        return {"products": [], "items": []}
+
+    async def no_sleep(_):
+        return None
+
+    crawl = await shop_crawl.crawl_shops(empty_page, no_json, sleep=no_sleep, gap=0)
+    assert crawl["hopincraftbier"]["items"] == [] and "0 items" in crawl["hopincraftbier"]["error"]

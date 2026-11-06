@@ -327,7 +327,12 @@ async def crawl_shops(get_text, get_json, sleep=asyncio.sleep, gap: float = PAGE
     for shop, job in jobs.items():
         try:
             items, pages = await job()
-            out[shop] = {"items": [{**it, "shop": shop} for it in items], "pages": pages, "error": None}
+            # A shop that answers but lists nothing has almost certainly changed its markup (hopincraftbier.be moved to
+            # a client-rendered Ecwid store and silently yielded 0 items for days): say so in the report.
+            out[shop] = {
+                "items": [{**it, "shop": shop} for it in items], "pages": pages,
+                "error": None if items else "0 items - the shop's markup may have changed",
+            }
         except Exception as e:  # noqa: BLE001 - a broken shop must never stop the others
             out[shop] = {"items": [], "pages": 0, "error": f"{type(e).__name__}: {e}"[:200]}
         await sleep(gap)
