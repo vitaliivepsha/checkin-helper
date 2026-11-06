@@ -290,3 +290,36 @@ async def test_choose_options_leave_out_other_numbered_editions(tmp_path):
                                            (9, "10th Anniversary Collab", "Browar Dziki Wschód"))])
     [question] = await lens_review.pick()
     assert [o["bid"] for o in question["options"]] == [9]       # #1 and #6 cannot be "no.5"
+
+
+async def test_check_questions_skip_safe_routes_and_put_the_risky_first(tmp_path):
+    _init_all(tmp_path)
+    shop = [{"name": "Shop Safe", "brewery": "B"}, {"name": "Shop Short", "brewery": "B"}, {"name": "Shop Old", "brewery": "B"}]
+    await lens_log.record(shop, [matched("Totally Other Name One", "B", 1, via="exact"), matched("Totally Other Name Two", "B", 2, via="exact+short"),
+                                 matched("Totally Other Name Three", "B", 3, via="")])
+    kinds = [(i["queryName"], i["via"]) for i in await lens_review.pick()]
+    assert kinds == [("Shop Short", "exact+short"), ("Shop Old", "")]      # the plain exact route is not asked about
+
+
+async def test_weekly_digest_reports_the_trend_and_the_answers(tmp_path):
+    _init_all(tmp_path)
+    report = {"total": 1000, "outcomes": {"matched": 880, "no_results": 40, "ambiguous": 80}, "suspicious": [{}] * 30}
+    assert lens_review.weekly_due(0) is True or lens_review.weekly_due()
+    await lens_log.record([{"name": "A Beer", "brewery": "X"}], [probable_result(5, "A Beer", "X")])
+    [question] = await lens_review.pick()
+    await lens_review.register([question])
+    await lens_review.decide(question["id"], "ok")
+
+    first = await lens_review.weekly_digest(report, 56, "en")
+    assert "880 of 1000 (88.0%)" in first and "Not found: 120" in first and "✅ 1" in first and "56" in first
+    assert "(+" not in first and "(-" not in first                  # nothing to compare with the first time
+    assert not lens_review.weekly_due()                              # just sent
+    better = {"total": 1100, "outcomes": {"matched": 990, "no_results": 40, "ambiguous": 70}, "suspicious": []}
+    second = await lens_review.weekly_digest(better, 60, "uk")
+    assert "(+2.0)" in second and "(-10)" in second and "✅ 0" in second   # 90.0% vs 88.0%, 110 vs 120 unmatched, counters reset
+
+
+def test_weekly_digest_strings_match_in_both_languages():
+    import string
+    fields = lambda s: {f for _, f, _, _ in string.Formatter().parse(s) if f}
+    assert fields(i18n.STRINGS["en"]["lens_weekly"]) == fields(i18n.STRINGS["uk"]["lens_weekly"])

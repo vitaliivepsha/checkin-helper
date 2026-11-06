@@ -220,3 +220,11 @@ def test_another_numbered_edition_can_never_be_the_shops_beer():
     assert not conflict("10th Anniversary no.5", "10th Anniversary #5: Sunset Guava Farmhouse")
     assert not conflict("Hazy Morning", "Hazy Morning #3")          # the shop names no number
     assert not conflict("10th Anniversary no.5", "10th Anniversary Collab")   # the candidate is not numbered
+
+
+def test_a_version_or_vintage_dropped_from_a_shortened_name_is_not_a_match():
+    drops = beer_match._drops_edition_number
+    assert drops("Beer Brothers 2.0", "Beer Brothers", "Beer Brothers", "Ziemia Obiecana")                     # a version
+    assert drops("Dark Star BBA 2016", "Dark Star BBA", "Dark Star BBA With Coffee", "Fremont")                # a vintage, not the bare name
+    assert not drops("Dark Star BBA 2016", "Dark Star BBA", "Dark Star BBA", "Fremont")                        # the bare name without a year: fine
+    assert not drops("Hazy Morning 500 ml", "Hazy Morning", "Hazy Morning", "PINTA")                           # packaging is not an edition

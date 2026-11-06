@@ -1384,6 +1384,8 @@ def _not_found_search_url(beer_name: str, brewery_name: str) -> str:
     return build_search_url(brewery_variants[-1], url_name)
 
 
+_VERSION_RE = re.compile(r"[(\[]?v?\.?\d+\.\d+[)\]]?", re.IGNORECASE)
+_YEAR_RE = re.compile(r"[(\[]?(?:19|20)\d{2}[)\]]?")
 _EDITION_WORDS = frozenset({"vol", "volume", "part", "batch", "no", "nr", "edition"})
 
 
@@ -1394,6 +1396,14 @@ def _drops_edition_number(clean_name: str, variant: str, matched_name: str, brew
     asked for. (Other dropped words are left alone on purpose - dropping "Cream" for
     the catalog's "Milk" is the documented purpose of the shortened variants.)"""
     brewery_words = _token_set(brewery_variant)   # a brewery prefix may have been stripped from the variant
+    # A version ("2.0", "v1.5") or - unless the match is the bare name - a vintage ("2016") dropped off the end.
+    raw_full, raw_short = clean_name.split(), variant.split()
+    if len(raw_short) < len(raw_full) and [w.lower() for w in raw_full[:len(raw_short)]] == [w.lower() for w in raw_short]:
+        dropped_raw = raw_full[len(raw_short):]
+        if any(_VERSION_RE.fullmatch(w) for w in dropped_raw):
+            return True
+        if any(_YEAR_RE.fullmatch(w) for w in dropped_raw) and _token_set(matched_name) != frozenset(_token_list(variant)):
+            return True
     full = [t for t in _token_list(clean_name) if t not in brewery_words]
     short = [t for t in _token_list(variant) if t not in brewery_words]
     if len(short) >= len(full) or full[:len(short)] != short:

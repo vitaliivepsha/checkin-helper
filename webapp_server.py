@@ -4957,6 +4957,17 @@ async def _send_lens_review_batch() -> int:
     return len(sent)
 
 
+async def _send_lens_weekly() -> bool:
+    """The Monday digest (lens_review.weekly_digest); False when the bot is not up."""
+    if _ptb_bot is None:
+        return False
+    owner_id = int(AUTO_TOAST_OWNER_ID)
+    lang = await user_tokens.get_language(owner_id) or "uk"
+    text = await lens_review.weekly_digest(await lens_log.report(100000), await lens_confirmations.count(), lang)
+    await _ptb_bot.send_message(chat_id=owner_id, text=text, parse_mode="HTML")
+    return True
+
+
 async def _lens_review_loop() -> None:
     """Once a day, inside LENS_REVIEW_HOURS, sends the review queue."""
     await asyncio.sleep(LENS_REVIEW_STARTUP_DELAY_SECONDS)
@@ -4966,6 +4977,8 @@ async def _lens_review_loop() -> None:
             due = time.time() - lens_review.last_run() >= lens_review.REVIEW_INTERVAL_SECONDS
             if due and now.hour in LENS_REVIEW_HOURS:
                 await _send_lens_review_batch()
+            if now.weekday() == 0 and now.hour in LENS_REVIEW_HOURS and lens_review.weekly_due():
+                await _send_lens_weekly()
         except asyncio.CancelledError:
             raise
         except Exception:

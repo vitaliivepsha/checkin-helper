@@ -48,13 +48,13 @@ def _load() -> dict:
     global _mirror
     if _mirror is not None:
         return _mirror
-    _mirror = {"items": {}, "sent": {}, "lastRun": 0}
+    _mirror = {"items": {}, "sent": {}, "lastRun": 0, "answers": {}, "weekly": {}}
     if _path and os.path.exists(_path):
         try:
             with open(_path, encoding="utf-8") as f:
                 loaded = json.load(f)
             if isinstance(loaded, dict):
-                _mirror.update({k: loaded[k] for k in ("items", "sent", "lastRun") if k in loaded})
+                _mirror.update({k: loaded[k] for k in ("items", "sent", "lastRun", "answers", "weekly") if k in loaded})
         except (json.JSONDecodeError, OSError):
             pass
     return _mirror
@@ -83,6 +83,24 @@ def _target(entry: dict) -> dict | None:
         return None
     return {"bid": probable["bid"], "name": probable.get("name") or "", "brewery": probable.get("brewery") or "",
             "style": probable.get("style") or "", "rating": probable.get("rating"), "kind": "probable"}
+
+
+# Which route accepted a doubtful match tells how likely it is wrong: both ❌ the owner ever gave were
+# shortened names that had dropped an edition/vintage; a plain exact route was right in practice.
+_SAFE_VIAS = frozenset({"exact", "confirmed", "glued"})
+
+
+def _risk(entry: dict) -> int:
+    """3 = the route is known to misfire (a shortened name, merged brewery, raw retry), 2 = a probable
+    match, 1 = no route logged (an older entry) or a mild one, 0 = a route that was right in practice."""
+    if entry.get("outcome") != "matched":
+        return 2
+    via = entry.get("via") or ""
+    if not via:
+        return 1
+    if via in _SAFE_VIAS:
+        return 0
+    return 3 if ("+short" in via or via in ("brewery-merged", "exact-raw", "other")) else 1
 
 
 def last_run() -> float:
@@ -134,7 +152,9 @@ async def pick(limit: int = REVIEW_BATCH) -> list[dict]:
             "queryName": entry.get("queryName") or "", "options": options, "views": entry.get("count", 0),
             "source": _source(entry),
         })
-    for entry in await lens_log.review_candidates(limit - len(out), skip_check):
+    pool = [e for e in await lens_log.review_candidates(limit * 6, skip_check) if _risk(e) > 0]
+    pool.sort(key=lambda e: -_risk(e))   # stable: the log's own order (most looked at first) breaks ties
+    for entry in pool[:max(0, limit - len(out))]:
         target = _target(entry)
         out.append({
             "id": _item_id(entry["key"], target["bid"]), "queryBrewery": entry.get("queryBrewery") or "",
@@ -239,6 +259,8 @@ async def decide(item_id: str, action: str) -> dict | None:
         elif action in ("ok", "no") and is_choose or action == "none" and not is_choose:
             return None
         del state["items"][item_id]
+        counter = "choose" if chosen is not None else action
+        state["answers"][counter] = state["answers"].get(counter, 0) + 1
         _save()
     brewery, name = item["queryBrewery"], item["queryName"]
     if chosen is not None:
@@ -258,3 +280,37 @@ async def decide(item_id: str, action: str) -> dict | None:
         await lens_confirmations.remove(brewery, name, item["bid"])
         await lens_log.mark_recheck(brewery, name)
     return item
+
+
+WEEKLY_INTERVAL_SECONDS = 6.5 * 24 * 3600
+
+
+def weekly_due(now: float | None = None) -> bool:
+    now = time.time() if now is None else now
+    return now - _load()["weekly"].get("at", 0) >= WEEKLY_INTERVAL_SECONDS
+
+
+async def weekly_digest(report: dict, confirmations: int, lang: str) -> str:
+    """The week's text for the owner: coverage now and its change since the last digest, what is left
+    unmatched/doubtful and how the review answers went - so the trend is visible without asking for a report.
+    Remembers the snapshot (and resets the answer counters) for the next one."""
+    outcomes = report.get("outcomes", {})
+    total = report.get("total", 0)
+    matched = outcomes.get("matched", 0)
+    unmatched = outcomes.get("no_results", 0) + outcomes.get("ambiguous", 0)
+    pct = 100 * matched / total if total else 0.0
+    async with _lock:
+        state = _load()
+        previous = state["weekly"]
+        answers = dict(state["answers"])
+        state["weekly"] = {"at": int(time.time()), "pct": pct, "unmatched": unmatched, "total": total}
+        state["answers"] = {}
+        _save()
+    pct_delta = f" ({pct - previous['pct']:+.1f})" if previous.get("pct") is not None and previous else ""
+    unmatched_delta = f" ({unmatched - previous['unmatched']:+d})" if previous else ""
+    return t(
+        lang, "lens_weekly", matched=matched, total=total, pct=f"{pct:.1f}", pct_delta=pct_delta,
+        unmatched=unmatched, unmatched_delta=unmatched_delta, suspicious=len(report.get("suspicious", [])),
+        ok=answers.get("ok", 0), no=answers.get("no", 0), choose=answers.get("choose", 0), none=answers.get("none", 0),
+        confirmations=confirmations,
+    )
