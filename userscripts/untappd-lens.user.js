@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.9.1
+// @version      2.9.2
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -234,7 +234,8 @@
       // - a second star-rating chip here would be pure duplication. Always
       // show a plain Untappd link chip instead, even when we DO have our
       // own rating (see renderOverlay's `!adapter.hideRating` check).
-      hideRating: true,
+      // The shop used to print its own Untappd rating on every card; after it moved to an Ecwid store the
+      // cards show only style and ABV, so our rating chip is wanted again (hideRating off).
       // This theme's own card already shows the beer's style (the same
       // info bar as the rating above) - our own style chip would be pure
       // duplication too.
