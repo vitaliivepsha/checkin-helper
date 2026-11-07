@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.9.2
+// @version      2.9.3
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -689,7 +689,7 @@ ${had}
     renderOverlay(card, result);
     const key = cacheKey(card.dataset.lensBrewery || "", card.dataset.lensName || "");
     const cache = loadCache();
-    cache[key] = { at: Date.now(), result };
+    cache[key] = { at: Date.now(), result, src: 1 };
     saveCache(cache);
   }
 
@@ -845,7 +845,9 @@ ${had}
       card.dataset.lensName = name;
       cardsByKey.set(key, card);
       const cached = cache[key];
-      if (cached && now - cached.at < CACHE_TTL_MS) {
+      // src: 1 = looked up by a version that also sends shop/page; older cache entries are asked again once
+      // (otherwise the 6 h cache hides an update and the bot never learns where a title was seen).
+      if (cached && cached.src === 1 && now - cached.at < CACHE_TTL_MS) {
         renderOverlay(card, cached.result);
       } else {
         toFetch.push({ brewery, name, key, page: productLink(card) });
@@ -859,7 +861,7 @@ ${had}
       const results = await apiLookup(toFetch.map((it) => ({ name: it.name, brewery: it.brewery, shop, page: it.page })));
       results.forEach((result, i) => {
         const { key } = toFetch[i];
-        cache[key] = { at: now, result };
+        cache[key] = { at: now, result, src: 1 };
         const card = cardsByKey.get(key);
         if (card) renderOverlay(card, result);
       });

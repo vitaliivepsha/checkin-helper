@@ -648,7 +648,8 @@
       const key = cacheKey(brewery, name);
       cardsByKey.set(key, card);
       const cached = cache[key];
-      if (cached && now - cached.at < CACHE_TTL_MS) {
+      // src: 1 = looked up by a version that also sends shop/page; older cache entries are asked again once.
+      if (cached && cached.src === 1 && now - cached.at < CACHE_TTL_MS) {
         renderOverlay(card, cached.result);
       } else {
         toFetch.push({ brewery, name, key, page: productLink(card) });
@@ -662,7 +663,7 @@
       const results = await apiLookup(toFetch.map((it) => ({ name: it.name, brewery: it.brewery, shop, page: it.page })));
       results.forEach((result, i) => {
         const { key } = toFetch[i];
-        cache[key] = { at: now, result };
+        cache[key] = { at: now, result, src: 1 };
         const card = cardsByKey.get(key);
         if (card) renderOverlay(card, result);
       });
