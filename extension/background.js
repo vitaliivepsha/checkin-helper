@@ -29,7 +29,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const res = await fetch(API_BASE + "/api/lens/lookup", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Lens-Token": token },
-      body: JSON.stringify({ items: message.items }),
+      body: JSON.stringify({ items: message.items, client: "extension " + chrome.runtime.getManifest().version }),
     });
     return res.json();
   }

@@ -173,3 +173,35 @@ async def test_the_crawl_also_re_resolves_questionable_matches_of_an_older_match
     assert await lens_log.due_for_crawl([item]) == [item]  # rules changed: look again, once
     await lens_log.record([item], [unmatched()], source="crawl")
     assert await lens_log.due_for_crawl([item]) == [item]  # (still unmatched, so still due)
+
+
+async def test_report_shows_which_client_versions_ask(tmp_path, monkeypatch):
+    lens_log.init(str(tmp_path))
+
+    async def fake_resolve(token, owner_id, name, brewery, **kw):
+        return unmatched()
+
+    async def fake_token(owner_id):
+        return "tok"
+
+    async def no_beers(*a, **kw):
+        return []
+
+    monkeypatch.setattr(ws, "LENS_API_TOKEN", "secret")
+    monkeypatch.setattr(ws, "AUTO_TOAST_OWNER_ID", "1")
+    monkeypatch.setattr(ws.user_tokens, "get_token", fake_token)
+    monkeypatch.setattr(ws, "_get_wishlist_beers", no_beers)
+    monkeypatch.setattr(ws, "_get_my_list_items", no_beers)
+    monkeypatch.setattr(ws.beer_match, "resolve_beer", fake_resolve)
+    monkeypatch.setattr(ws, "_lens_clients", {})
+
+    app = web.Application()
+    app.router.add_post("/api/lens/lookup", ws.handle_lens_lookup)
+    app.router.add_get("/api/lens/report", ws.handle_lens_report)
+    async with TestClient(TestServer(app)) as c:
+        headers = {"X-Lens-Token": "secret"}
+        item = {"name": "Hazy", "brewery": "PINTA"}
+        await c.post("/api/lens/lookup", json={"items": [item], "client": "userscript 2.9.4"}, headers=headers)
+        await c.post("/api/lens/lookup", json={"items": [item, item]}, headers=headers)      # an old client sends no version
+        clients = (await (await c.get("/api/lens/report", headers=headers)).json())["clients"]
+    assert clients["userscript 2.9.4"]["items"] == 1 and clients["legacy (no version)"]["items"] == 2

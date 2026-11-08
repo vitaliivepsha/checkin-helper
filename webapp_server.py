@@ -2107,6 +2107,9 @@ async def _lens_resolve_item(token: str, owner_id: int, item, wishlist_bids: set
         }
 
 
+_lens_clients: dict[str, dict] = {}   # since the last restart: client label -> {lookups, items, last}
+
+
 async def handle_lens_lookup(request: web.Request) -> web.Response:
     """Batch beer lookup for a browser userscript (see LENS_API_TOKEN's own
     comment above): given raw {name, brewery} pairs scraped from a shop's
@@ -2131,6 +2134,13 @@ async def handle_lens_lookup(request: web.Request) -> web.Response:
     if not isinstance(items, list) or not items:
         return _json_error("no_items")
     items = items[:LENS_MAX_ITEMS_PER_REQUEST]
+    # Which client version asks ("userscript 2.9.4", "extension 1.14.4"; none = an old one): a stale copy
+    # somewhere keeps sending titles without their source, and this is how /api/lens/report shows it.
+    client = str(body.get("client") or "legacy (no version)")[:40]
+    seen = _lens_clients.setdefault(client, {"lookups": 0, "items": 0, "last": 0})
+    seen["lookups"] += 1
+    seen["items"] += len(items)
+    seen["last"] = int(time.time())
 
     owner_id = int(AUTO_TOAST_OWNER_ID)
     token = await user_tokens.get_token(owner_id)
@@ -2176,6 +2186,7 @@ async def handle_lens_report(request: web.Request) -> web.Response:
         for via in (entry.get("vias") or {}).values():
             report["rejectionsByVia"][via] = report["rejectionsByVia"].get(via, 0) + 1
     report["confirmations"] = await lens_confirmations.count()
+    report["clients"] = {k: dict(v) for k, v in _lens_clients.items()}
     report["crawl"] = {**shop_crawl.load_state(), "running": _shop_crawl_running}
     return web.json_response(report)
 
