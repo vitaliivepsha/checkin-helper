@@ -827,7 +827,7 @@ def _search_festival_beers(
 _ZONE_NAME_RE = re.compile(r"^Area (\d+)$")
 
 
-def _festival_editable_zone_names(beers: list | None = None) -> list[str]:
+def _festival_editable_zone_names(beers: list | None = None, template: dict | None = None) -> list[str]:
     """Every distinct "Area N" location present in the given festival's beer
     data (defaults to the module-global default dataset when called with no
     override - see _sessions_for's own note), sorted numerically (not
@@ -835,13 +835,17 @@ def _festival_editable_zone_names(beers: list | None = None) -> list[str]:
     However many of these exist (MBCC has 4; a different festival might
     have just one, or a dozen) are the main, user-editable zones on the
     festival map - see festival_map.py's own docstring for why it doesn't
-    hardcode this itself."""
+    hardcode this itself. A festival whose beers are not announced yet can
+    still have its zones: the "Area N" zones of its layout template
+    (festival_layouts/<key>.json) count too, so the planned stands show up
+    on the map before the first beer does."""
     beers = _festival_beers if beers is None else beers
     names = {
         (b.get("location") or "").strip()
         for b in beers
         if _ZONE_NAME_RE.match((b.get("location") or "").strip())
     }
+    names |= {z for z in ((template or {}).get("zones") or {}) if _ZONE_NAME_RE.match(z)}
     return sorted(names, key=lambda n: int(_ZONE_NAME_RE.match(n).group(1)))
 
 
@@ -2531,10 +2535,10 @@ async def _festival_map_payload(festival_key: str | None) -> dict:
     beers, _ = _festival_data_for(festival_key)
     map_key = festival_key or _active_festival_key
 
-    zone_names = _festival_editable_zone_names(beers)
+    template = _festival_layout_template(map_key)
+    zone_names = _festival_editable_zone_names(beers, template)
     zone_hint = _festival_brewery_zone_map(beers)
     known_breweries = list(zone_hint.keys())
-    template = _festival_layout_template(map_key)
     # The whole floor plan shows up from day one: plan stands with no beers
     # in the data yet are placeholders (see festival_map.planned_stands).
     planned = festival_map.planned_stands(template, known_breweries)
@@ -2585,7 +2589,7 @@ async def handle_festival_map_move(request: web.Request) -> web.Response:
         return _json_error("invalid_island")
 
     moved = await festival_map.move_brewery(
-        map_key, brewery, zone, side, index, _festival_editable_zone_names(beers), island_id=island_id
+        map_key, brewery, zone, side, index, _festival_editable_zone_names(beers, _festival_layout_template(map_key)), island_id=island_id
     )
     if not moved:
         return _json_error("invalid_zone")
@@ -2611,7 +2615,7 @@ async def _handle_festival_map_gap(request: web.Request, edit) -> web.Response:
     beers, _ = _festival_data_for(festival_key)
     map_key = festival_key or _active_festival_key
     done = await edit(
-        map_key, body.get("zone"), body.get("side"), index, _festival_editable_zone_names(beers), island_id=island_id
+        map_key, body.get("zone"), body.get("side"), index, _festival_editable_zone_names(beers, _festival_layout_template(map_key)), island_id=island_id
     )
     if not done:
         return _json_error("invalid_gap")
@@ -2641,7 +2645,7 @@ async def _festival_map_island_call(request: web.Request, call) -> web.Response:
     festival_key = await _resolve_festival_key(user_id)
     beers, _ = _festival_data_for(festival_key)
     map_key = festival_key or _active_festival_key
-    result = await call(map_key, body, _festival_editable_zone_names(beers))
+    result = await call(map_key, body, _festival_editable_zone_names(beers, _festival_layout_template(map_key)))
     if result is None:
         return _json_error("invalid_request")
     return web.json_response({"ok": True, **result})
@@ -2691,7 +2695,7 @@ async def handle_festival_map_island_create(request: web.Request) -> web.Respons
     map_key = festival_key or _active_festival_key
 
     zone = body.get("zone")
-    island_id = await festival_map.create_island(map_key, zone, _festival_editable_zone_names(beers))
+    island_id = await festival_map.create_island(map_key, zone, _festival_editable_zone_names(beers, _festival_layout_template(map_key)))
     if island_id is None:
         return _json_error("invalid_zone")
     return web.json_response({"ok": True, "islandId": island_id})
@@ -2717,7 +2721,7 @@ async def handle_festival_map_island_delete(request: web.Request) -> web.Respons
     island_id = body.get("islandId")
     if not isinstance(island_id, str):
         return _json_error("invalid_island")
-    deleted = await festival_map.delete_island(map_key, zone, island_id, _festival_editable_zone_names(beers))
+    deleted = await festival_map.delete_island(map_key, zone, island_id, _festival_editable_zone_names(beers, _festival_layout_template(map_key)))
     return web.json_response({"ok": deleted})
 
 

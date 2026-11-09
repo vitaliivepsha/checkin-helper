@@ -264,3 +264,31 @@ def test_resolve_label_ignores_how_the_name_is_split():
     assert festival_map.resolve_label("Hop Brook", ["HopBrook", "Sulewski"]) == "HopBrook"
     assert festival_map.resolve_label("HopBrook", ["Hop Brook"]) == "Hop Brook"
     assert festival_map.resolve_label("Hop", ["HopBrook"]) is None
+
+
+async def test_a_festival_without_beers_still_shows_its_planned_stands_in_the_template_zones(tmp_path, monkeypatch):
+    import webapp_server as ws
+
+    festival_map.init(str(tmp_path))
+    template = json.loads((Path(__file__).resolve().parent.parent / "festival_layouts" / "mbcc2027.json").read_text(encoding="utf-8"))
+    monkeypatch.setattr(ws, "_festival_data_for", lambda key: ([], {}))
+    monkeypatch.setattr(ws, "_festival_layout_template", lambda key: template)
+    payload = await ws._festival_map_payload("mbcc2027")
+
+    assert sorted(payload["zones"]) == ["Area 1", "Area 2", "Area 3", "Area 4"]
+    assert len(payload["plannedStands"]) == 101                       # every brewery of the poster, as a placeholder
+    placed = [b for z in payload["zones"].values() for side in ("top", "right", "bottom", "left") for b in z[side] if b]
+    assert sorted(placed) == sorted(payload["plannedStands"])         # and every one of them has a place on the map
+    assert ws._festival_editable_zone_names([], template) == ["Area 1", "Area 2", "Area 3", "Area 4"]
+    assert ws._festival_editable_zone_names([], None) == []            # no beers and no plan: no zones, as before
+
+
+def test_the_shipped_mbcc2027_template_is_well_formed_and_registered():
+    root = Path(__file__).resolve().parent.parent
+    template = json.loads((root / "festival_layouts" / "mbcc2027.json").read_text(encoding="utf-8"))
+    names = [n for z in template["zones"].values() for side in ("top", "right", "bottom", "left") for n in z[side]]
+    assert len(names) == len(set(names)) == 101
+    sizes = [sum(len(z[s]) for s in ("top", "right", "bottom", "left")) for z in template["zones"].values()]
+    assert max(sizes) - min(sizes) <= 1                                # an even random split
+    entry = next(f for f in json.loads((root / "festivals.json").read_text(encoding="utf-8"))["festivals"] if f["key"] == "mbcc2027")
+    assert (root / entry["file"]).exists() and (root / "webapp" / "festivals" / entry["image"]).exists()

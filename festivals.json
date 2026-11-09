@@ -29,6 +29,12 @@
       "label": "MBCB 2026",
       "image": "mbcb2026.png",
       "file": "mbcb_beers.json"
+    },
+    {
+      "key": "mbcc2027",
+      "label": "MBCC 2027",
+      "image": "mbcc2027.webp",
+      "file": "mbcc2027_beers.json"
     }
   ]
 }

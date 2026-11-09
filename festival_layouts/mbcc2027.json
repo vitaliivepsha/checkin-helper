@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "source": "MBCC 2027 Copenhagen - the brewery lineup from the festival's announcement poster (101 breweries). The floor plan is not published yet: Area 1-4 are assigned at random (seed 2027) and the stands are placed round-robin on the sides of each zone - a placeholder to rearrange by hand, replaced by a real plan (bump `version`) when it comes.",
+  "zones": {
+    "Area 1": {
+      "version": 1,
+      "top": [
+        "Peiping Machine",
+        "Willibald Farm Brewery",
+        "Brewskey",
+        "Badlands Brewing Company",
+        "Ill Will",
+        "Frontaal",
+        "Spartacus Brewing"
+      ],
+      "right": [
+        "Samata",
+        "3 Sons Brewing Co",
+        "Ruse",
+        "Palindrome Brewing Co",
+        "Moksa Brewing Co",
+        "Salikatt",
+        "Breakthru"
+      ],
+      "bottom": [
+        "Playground Brewing",
+        "Pinta Barrel Brewing",
+        "Forager Brewery",
+        "Brauerei Wagner Merkendorf",
+        "Soma",
+        "Resident Culture Brewing Co"
+      ],
+      "left": [
+        "Brewski",
+        "Westmalle Trappist",
+        "Superstition Meadery",
+        "Bayreuther Brauhaus",
+        "Marlobobo",
+        "Corporate Ladder Brewing Company"
+      ]
+    },
+    "Area 2": {
+      "version": 1,
+      "top": [
+        "Tripping Animals",
+        "Floc",
+        "Fabled Brew",
+        "Finback",
+        "XUL Beer Co",
+        "Guinness",
+        "Adroit Theory Brewing"
+      ],
+      "right": [
+        "Brygghus 19",
+        "Weldwerks",
+        "Tall Trees",
+        "Arpus Brewing Co",
+        "Lua Brewing",
+        "Folkingebrew"
+      ],
+      "bottom": [
+        "Wandering Monsters",
+        "Hoppy People",
+        "RAR Brewing",
+        "Mikkeller Brewpub London",
+        "Budweiser Budvar",
+        "Hill Farmstead"
+      ],
+      "left": [
+        "The Attic Meadery",
+        "Omnipollo",
+        "Counterpart Brewing",
+        "Maisel and Friends",
+        "Sudden Death Brewing Co",
+        "Schilling Beer Co"
+      ]
+    },
+    "Area 3": {
+      "version": 1,
+      "top": [
+        "Green Cheek",
+        "Quantum Satis",
+        "Ophiussa Brewing Co",
+        "Brouwerij 3 Fonteinen",
+        "Pulpit Rock Brewing Co",
+        "Schönramer",
+        "Boiler"
+      ],
+      "right": [
+        "Off Script Brewing",
+        "Amager Bryghus",
+        "Pohjala",
+        "Paihalas Brewery",
+        "Ebeltoft Gårdbryggeri",
+        "Flying Couch Brewing"
+      ],
+      "bottom": [
+        "Dankhouse Brewing Co",
+        "Lyric Brewing Co",
+        "Brasserie du Bas Canada",
+        "Tired Hands Brewing Company",
+        "Eckhart Beer",
+        "Uchu"
+      ],
+      "left": [
+        "Oud Beersel",
+        "Whitstable Oyster Brewing",
+        "Dimensional",
+        "Funky Fluid",
+        "Factory Brewing",
+        "Lumen Beer Co"
+      ]
+    },
+    "Area 4": {
+      "version": 1,
+      "top": [
+        "Panimoyhtiö Tuju",
+        "Eavesdrop Brewery",
+        "Horizont Brewing",
+        "Everywhere",
+        "Keesmann",
+        "Bofkont",
+        "Obercreek Brewing"
+      ],
+      "right": [
+        "Toppling Goliath Brewing Co",
+        "Clef Brewery",
+        "Autodidact",
+        "Mikkeller",
+        "To Øl",
+        "Compania Cervecera Hercules"
+      ],
+      "bottom": [
+        "Minoh",
+        "Browar Stu Mostów",
+        "Bad Seed Brewing",
+        "Lolev",
+        "Oy",
+        "Warpigs Brewpub"
+      ],
+      "left": [
+        "Pleasanti Street and Ollebrodre",
+        "Y Not Brewing",
+        "Brouwerij Bravoure",
+        "Goldfinger Brewing",
+        "Birrificio Italiano",
+        "Goose Island Beer Co"
+      ]
+    }
+  }
+}

@@ -1,0 +1,1054 @@
+{
+ "festival": "MBCC 2027 Copenhagen",
+ "comparedWith": [
+  "2022",
+  "2024",
+  "2025",
+  "2026"
+ ],
+ "breweries": [
+  {
+   "brewery": "3 Sons Brewing Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Adroit Theory Brewing",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Amager Bryghus",
+   "country": "Denmark",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇰"
+  },
+  {
+   "brewery": "Arpus Brewing Co",
+   "country": "Latvia",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇱🇻"
+  },
+  {
+   "brewery": "Autodidact",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2024"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Bad Seed Brewing",
+   "country": "Denmark",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇰"
+  },
+  {
+   "brewery": "Badlands Brewing Company",
+   "country": "Canada",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇨🇦"
+  },
+  {
+   "brewery": "Bayreuther Brauhaus",
+   "country": "Germany",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇩🇪"
+  },
+  {
+   "brewery": "Birrificio Italiano",
+   "country": "Italy",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇮🇹"
+  },
+  {
+   "brewery": "Bofkont",
+   "country": "Belgium",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇧🇪"
+  },
+  {
+   "brewery": "Boiler",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Brasserie du Bas Canada",
+   "country": "Canada",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇨🇦"
+  },
+  {
+   "brewery": "Brauerei Wagner Merkendorf",
+   "country": "Germany",
+   "new": false,
+   "seen": [
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇪"
+  },
+  {
+   "brewery": "Breakthru",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Brewskey",
+   "country": "Canada",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇨🇦"
+  },
+  {
+   "brewery": "Brewski",
+   "country": "Sweden",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇸🇪"
+  },
+  {
+   "brewery": "Brouwerij 3 Fonteinen",
+   "country": "Belgium",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇧🇪"
+  },
+  {
+   "brewery": "Brouwerij Bravoure",
+   "country": "Netherlands",
+   "new": false,
+   "seen": [
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇳🇱"
+  },
+  {
+   "brewery": "Browar Stu Mostów",
+   "country": "Poland",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇵🇱"
+  },
+  {
+   "brewery": "Brygghus 19",
+   "country": "Sweden",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇸🇪"
+  },
+  {
+   "brewery": "Budweiser Budvar",
+   "country": "Czech Republic",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇨🇿"
+  },
+  {
+   "brewery": "Clef Brewery",
+   "country": "Slovenia",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇸🇮"
+  },
+  {
+   "brewery": "Compania Cervecera Hercules",
+   "country": "Mexico",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇲🇽"
+  },
+  {
+   "brewery": "Corporate Ladder Brewing Company",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Counterpart Brewing",
+   "country": "Canada",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇨🇦"
+  },
+  {
+   "brewery": "Dankhouse Brewing Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Dimensional",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Eavesdrop Brewery",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Ebeltoft Gårdbryggeri",
+   "country": "Denmark",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇩🇰"
+  },
+  {
+   "brewery": "Eckhart Beer",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Everywhere",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Fabled Brew",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Factory Brewing",
+   "country": "Finland",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇫🇮"
+  },
+  {
+   "brewery": "Finback",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Floc",
+   "country": "UK",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇬🇧"
+  },
+  {
+   "brewery": "Flying Couch Brewing",
+   "country": "Denmark",
+   "new": false,
+   "seen": [
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇰"
+  },
+  {
+   "brewery": "Folkingebrew",
+   "country": "Netherlands",
+   "new": false,
+   "seen": [
+    "2024",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇳🇱"
+  },
+  {
+   "brewery": "Forager Brewery",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Frontaal",
+   "country": "Netherlands",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇳🇱"
+  },
+  {
+   "brewery": "Funky Fluid",
+   "country": "Poland",
+   "new": false,
+   "seen": [
+    "2022",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇵🇱"
+  },
+  {
+   "brewery": "Goldfinger Brewing",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Goose Island Beer Co",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Green Cheek",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Guinness",
+   "country": "UK",
+   "new": false,
+   "seen": [],
+   "note": "був у 2026 як стенд (Gravens Rand), але не в списку пив",
+   "flag": "🇬🇧"
+  },
+  {
+   "brewery": "Hill Farmstead",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Hoppy People",
+   "country": "Switzerland",
+   "new": false,
+   "seen": [
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇨🇭"
+  },
+  {
+   "brewery": "Horizont Brewing",
+   "country": "Hungary",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇭🇺"
+  },
+  {
+   "brewery": "Ill Will",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Keesmann",
+   "country": "Germany",
+   "new": false,
+   "seen": [
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇪"
+  },
+  {
+   "brewery": "Lolev",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Lua Brewing",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Lumen Beer Co",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Lyric Brewing Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Maisel and Friends",
+   "country": "Germany",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇩🇪"
+  },
+  {
+   "brewery": "Marlobobo",
+   "country": "Norway",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇳🇴"
+  },
+  {
+   "brewery": "Mikkeller",
+   "country": "Denmark",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇰"
+  },
+  {
+   "brewery": "Mikkeller Brewpub London",
+   "country": "England",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇬🇧"
+  },
+  {
+   "brewery": "Minoh",
+   "country": "Japan",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇯🇵"
+  },
+  {
+   "brewery": "Moksa Brewing Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Obercreek Brewing",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Off Script Brewing",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Omnipollo",
+   "country": "Sweden",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇸🇪"
+  },
+  {
+   "brewery": "Ophiussa Brewing Co",
+   "country": "Portugal",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇵🇹"
+  },
+  {
+   "brewery": "Oud Beersel",
+   "country": "Belgium",
+   "new": false,
+   "seen": [
+    "2022",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇧🇪"
+  },
+  {
+   "brewery": "Oy",
+   "country": "Faroe Islands",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "Oy Brewing; назву на плакаті прочитано неточно",
+   "flag": "🇫🇴"
+  },
+  {
+   "brewery": "Paihalas Brewery",
+   "country": "Finland",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇫🇮"
+  },
+  {
+   "brewery": "Palindrome Brewing Co",
+   "country": "UK",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇬🇧"
+  },
+  {
+   "brewery": "Panimoyhtiö Tuju",
+   "country": "Finland",
+   "new": false,
+   "seen": [
+    "2024",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇫🇮"
+  },
+  {
+   "brewery": "Peiping Machine",
+   "country": "China",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇨🇳"
+  },
+  {
+   "brewery": "Pinta Barrel Brewing",
+   "country": "Poland",
+   "new": false,
+   "seen": [
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇵🇱"
+  },
+  {
+   "brewery": "Playground Brewing",
+   "country": "Korea",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇰🇷"
+  },
+  {
+   "brewery": "Pleasanti Street and Ollebrodre",
+   "country": "Denmark",
+   "new": true,
+   "seen": [],
+   "note": "колаб; Øllebrødre були в 2024, а Pleasanti Street — ні (назву на плакаті прочитано неточно)",
+   "flag": "🇩🇰"
+  },
+  {
+   "brewery": "Pohjala",
+   "country": "Estonia",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇪🇪"
+  },
+  {
+   "brewery": "Pulpit Rock Brewing Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Quantum Satis",
+   "country": "Poland",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇵🇱"
+  },
+  {
+   "brewery": "RAR Brewing",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Resident Culture Brewing Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Ruse",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Salikatt",
+   "country": "Norway",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇳🇴"
+  },
+  {
+   "brewery": "Samata",
+   "country": "Thailand",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇹🇭"
+  },
+  {
+   "brewery": "Schilling Beer Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Schönramer",
+   "country": "Germany",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇪"
+  },
+  {
+   "brewery": "Soma",
+   "country": "Spain",
+   "new": false,
+   "seen": [
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇪🇸"
+  },
+  {
+   "brewery": "Spartacus Brewing",
+   "country": "Brazil",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇧🇷"
+  },
+  {
+   "brewery": "Sudden Death Brewing Co",
+   "country": "Germany",
+   "new": false,
+   "seen": [
+    "2022",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇩🇪"
+  },
+  {
+   "brewery": "Superstition Meadery",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Tall Trees",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "The Attic Meadery",
+   "country": "Sweden",
+   "new": false,
+   "seen": [
+    "2024",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇸🇪"
+  },
+  {
+   "brewery": "Tired Hands Brewing Company",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "To Øl",
+   "country": "Denmark",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇰"
+  },
+  {
+   "brewery": "Toppling Goliath Brewing Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Tripping Animals",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Uchu",
+   "country": "Japan",
+   "new": false,
+   "seen": [
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇯🇵"
+  },
+  {
+   "brewery": "Wandering Monsters",
+   "country": "USA",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Warpigs Brewpub",
+   "country": "Denmark",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025"
+   ],
+   "note": "",
+   "flag": "🇩🇰"
+  },
+  {
+   "brewery": "Weldwerks",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2022",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Westmalle Trappist",
+   "country": "Belgium",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇧🇪"
+  },
+  {
+   "brewery": "Whitstable Oyster Brewing",
+   "country": "UK",
+   "new": true,
+   "seen": [],
+   "note": "",
+   "flag": "🇬🇧"
+  },
+  {
+   "brewery": "Willibald Farm Brewery",
+   "country": "Canada",
+   "new": false,
+   "seen": [
+    "2022",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇨🇦"
+  },
+  {
+   "brewery": "XUL Beer Co",
+   "country": "USA",
+   "new": false,
+   "seen": [
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇺🇸"
+  },
+  {
+   "brewery": "Y Not Brewing",
+   "country": "Denmark",
+   "new": false,
+   "seen": [
+    "2025",
+    "2026"
+   ],
+   "note": "",
+   "flag": "🇩🇰"
+  }
+ ]
+}
