@@ -2145,6 +2145,9 @@ async def handle_lens_lookup(request: web.Request) -> web.Response:
     seen["lookups"] += 1
     seen["items"] += len(items)
     seen["last"] = int(time.time())
+    # Which device it is (the browser's User-Agent and the address the proxy saw), to find the stale copy.
+    seen["ua"] = request.headers.get("User-Agent", "")[:100]
+    seen["ip"] = (request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote or "")[:45]
 
     owner_id = int(AUTO_TOAST_OWNER_ID)
     token = await user_tokens.get_token(owner_id)

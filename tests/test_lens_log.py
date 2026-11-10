@@ -201,7 +201,9 @@ async def test_report_shows_which_client_versions_ask(tmp_path, monkeypatch):
     async with TestClient(TestServer(app)) as c:
         headers = {"X-Lens-Token": "secret"}
         item = {"name": "Hazy", "brewery": "PINTA"}
-        await c.post("/api/lens/lookup", json={"items": [item], "client": "userscript 2.9.4"}, headers=headers)
+        await c.post("/api/lens/lookup", json={"items": [item], "client": "userscript 2.9.4"},
+                     headers={**headers, "User-Agent": "TestBrowser/1.0", "X-Forwarded-For": "203.0.113.7, 10.0.0.1"})
         await c.post("/api/lens/lookup", json={"items": [item, item]}, headers=headers)      # an old client sends no version
         clients = (await (await c.get("/api/lens/report", headers=headers)).json())["clients"]
     assert clients["userscript 2.9.4"]["items"] == 1 and clients["legacy (no version)"]["items"] == 2
+    assert clients["userscript 2.9.4"]["ua"] == "TestBrowser/1.0" and clients["userscript 2.9.4"]["ip"] == "203.0.113.7"
