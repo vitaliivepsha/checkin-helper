@@ -6,7 +6,7 @@
   },
   {
     "url": "https://untappd.com/blog/your-next-check-in-could-make-you-a-winner-introducing-the-untappd-check-in-challenge-season-1/1971",
-    "note": "Untappd Check In Challenge, Season 1 (10 weekly badges, Nov 2 2026 - Jan 10 2027): Week 1 (Nov 2-8) criteria is simply 'check in any drink' - no style or country restriction, same 'any' case as the pruned Untappd 16th Anniversary badge that this schema's kind:style/kind:country matcher can't encode. Weeks 2-10 challenges are not yet revealed (unlock on their own start dates), so their criteria can't be read yet either. Re-check this post (or the blog) as later weeks unlock to see if any week's challenge turns out to be style/country-specific and thus computable.",
+    "note": "Untappd Check In Challenge, Season 1 (10 weekly badges, Nov 2 2026 - Jan 10 2027): Week 1 (Nov 2-8) criteria is simply 'check in any drink' - no style or country restriction, same 'any' case as the pruned Untappd 16th Anniversary badge that this schema's kind:style/kind:country matcher can't encode. Week 2 (Nov 9-15) turned out to be style-specific ('any IPA') and was computable, so it now has its own entry in special_badges.json (see https://untappd.com/blog/untappd-check-in-challenge-week-2/1972) - remove that entry once it expires (activeUntil 2026-11-15). Weeks 3-10 are not yet revealed (each unlocks on its own Monday start date per the post's schedule: Wk3 Nov16, Wk4 Nov23, Wk5 Nov30, Wk6 Dec7, Wk7 Dec14, Wk8 Dec21, Wk9 Dec28, Wk10 Jan4), so their criteria can't be read yet. Re-check this post (or the blog) as later weeks unlock to see if any turn out to be style/country-specific and thus computable.",
     "foundAt": "2026-11-05"
   }
 ]
