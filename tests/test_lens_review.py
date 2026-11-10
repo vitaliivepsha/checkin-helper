@@ -204,7 +204,8 @@ async def test_review_question_names_the_shop_as_the_source_with_a_link(tmp_path
     assert 'Source: <a href="https://www.piwnemosty.pl/product-pol-1-Pilsvar.html">piwnemosty.pl</a>' in text
     assert "https://hoptimaal.com/products/lach" in lens_review.render(by_bid[6], "uk")
     assert "Джерело" in lens_review.render(by_bid[6], "uk")
-    assert "Source" not in lens_review.render(by_bid[7], "en")   # a non-https link is never kept
+    assert "Source: unknown" in lens_review.render(by_bid[7], "en")   # a non-https link is never kept: the source reads as unknown
+    assert "Джерело: невідоме" in lens_review.render(by_bid[7], "uk")
     suspicious_old = {**by_bid[5], "kind": "suspicious", "via": ""}
     assert "(matched by" not in lens_review.render(suspicious_old, "en")   # an entry without a route reads plainly
 

@@ -188,7 +188,9 @@ async def register(items: list[dict]) -> None:
 
 def _source_line(item: dict, lang: str) -> str:
     label, link = item.get("source") or ("", "")
-    return t(lang, "lens_review_source", url=html.escape(link, quote=True), label=html.escape(label)) if link else ""
+    if not link:
+        return t(lang, "lens_review_source_unknown")   # said outright, so a missing line is never mistaken for a bug
+    return t(lang, "lens_review_source", url=html.escape(link, quote=True), label=html.escape(label))
 
 
 def render(item: dict, lang: str) -> str:
