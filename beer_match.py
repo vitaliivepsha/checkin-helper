@@ -1339,12 +1339,29 @@ def _query_name_variants(clean_name: str, *brewery_cores: str) -> list[str]:
     return deduped[:10]
 
 
+# One resolution tries brewery variants x name variants; many of those produce the same query text (audit M4:
+# up to 20 live searches for one product that does not exist on Untappd). A resolution remembers each query it ran
+# and stops after this many distinct ones.
+MAX_SEARCHES_PER_RESOLUTION = 10
+
+
+class _SearchBudgetSpent(Exception):
+    pass
+
+
 async def _search_and_match(
     token: str, brewery: str, beer_name: str, rejected_bids: frozenset[int] = frozenset(),
-    confirmed_bid: int | None = None,
+    confirmed_bid: int | None = None, searched: dict[str, list[dict]] | None = None,
 ) -> tuple[dict | None, str, list[dict]]:
     query = f"{brewery} {beer_name}".strip()
-    results = await untappd_mcp.search_beers(token, query, limit=SEARCH_RESULT_LIMIT)
+    if searched is None:
+        results = await untappd_mcp.search_beers(token, query, limit=SEARCH_RESULT_LIMIT)
+    elif query.lower() in searched:
+        results = searched[query.lower()]
+    else:
+        if len(searched) >= MAX_SEARCHES_PER_RESOLUTION:
+            raise _SearchBudgetSpent
+        results = searched[query.lower()] = await untappd_mcp.search_beers(token, query, limit=SEARCH_RESULT_LIMIT)
     if rejected_bids:
         results = [r for r in results if r.get("bid") not in rejected_bids]
     if not results:
@@ -1569,6 +1586,8 @@ async def _resolve_identity(
     # the first one found literally nothing to show.
     first_results: list[dict] | None = None
     last_nonempty_results: list[dict] = []
+    searched: dict[str, list[dict]] = {}
+    budget_spent = False
     for brewery_variant in brewery_variants:
         # Recomputed per brewery_variant (cheap - pure string ops, no I/O):
         # the brewery-prefix-stripped name variant (see
@@ -1583,7 +1602,14 @@ async def _resolve_identity(
         # still duplicates what the shop actually printed, not the override.
         name_variants = _query_name_variants(clean_name, brewery_variant, original_brewery_core)
         for candidate_name in name_variants:
-            match, query, results = await _search_and_match(token, brewery_variant, candidate_name, rejected_bids, confirmed_bid)
+            try:
+                match, query, results = await _search_and_match(
+                    token, brewery_variant, candidate_name, rejected_bids, confirmed_bid, searched,
+                )
+            except _SearchBudgetSpent:
+                logger.info("resolve_beer: search budget spent for %r / %r", brewery_name, beer_name)
+                budget_spent = True
+                break
             if match is not None and match.get("bid") != confirmed_bid and _drops_edition_number(
                 clean_name, candidate_name, match.get("beerName") or "", brewery_variant,
             ):
@@ -1598,7 +1624,7 @@ async def _resolve_identity(
                     clean_name, candidate_name, match.get("beerName") or "", brewery_variant,
                 )
                 break
-        if match is not None:
+        if match is not None or budget_spent:
             break
 
     if match is None:

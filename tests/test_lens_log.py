@@ -1,6 +1,8 @@
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
+import time
+
 import beer_match
 import lens_log
 import webapp_server as ws
@@ -131,6 +133,9 @@ async def test_entries_to_recheck_skips_crawled_items_drops_junk_and_keeps_count
     fine = {"name": "Hazy Morning", "brewery": "PINTA"}
     await lens_log.record([userscript_only, in_todays_crawl, junk, fine], [unmatched(["a", "b"]), unmatched(), unmatched(), matched("Hazy Morning", "PINTA", 1)])
     await lens_log.record([userscript_only], [unmatched(["a", "b"])])  # opened twice: ranks first
+    assert await lens_log.entries_to_recheck([], 10) == []   # unmatched a moment ago, matcher unchanged: not searched again
+    for e in lens_log._load().values():
+        e["resolvedAt"] = int(time.time()) - lens_log.UNMATCHED_RETRY_SECONDS - 10   # long enough ago to be retried
 
     import shop_crawl
     todo = await lens_log.entries_to_recheck([in_todays_crawl], 10, shop_crawl.is_non_beer)
@@ -155,6 +160,9 @@ async def test_entries_to_recheck_also_covers_questionable_matches_and_drops_mer
         [wrong, fine, shirt, gone],
         [matched("Pilsvar Grybów", "Pilsvar", 1), matched("Hazy Morning", "PINTA", 2), matched("WRCLW Pszeniczny", "WRCLW", 3), unmatched()],
     )
+    assert await lens_log.entries_to_recheck([], 10) == []   # nothing is retried straight after being tried (audit M4)
+    for e in lens_log._load().values():
+        e["resolvedAt"] = int(time.time()) - lens_log.UNMATCHED_RETRY_SECONDS - 10   # long enough ago to be retried
     # recorded under the current rules: the questionable match is not due yet
     assert [t["name"] for t in await lens_log.entries_to_recheck([], 10)] == ["Nothing Here"]
     monkeypatch.setattr(beer_match, "MATCHER_VERSION", beer_match.MATCHER_VERSION + 1)  # the rules changed since
@@ -172,7 +180,10 @@ async def test_the_crawl_also_re_resolves_questionable_matches_of_an_older_match
     monkeypatch.setattr(beer_match, "MATCHER_VERSION", beer_match.MATCHER_VERSION + 1)
     assert await lens_log.due_for_crawl([item]) == [item]  # rules changed: look again, once
     await lens_log.record([item], [unmatched()], source="crawl")
-    assert await lens_log.due_for_crawl([item]) == [item]  # (still unmatched, so still due)
+    assert await lens_log.due_for_crawl([item]) == []      # tried again under the new rules and still unmatched: rest
+    for e in lens_log._load().values():
+        e["resolvedAt"] = int(time.time()) - lens_log.UNMATCHED_RETRY_SECONDS - 10   # long enough ago to be retried
+    assert await lens_log.due_for_crawl([item]) == [item]  # a week later it is searched once more
 
 
 async def test_report_shows_which_client_versions_ask(tmp_path, monkeypatch):

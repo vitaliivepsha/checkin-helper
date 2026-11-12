@@ -288,3 +288,21 @@ async def test_a_confirmed_beer_is_never_demoted(monkeypatch):
     other = _result(12, "Hazy IPA", "Totally Other Brewing")
     identity = await _identity(monkeypatch, [other], "Hazy IPA", "Nowy Browar", confirmed_bid=12)
     assert identity["matched"] and identity["via"] == "confirmed"
+
+
+async def test_one_resolution_never_repeats_a_query_and_stops_after_the_budget(monkeypatch):
+    # audit M4: the audit counted 20 live searches for one product that is not on Untappd
+    queries = []
+
+    async def fake_search(token, query, limit=10):
+        queries.append(query)
+        return []
+
+    monkeypatch.setattr(beer_match.untappd_mcp, "search_beers", fake_search)
+    beer_match._identity_cache.clear()
+    identity = await beer_match._resolve_identity(
+        "t", "Miodowe Jasne Bezalkoholowe 0,0% Pils 500 ml", "Browar Jana Brewery",
+    )
+    assert identity["matched"] is False
+    assert len(queries) == len({q.lower() for q in queries}), "an identical query was sent twice"
+    assert len(queries) <= beer_match.MAX_SEARCHES_PER_RESOLUTION

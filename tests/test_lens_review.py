@@ -261,6 +261,8 @@ async def test_not_on_untappd_removes_a_product_from_the_unmatched_list_and_the_
     ambiguous_item = {"name": "Mini Maxi", "brewery": "PINTA"}
     await lens_log.record([ambiguous_item], [ambiguous((1, "Mini Maxi IPA", "PINTA"), (2, "Mini Maxi Mango", "PINTA"))])
     assert len((await lens_log.report())["unmatched"]) == 2
+    for e in lens_log._load().values():
+        e["resolvedAt"] = 1   # tried long ago, so the rechecks below would pick them up
 
     [question] = await lens_review.pick()
     assert question["queryName"] == "Mini Maxi"

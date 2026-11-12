@@ -125,6 +125,8 @@ async def test_due_for_crawl_orders_unmatched_then_new_then_stale(tmp_path, monk
     )
     lens_log._load()[lens_log._key("B", "Old Match")]["resolvedAt"] = int(time.time()) - lens_log.STALE_AFTER_SECONDS - 10
     items = [{"name": n, "brewery": "B"} for n in ("Fresh Match", "Old Match", "Missing", "Brand New")]
+    assert [it["name"] for it in await lens_log.due_for_crawl(items)] == ["Brand New", "Old Match"]   # "Missing" was just tried
+    lens_log._load()[lens_log._key("B", "Missing")]["resolvedAt"] = int(time.time()) - lens_log.UNMATCHED_RETRY_SECONDS - 10
     due = [it["name"] for it in await lens_log.due_for_crawl(items)]
     assert due == ["Missing", "Brand New", "Old Match"]  # "Fresh Match" needs no re-check
 

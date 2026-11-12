@@ -180,11 +180,26 @@ async def due_for_crawl(items: list[dict]) -> list[dict]:
                 continue
             if entry is None:
                 buckets[1].append(item)
-            elif entry.get("outcome") != "matched" or _needs_recheck_rank(entry) == 1:
+            elif entry.get("outcome") != "matched":
+                if _unmatched_worth_retrying(entry, now):
+                    buckets[0].append(item)
+            elif _needs_recheck_rank(entry) == 1:
                 buckets[0].append(item)
             elif now - entry.get("resolvedAt", 0) > STALE_AFTER_SECONDS:
                 buckets[2].append(item)
     return buckets[0] + buckets[1] + buckets[2]
+
+
+UNMATCHED_RETRY_SECONDS = 7 * 24 * 3600   # a product Untappd does not list is searched again after this long
+
+
+def _unmatched_worth_retrying(entry: dict, now: float | None = None) -> bool:
+    """An unmatched product is searched again only when the matcher changed since the last try, a review decision
+    is waiting, or a week has passed (the beer may have been added to Untappd). Before, every nightly crawl re-ran
+    every unmatched product - up to 10 live searches each - for a result that had not changed (audit M4)."""
+    if entry.get("recheck") or entry.get("matcherVersion") != beer_match.MATCHER_VERSION:
+        return True
+    return (now if now is not None else time.time()) - entry.get("resolvedAt", 0) > UNMATCHED_RETRY_SECONDS
 
 
 def _needs_recheck_rank(entry: dict) -> int | None:
@@ -196,7 +211,7 @@ def _needs_recheck_rank(entry: dict) -> int | None:
     if entry.get("recheck"):
         return 1  # a review decision (rejected/confirmed) is waiting to be re-resolved
     if entry.get("outcome") in ("no_results", "ambiguous"):
-        return 0
+        return 0 if _unmatched_worth_retrying(entry) else None
     if entry.get("outcome") == "matched" and entry.get("matcherVersion") != beer_match.MATCHER_VERSION and (
         entry.get("matchKind") == "different"
         or (entry.get("matchKind") in ("candidate_longer", "query_longer") and entry.get("delta", 0) >= SUSPICIOUS_DELTA)
