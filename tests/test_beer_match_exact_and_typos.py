@@ -317,3 +317,28 @@ def test_a_doubled_letter_does_not_equate_style_words():
         assert beer_match._typo_token_match(a, b), (a, b)
     results = [{"bid": 1, "beerName": "Mango Goose", "brewery": {"name": "Browar Z"}}]
     assert beer_match.pick_best_match(results, "Mango Gose", "Browar Z") is None
+
+
+async def test_a_name_cleaned_to_a_shorter_beer_prefers_the_catalog_beer_with_the_full_name(monkeypatch):
+    # audit M2: "Miodowe Gold" was cleaned to "Miodowe" and became the brewery's plain "Miodowe"
+    plain = _result(1, "Miodowe", "Browar Z")
+    gold = _result(2, "Miodowe Gold", "Browar Z")
+    identity = await _identity(monkeypatch, [plain, gold], "Miodowe Gold", "Browar Z")
+    assert identity["matched"] and identity["bid"] == 2
+
+
+async def test_another_degree_is_another_beer(monkeypatch):
+    eleven = _result(3, "Parohatej 11°", "Browar Z")
+    identity = await _identity(monkeypatch, [eleven], "Parohatej 12°", "Browar Z")
+    assert identity["matched"] is False
+    twelve = _result(4, "Parohatej 12°", "Browar Z")
+    assert (await _identity(monkeypatch, [eleven, twelve], "Parohatej 12°", "Browar Z"))["bid"] == 4
+    bare = _result(5, "Parohatej", "Browar Z")
+    assert (await _identity(monkeypatch, [bare], "Parohatej 12°", "Browar Z"))["bid"] == 5   # no number in the catalog name: fine
+
+
+def test_degree_conflict_only_looks_at_degrees():
+    assert beer_match._degree_conflict("Parohatej 12°", "Parohatej 11°")
+    assert not beer_match._degree_conflict("Parohatej 12°", "Parohatej 12")
+    assert not beer_match._degree_conflict("Hazy IPA 6,5%", "Hazy IPA 11")     # an ABV is not a degree
+    assert not beer_match._degree_conflict("Parohatej 12°", "Parohatej")

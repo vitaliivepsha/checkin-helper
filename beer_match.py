@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Bumped whenever the matching rules change in a way that can alter outcomes: the
 # lens log stores the version each entry was resolved with, and the daily crawl
 # re-resolves still-unmatched and questionable entries of an older version once.
-MATCHER_VERSION = 7
+MATCHER_VERSION = 8
 
 SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # exact-name match past position 5 among a brewery's many similarly-styled
@@ -1491,6 +1491,34 @@ def _drops_edition_number(clean_name: str, variant: str, matched_name: str, brew
     return bool(dropped & _EDITION_WORDS) and any(t.isdigit() for t in dropped) and not dropped <= _token_set(matched_name)
 
 
+_DEGREE_NUMBER_RE = re.compile(r"(?<![0-9])([0-9]{1,2})(?:[.,][0-9]+)?\s*°")
+_SMALL_NUMBER_RE = re.compile(r"(?<![0-9.,])([0-9]{1,2})(?![0-9.,])")
+
+
+def _degree_conflict(raw_name: str, matched_name: str) -> bool:
+    """True when the shop name carries a Plato degree ("Parohatej 12°") that the cleaned query dropped and the match
+    names a DIFFERENT number ("Parohatej 11°"): a lager's 11° and 12° are two beers. A match with no number at all
+    ("Parohatej") stays acceptable - many catalogs leave the degree out (audit M2)."""
+    wanted = {m.group(1) for m in _DEGREE_NUMBER_RE.finditer(raw_name or "")}
+    if not wanted:
+        return False
+    found = set(_SMALL_NUMBER_RE.findall(matched_name or ""))
+    return bool(found) and wanted.isdisjoint(found)
+
+
+def _raw_exact_preferred(results: list[dict], match: dict, beer_name: str, brewery: str) -> dict | None:
+    """A catalog beer whose name equals the shop's own name (only packaging removed) when the cleaned query matched a
+    different one: shop "Miodowe Gold" was cleaned to "Miodowe", which then matched the brewery's plain "Miodowe"
+    although "Miodowe Gold" was in the same result list (audit M2). None when the cleaned match is already that beer."""
+    light = _PACKAGING_SUFFIX_RE.sub("", beer_name or "").strip()
+    if not light:
+        return None
+    exact = pick_best_match(results, light, brewery, exact_only=True)
+    if exact is not None and exact.get("bid") != match.get("bid"):
+        return exact
+    return None
+
+
 _GENERIC_BREWERY_WORDS = frozenset({"browar", "brewery", "brewing", "brasserie", "pivovar", "co", "company", "the", "bryggeri"})
 
 
@@ -1625,12 +1653,21 @@ async def _resolve_identity(
             ):
                 logger.info("resolve_beer: %r lacks the edition number of %r, not a match", match.get("beerName"), clean_name)
                 match = None
+            raw_exact = None
+            if match is not None and match.get("bid") != confirmed_bid:
+                if _degree_conflict(beer_name, match.get("beerName") or ""):
+                    logger.info("resolve_beer: %r has another degree than %r, not a match", match.get("beerName"), beer_name)
+                    match = None
+                else:
+                    raw_exact = _raw_exact_preferred(results, match, beer_name, brewery_variant)
+                    if raw_exact is not None:
+                        match = raw_exact
             if first_results is None:
                 first_results = results
             if results:
                 last_nonempty_results = results
             if match is not None:
-                via = "confirmed" if match.get("bid") == confirmed_bid else _match_route(
+                via = "confirmed" if match.get("bid") == confirmed_bid else "exact-raw" if raw_exact is not None else _match_route(
                     clean_name, candidate_name, match.get("beerName") or "", brewery_variant,
                 )
                 break
