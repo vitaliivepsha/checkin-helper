@@ -7,6 +7,7 @@ start_limited_background_tasks for the established pattern this mirrors.
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import collections
 import csv
 import hashlib
 import hmac
@@ -4296,6 +4297,9 @@ def _html_link(url: str, text: str) -> str:
 # at all) carries them, so they come from get_beer on the owner's own token
 # (1 MCP call, cached for hours: a hot tap is checked in many times).
 _novelty_facts_cache = public_map_util.TTLCache(ttl_seconds=6 * 3600, max_entries=3000)
+NOVELTY_FACTS_MAX_PER_HOUR = 20     # uncached get_beer lookups the filter may spend per rolling hour
+NOVELTY_FACTS_MIN_REMAINING = 40    # ...and only while the owner's token still has this much quota left
+_novelty_lookup_times: collections.deque = collections.deque()
 
 
 async def _novelty_beer_facts(owner_id: int, bid: int) -> dict | None:
@@ -4308,6 +4312,21 @@ async def _novelty_beer_facts(owner_id: int, bid: int) -> dict | None:
     token = await user_tokens.get_token(owner_id)
     if not token:
         return None
+    # Quota discipline (audit R5): a busy tap can bring dozens of new beers in one pass. Look up at most
+    # NOVELTY_FACTS_MAX_PER_HOUR per rolling hour and only while the token has headroom (the usage read is free);
+    # the rest go through unfiltered, as they already do when a lookup fails.
+    now = time.time()
+    while _novelty_lookup_times and now - _novelty_lookup_times[0] > 3600:
+        _novelty_lookup_times.popleft()
+    if len(_novelty_lookup_times) >= NOVELTY_FACTS_MAX_PER_HOUR:
+        return None
+    try:
+        usage = await untappd_mcp.get_untappd_api_usage(token)
+    except untappd_mcp.UntappdMCPError:
+        return None
+    if not _quota_allows(usage, NOVELTY_FACTS_MIN_REMAINING):
+        return None
+    _novelty_lookup_times.append(now)
     try:
         detail = await untappd_mcp.get_beer(token, bid)
     except untappd_mcp.UntappdMCPError as e:

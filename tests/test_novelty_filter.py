@@ -105,3 +105,36 @@ async def test_a_failed_lookup_lets_the_beer_through(monkeypatch):
     cfg = {"noveltyStyles": [HAZY], "noveltyRatingMin": 3.8, "noveltyRatingMax": 5.0}
     ok, calls = await _item_passes(monkeypatch, cfg, {"beer": {}}, None)
     assert ok and calls == [7]
+
+
+async def test_facts_lookups_respect_the_hourly_budget_and_the_quota_gate(monkeypatch):
+    # audit R5: the filter must not drain the owner's MCP quota on a busy tap
+    calls = []
+
+    async def token(user_id):
+        return "tok"
+
+    async def get_beer(tok, bid):
+        calls.append(bid)
+        return {"beer": {"beer_style": HAZY, "rating_score": 4.0, "rating_count": 10}}
+
+    usage = {"lastSeen": {"remaining": 500, "ageSeconds": 5}}
+
+    async def get_usage(tok):
+        return usage
+
+    monkeypatch.setattr(webapp_server.user_tokens, "get_token", token)
+    monkeypatch.setattr(webapp_server.untappd_mcp, "get_beer", get_beer)
+    monkeypatch.setattr(webapp_server.untappd_mcp, "get_untappd_api_usage", get_usage)
+    monkeypatch.setattr(webapp_server, "_novelty_facts_cache", webapp_server.public_map_util.TTLCache(ttl_seconds=3600, max_entries=100))
+    webapp_server._novelty_lookup_times.clear()
+    monkeypatch.setattr(webapp_server, "NOVELTY_FACTS_MAX_PER_HOUR", 3)
+
+    results = [await webapp_server._novelty_beer_facts(1, bid) for bid in range(1, 7)]
+    assert len(calls) == 3 and [r is not None for r in results] == [True] * 3 + [False] * 3   # the rest pass unfiltered
+    assert await webapp_server._novelty_beer_facts(1, 2) is not None                       # cached ones stay free
+    assert len(calls) == 3
+
+    webapp_server._novelty_lookup_times.clear()
+    usage["lastSeen"] = {"remaining": 5, "ageSeconds": 5}                                  # nearly out of quota
+    assert await webapp_server._novelty_beer_facts(1, 50) is None and len(calls) == 3
