@@ -53,6 +53,7 @@ import untappd_mcp
 import user_tokens
 import venue_index
 import special_badge_dismissals
+import deploy_checks
 import input_checks
 import pending_checkins
 import wishlist_items
@@ -621,6 +622,20 @@ async def _resolve_token(tg_user: dict) -> str | None:
     if FALLBACK_TOKEN and OWNER_TELEGRAM_ID and str(user_id) == OWNER_TELEGRAM_ID:
         return FALLBACK_TOKEN
     return None
+
+
+async def _is_known_user(user_id) -> bool:
+    """Who may use the features that spend the owner's shared resources (the festival map every group member sees,
+    the Foursquare key, the direct Untappd quota): the owner, anyone who connected their own Untappd account,
+    and members of a group that joined the bot. A Telegram account that merely pressed Start is not one of them -
+    the Mini App's initData proves who someone is, not that they are meant to be here (audit S3/S4)."""
+    if user_id is None:
+        return False
+    if _is_auto_toast_owner(user_id) or (OWNER_TELEGRAM_ID and str(user_id) == OWNER_TELEGRAM_ID):
+        return True
+    if await user_tokens.get_token(user_id):
+        return True
+    return await group_membership.get_active_group(user_id) is not None
 
 
 async def _active_group(user_id: int) -> dict | None:
@@ -1421,6 +1436,8 @@ async def handle_venues_nearby(request: web.Request) -> web.Response:
         return _json_error("invalid_init_data", 401)
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
+    if not await _is_known_user(user_id):
+        return _json_error("not_allowed", 403)
 
     try:
         body = await request.json()
@@ -2330,6 +2347,24 @@ async def handle_lens_crawl(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "started": True}, status=202)
 
 
+_deploy_lock = asyncio.Lock()
+
+
+async def _notify_deploy_rejected(previous: str, problems: list[str]) -> None:
+    """Tells the owner a push was not deployed (the bot is still running the previous commit)."""
+    if _ptb_bot is None or not AUTO_TOAST_OWNER_ID:
+        return
+    try:
+        lang = await user_tokens.get_language(int(AUTO_TOAST_OWNER_ID)) or "uk"
+        details = html.escape("; ".join(problems)[:800])
+        await _ptb_bot.send_message(
+            chat_id=int(AUTO_TOAST_OWNER_ID), parse_mode="HTML",
+            text=i18n.t(lang, "deploy_rejected", previous=previous, details=details),
+        )
+    except Exception:
+        logger.exception("deploy webhook: could not tell the owner about the rejected deploy")
+
+
 async def _git(*args: str, cwd: str) -> tuple[int, str]:
     proc = await asyncio.create_subprocess_exec(
         "git", *args, cwd=cwd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
@@ -2390,14 +2425,28 @@ async def handle_deploy_webhook(request: web.Request) -> web.Response:
     if payload.get("ref") != "refs/heads/master":
         return web.json_response({"ok": True, "deployed": False, "reason": "not master"})
 
-    stashed = await _stash_local_changes(_data_dir)
-    code, output = await _git("pull", "--ff-only", cwd=_data_dir)
-    if code != 0:
-        logger.error("deploy webhook: git pull failed: %s", output)
-        return web.json_response({"ok": False, "error": "git_pull_failed", "output": output}, status=500)
+    # Two pushes close together (the routines push in bursts) used to run two `git pull`s at once.
+    async with _deploy_lock:
+        stashed = await _stash_local_changes(_data_dir)
+        _, old_head = await _git("rev-parse", "HEAD", cwd=_data_dir)
+        old_head = old_head.strip()
+        code, output = await _git("pull", "--ff-only", cwd=_data_dir)
+        if code != 0:
+            logger.error("deploy webhook: git pull failed: %s", output)
+            return web.json_response({"ok": False, "error": "git_pull_failed", "output": output}, status=500)
 
-    if "Already up to date" in output:
-        return web.json_response({"ok": True, "deployed": False, "reason": "no changes"})
+        if "Already up to date" in output:
+            return web.json_response({"ok": True, "deployed": False, "reason": "no changes"})
+
+        # Never restart into a checkout that cannot start (audit R1): validate what the pull changed first and
+        # roll back to the previous commit if anything is wrong - the running process keeps serving meanwhile.
+        _, changed = await _git("diff", "--name-only", old_head, "HEAD", cwd=_data_dir)
+        problems = await deploy_checks.validate(_data_dir, [n.strip() for n in changed.splitlines() if n.strip()])
+        if problems:
+            await _git("reset", "--hard", old_head, cwd=_data_dir)
+            logger.error("deploy webhook: pulled code rejected, rolled back to %s: %s", old_head[:7], problems)
+            await _notify_deploy_rejected(old_head[:7], problems)
+            return web.json_response({"ok": False, "error": "deploy_checks_failed", "problems": problems}, status=422)
 
     logger.info("deploy webhook: pulled new code (stashed local edits of: %s), restarting: %s", stashed or "nothing", output.strip())
     try:
@@ -2604,6 +2653,8 @@ async def handle_festival_map_move(request: web.Request) -> web.Response:
         return _json_error("invalid_init_data", 401)
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
+    if not await _is_known_user(user_id):
+        return _json_error("not_allowed", 403)
 
     try:
         body = await request.json()
@@ -2643,6 +2694,8 @@ async def _handle_festival_map_gap(request: web.Request, edit) -> web.Response:
     if not init_data:
         return _json_error("invalid_init_data", 401)
     user_id = (init_data.get("user") or {}).get("id")
+    if not await _is_known_user(user_id):
+        return _json_error("not_allowed", 403)
     try:
         body = await request.json()
     except json.JSONDecodeError:
@@ -2680,6 +2733,8 @@ async def _festival_map_island_call(request: web.Request, call) -> web.Response:
     if not init_data:
         return _json_error("invalid_init_data", 401)
     user_id = (init_data.get("user") or {}).get("id")
+    if not await _is_known_user(user_id):
+        return _json_error("not_allowed", 403)
     try:
         body = await request.json()
     except json.JSONDecodeError:
@@ -2726,6 +2781,8 @@ async def handle_festival_map_island_create(request: web.Request) -> web.Respons
         return _json_error("invalid_init_data", 401)
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
+    if not await _is_known_user(user_id):
+        return _json_error("not_allowed", 403)
 
     try:
         body = await request.json()
@@ -2749,6 +2806,8 @@ async def handle_festival_map_island_delete(request: web.Request) -> web.Respons
         return _json_error("invalid_init_data", 401)
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
+    if not await _is_known_user(user_id):
+        return _json_error("not_allowed", 403)
 
     try:
         body = await request.json()
@@ -3175,6 +3234,8 @@ async def handle_festival_watch_set_location(request: web.Request) -> web.Respon
         return _json_error("invalid_init_data", 401)
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
+    if not await _is_known_user(user_id):
+        return _json_error("not_allowed", 403)
     try:
         body = await request.json()
     except json.JSONDecodeError:
@@ -3211,6 +3272,8 @@ async def handle_festival_watch_add_extra_venue(request: web.Request) -> web.Res
         return _json_error("invalid_init_data", 401)
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
+    if not await _is_known_user(user_id):
+        return _json_error("not_allowed", 403)
     try:
         body = await request.json()
     except json.JSONDecodeError:

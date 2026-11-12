@@ -72,3 +72,56 @@ async def test_a_body_that_is_not_an_object_is_a_400_not_a_500():
             assert r.status == 400 and (await r.json())["error"] == "invalid_json", raw
         r = await c.post("/x", json={"a": 1})
         assert r.status == 200 and (await r.json())["keys"] == ["a"]
+
+
+async def test_known_users_are_the_owner_token_holders_and_group_members(monkeypatch):
+    async def token(user_id):
+        return "tok" if user_id == 2 else None
+
+    async def group(user_id):
+        return {"chatId": 1} if user_id == 3 else None
+
+    monkeypatch.setattr(ws, "AUTO_TOAST_OWNER_ID", "1")
+    monkeypatch.setattr(ws, "OWNER_TELEGRAM_ID", "")
+    monkeypatch.setattr(ws.user_tokens, "get_token", token)
+    monkeypatch.setattr(ws.group_membership, "get_active_group", group)
+    assert [await ws._is_known_user(u) for u in (1, 2, 3, 4, None)] == [True, True, True, False, False]
+
+
+async def test_a_stranger_cannot_edit_the_map_or_spend_the_direct_quota(monkeypatch):
+    async def stranger(request):
+        return {"user": {"id": 99}}
+
+    async def nobody(user_id):
+        return None
+
+    monkeypatch.setattr(ws, "_require_valid_init_data", stranger)
+    monkeypatch.setattr(ws, "AUTO_TOAST_OWNER_ID", "1")
+    monkeypatch.setattr(ws, "OWNER_TELEGRAM_ID", "")
+    monkeypatch.setattr(ws.user_tokens, "get_token", nobody)
+    monkeypatch.setattr(ws.group_membership, "get_active_group", nobody)
+
+    app = web.Application(middlewares=[ws._json_object_middleware])
+    for path, handler in (
+        ("/move", ws.handle_festival_map_move), ("/gap", ws.handle_festival_map_gap_insert), ("/order", ws.handle_festival_map_zone_order),
+        ("/island", ws.handle_festival_map_island_create), ("/delete", ws.handle_festival_map_island_delete),
+        ("/loc", ws.handle_festival_watch_set_location), ("/extra", ws.handle_festival_watch_add_extra_venue),
+        ("/nearby", ws.handle_venues_nearby),
+    ):
+        app.router.add_post(path, handler)
+    async with TestClient(TestServer(app)) as c:
+        for path in ("/move", "/gap", "/order", "/island", "/delete", "/loc", "/extra", "/nearby"):
+            r = await c.post(path, json={"zone": "Area 1", "lat": 1, "lng": 2, "foursquareId": "4b5bc1e0f964a520e6e925e3"})
+            assert r.status == 403 and (await r.json())["error"] == "not_allowed", path
+
+
+async def test_a_huge_index_cannot_grow_a_side_list_or_the_map_file(tmp_path):
+    import festival_map
+
+    festival_map.init(str(tmp_path))
+    zones = ["Area 1"]
+    assert await festival_map.move_brewery("fest", "A", "Area 1", "left", 300_000, zones)
+    layout = await festival_map.get_layout("fest", ["A"], {"A": "Area 1"}, zones)
+    assert len(layout["Area 1"]["left"]) <= festival_map.MAX_PADDING + 1
+    assert not await festival_map.insert_gap("fest", "Area 1", "left", 10**8, zones)        # out of range: refused
+    assert (tmp_path / "festival_map.json").stat().st_size < 10_000

@@ -199,6 +199,12 @@ def _island_lists(zone: dict) -> list[list[str | None]]:
     return [island["breweries"] for island in zone["islands"].values()]
 
 
+# A caller-supplied index never grows a side list by more than this many empty slots (index 10**8 used to build a
+# 10**8-element list and a 100 MB map file), and never exceeds MAX_INDEX.
+MAX_PADDING = 50
+MAX_INDEX = 1000
+
+
 def _trim_trailing_none(loaded: dict[str, dict]) -> bool:
     """A None past the last real entry in a side's (or island's) list
     doesn't align with anything anymore (nothing further along to leave
@@ -543,7 +549,7 @@ async def move_brewery(
             target = island["breweries"]
         else:
             target = loaded[zone][side]
-        index = max(0, index)
+        index = min(max(0, index), len(target) + MAX_PADDING)
         claim_slot = index >= len(target) or target[index] is None
 
         for z in loaded.values():
@@ -593,7 +599,7 @@ async def remove_gap(
 async def _edit_gap(
     festival_key: str | None, zone: str, side: str, index: int, zones: list[str], island_id: str | None, insert: bool,
 ) -> bool:
-    if zone not in zones or index < 0:
+    if zone not in zones or index < 0 or index > MAX_INDEX:
         return False
     if island_id is None and side not in SIDES:
         return False
@@ -670,7 +676,7 @@ async def insert_island_spacer(festival_key: str | None, zone: str, index: int, 
     `spacer` (no stands, drawn as an empty row, removed with delete_island)
     at position `index` of the zone's islands (display order = dict order).
     Returns its id, or None for an invalid zone/index."""
-    if zone not in zones or index < 0:
+    if zone not in zones or index < 0 or index > MAX_INDEX:
         return None
     bucket = _bucket_key(festival_key)
     async with _lock:
