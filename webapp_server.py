@@ -375,7 +375,22 @@ async def _no_cache_middleware(request: web.Request, handler):
         response.headers["Cache-Control"] = "no-store"
     elif "Cache-Control" not in response.headers:
         response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    _add_security_headers(request, response)
     return response
+
+
+def _add_security_headers(request: web.Request, response: web.StreamResponse) -> None:
+    """Headers that cost nothing and close easy holes (audit S9): no content sniffing, no full referrer sent to other
+    sites, and the Mini App/API may only be framed by Telegram itself. The public map (/map and /api/public) stays
+    embeddable - it is read-only and meant to be linked from outside. A script-src policy is NOT set here: the pages
+    still carry inline scripts and styles, so one would break them."""
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    if not (request.path == "/map" or request.path.startswith("/api/public/")):
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org; base-uri 'self'; object-src 'none'",
+        )
 
 
 # Pre-loaded festival beer list (bot.py's ALL_BEERS - id/name/brewery/style/session),
@@ -3687,7 +3702,9 @@ async def start_webapp_server(
     aio_app = _build_app()
     runner = web.AppRunner(aio_app, access_log_class=_DstAwareAccessLogger)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", port)
+    # WEBAPP_HOST=127.0.0.1 when a reverse proxy on the same machine is the only way in (audit S8); the default keeps
+    # the old behaviour so a deploy cannot cut off an existing setup.
+    site = web.TCPSite(runner, os.environ.get("WEBAPP_HOST", "0.0.0.0"), port)
     await site.start()
     logger.info("Festival check-in Mini App server listening on :%s", port)
     if not dev_mode:
