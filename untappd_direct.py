@@ -40,7 +40,7 @@ import time
 
 import httpx
 
-from untappd_mcp import UntappdMalformedResponse, UntappdMCPError, UntappdRateLimited
+from untappd_mcp import UntappdMalformedResponse, UntappdMCPError, UntappdRateLimited, is_rate_limit_message
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +202,7 @@ async def _call_api(method: str, path: str, token: str, params: dict | None = No
     # classified the same way for callers.
     if meta.get("code") != 200:
         message = str(meta.get("error_detail") or meta.get("developer_friendly") or meta)
-        if "429" in message or "rate" in message.lower():
+        if is_rate_limit_message(message):
             raise UntappdRateLimited(message)
         raise UntappdMCPError(message)
 

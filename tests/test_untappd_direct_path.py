@@ -43,3 +43,12 @@ def test_foursquare_ids_from_request_bodies_are_validated():
     assert ws._valid_foursquare_id("4b5bc1e0f964a520e6e925e3")
     for bad in ("../../friend/remove/1", "abc", "x" * 41, "a/b/c/d/e/f/g", None, 123, ["4b5bc1e0f964a520e6e925e3"], ""):
         assert not ws._valid_foursquare_id(bad), bad
+
+
+def test_rate_limit_text_is_matched_by_whole_words():
+    # audit R4: "rate" inside "generated"/"separate" must not read as a rate limit
+    from untappd_mcp import is_rate_limit_message
+    for text in ("HTTP 429", "Rate limit exceeded", "rate_limit", "Too Many Requests", "request throttled"):
+        assert is_rate_limit_message(text), text
+    for text in ("Beer separate from brewery", "Could not generate report", "Inaccurate id 14290", "error 14290", ""):
+        assert not is_rate_limit_message(text), text

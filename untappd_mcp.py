@@ -13,6 +13,7 @@ only thing that stays global.
 
 import itertools
 import json
+import re
 import logging
 import os
 from datetime import datetime
@@ -24,6 +25,15 @@ logger = logging.getLogger(__name__)
 
 _client: httpx.AsyncClient | None = None
 _id_counter = itertools.count(1)
+
+
+_RATE_LIMIT_RE = re.compile(r"\b429\b|rate[\s_-]?limit|too many requests|throttl", re.IGNORECASE)
+
+
+def is_rate_limit_message(message: str) -> bool:
+    """Whether an error text is a rate-limit one. Whole words only: the old `"rate" in message` test also
+    fired on "generated", "separate", "accurate"... and turned ordinary errors into a quota-exhausted state (audit R4)."""
+    return bool(_RATE_LIMIT_RE.search(message or ""))
 
 
 class UntappdMCPError(Exception):
@@ -145,7 +155,7 @@ async def _call_tool(name: str, arguments: dict, token: str) -> dict:
         raise UntappdMalformedResponse(f"Malformed MCP tool-result JSON: {e}") from e
     if isinstance(parsed, dict) and parsed.get("error"):
         message = str(parsed.get("message", parsed["error"]))
-        if "429" in message or "rate" in message.lower():
+        if is_rate_limit_message(message):
             raise UntappdRateLimited(message)
         raise UntappdMCPError(message)
     return parsed
