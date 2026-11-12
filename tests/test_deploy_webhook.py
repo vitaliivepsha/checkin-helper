@@ -95,3 +95,30 @@ async def test_local_edits_of_tracked_files_are_stashed_so_the_pull_can_go_ahead
         ["git", "stash", "list"], cwd=tmp_path, capture_output=True, text=True,
     ).stdout
     assert await webapp_server._stash_local_changes(str(tmp_path)) == []   # clean tree: nothing to do
+
+
+async def test_restart_waits_for_requests_in_flight(monkeypatch):
+    import asyncio
+    import webapp_server as ws
+
+    monkeypatch.setattr(ws, "STOP_GRACE_SECONDS", 0.05)
+    stopped = []
+    ws._inflight_requests = 0
+
+    async def slow(request):
+        await asyncio.sleep(0.4)
+        return ws.web.Response(text="done")
+
+    app = ws.web.Application(middlewares=[ws._inflight_middleware])
+    app.router.add_get("/slow", slow)
+    from aiohttp.test_utils import TestClient, TestServer
+    async with TestClient(TestServer(app)) as c:
+        request = asyncio.create_task(c.get("/slow"))
+        await asyncio.sleep(0.1)                                  # the slow request is running
+        assert ws._inflight_requests == 1
+        stopper = asyncio.create_task(ws._stop_when_idle(lambda: stopped.append(ws._inflight_requests)))
+        await asyncio.sleep(0.2)
+        assert stopped == []                                      # still waiting for it
+        assert (await request).status == 200
+        await stopper
+        assert stopped == [0]                                     # stopped only once nothing was running

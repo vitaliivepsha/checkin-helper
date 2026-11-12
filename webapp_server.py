@@ -358,6 +358,33 @@ async def _json_object_middleware(request: web.Request, handler):
     return await handler(request)
 
 
+_inflight_requests = 0
+STOP_GRACE_SECONDS = 1.0     # lets the deploy webhook's own answer go out
+STOP_MAX_WAIT_SECONDS = 20   # a request still running after this is cut off, as before
+
+
+@web.middleware
+async def _inflight_middleware(request: web.Request, handler):
+    """Counts the requests being served, so a deploy restart can wait for them (audit R10: stop_running() one
+    second after the webhook used to cut a check-in off mid-request - see R2)."""
+    global _inflight_requests
+    _inflight_requests += 1
+    try:
+        return await handler(request)
+    finally:
+        _inflight_requests -= 1
+
+
+async def _stop_when_idle(stop) -> None:
+    """Calls `stop` once only the deploy request itself is left (or after STOP_MAX_WAIT_SECONDS)."""
+    await asyncio.sleep(STOP_GRACE_SECONDS)
+    waited = 0.0
+    while _inflight_requests > 0 and waited < STOP_MAX_WAIT_SECONDS:
+        await asyncio.sleep(0.5)
+        waited += 0.5
+    stop()
+
+
 @web.middleware
 async def _no_cache_middleware(request: web.Request, handler):
     """Telegram's Mini App WebView has been observed to cache aggressively
@@ -2561,7 +2588,7 @@ async def handle_deploy_webhook(request: web.Request) -> web.Response:
         # Respond first, then stop - GitHub's webhook delivery has its own
         # timeout and shouldn't be left hanging on the process tearing
         # itself down.
-        asyncio.get_running_loop().call_later(1, _ptb_app.stop_running)
+        asyncio.get_running_loop().create_task(_stop_when_idle(_ptb_app.stop_running))
     return response
 
 
@@ -3485,7 +3512,7 @@ async def handle_festival_watch_set_notify_listed(request: web.Request) -> web.R
 
 
 def _build_app() -> web.Application:
-    app = web.Application(middlewares=[_json_object_middleware, _no_cache_middleware], client_max_size=MAX_REQUEST_BYTES)
+    app = web.Application(middlewares=[_inflight_middleware, _json_object_middleware, _no_cache_middleware], client_max_size=MAX_REQUEST_BYTES)
     app.router.add_get("/checkin", handle_index)
     app.router.add_get("/map", handle_public_index)
     app.router.add_post("/api/public/i18n", handle_public_i18n)
