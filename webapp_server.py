@@ -1117,7 +1117,7 @@ def validate_init_data(init_data: str, bot_token: str, max_age_seconds: int = 86
     secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
     computed_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
-    if not hmac.compare_digest(computed_hash, received_hash):
+    if not _constant_time_equal(computed_hash, received_hash):
         return None
 
     auth_date = pairs.get("auth_date")
@@ -2188,6 +2188,16 @@ async def _lens_resolve_item(token: str, owner_id: int, item, wishlist_bids: set
 _lens_clients: dict[str, dict] = {}   # since the last restart: client label -> {lookups, items, last}
 
 
+def _constant_time_equal(a: str, b: str) -> bool:
+    """compare_digest on bytes: on str it raises TypeError for non-ASCII input (a 500 instead of a 401, audit S7)."""
+    return hmac.compare_digest((a or "").encode("utf-8"), (b or "").encode("utf-8"))
+
+
+def _lens_authorized(request: web.Request) -> bool:
+    """The one X-Lens-Token check every lens route uses (it used to be copied into each handler)."""
+    return bool(LENS_API_TOKEN) and _constant_time_equal(request.headers.get("X-Lens-Token", ""), LENS_API_TOKEN)
+
+
 async def handle_lens_lookup(request: web.Request) -> web.Response:
     """Batch beer lookup for a browser userscript (see LENS_API_TOKEN's own
     comment above): given raw {name, brewery} pairs scraped from a shop's
@@ -2201,7 +2211,7 @@ async def handle_lens_lookup(request: web.Request) -> web.Response:
     sources) - deliberately no badge computation here, out of scope for
     "should I buy this" browsing (unlike /scan's own use of the same
     resolver)."""
-    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+    if not _lens_authorized(request):
         return _json_error("unauthorized", 401)
 
     try:
@@ -2253,7 +2263,7 @@ async def handle_lens_report(request: web.Request) -> web.Response:
     """Review view of lens_log.py (same X-Lens-Token as /api/lens/lookup):
     unmatched products, suspicious matches and outcome changes - e.g.
     `curl -H "X-Lens-Token: $LENS_API_TOKEN" <origin>/api/lens/report?limit=30`."""
-    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+    if not _lens_authorized(request):
         return _json_error("unauthorized", 401)
     try:
         limit = max(1, min(1000, int(request.query.get("limit", "50"))))
@@ -2275,7 +2285,7 @@ async def handle_lens_report(request: web.Request) -> web.Response:
 async def _lens_rejection_request(request: web.Request) -> tuple[dict, None] | tuple[None, web.Response]:
     """Shared validation of /api/lens/reject and /unreject: (fields, None) or
     (None, error response). Same X-Lens-Token gate as the lookup."""
-    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+    if not _lens_authorized(request):
         return None, _json_error("unauthorized", 401)
     try:
         body = await request.json()
@@ -2359,7 +2369,7 @@ async def handle_lens_crawl(request: web.Request) -> web.Response:
     the daily run - e.g. right after a matcher fix, to re-resolve what was
     unmatched. Runs in the background; progress shows up in /api/lens/report
     under "crawl"."""
-    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+    if not _lens_authorized(request):
         return _json_error("unauthorized", 401)
     if _shop_crawl_running:
         return _json_error("already_running", 409)
@@ -2436,7 +2446,7 @@ async def handle_deploy_webhook(request: web.Request) -> web.Response:
     raw_body = await request.read()
     signature = request.headers.get("X-Hub-Signature-256", "")
     expected = "sha256=" + hmac.new(DEPLOY_WEBHOOK_SECRET.encode(), raw_body, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(signature, expected):
+    if not _constant_time_equal(signature, expected):
         return _json_error("bad_signature", 401)
 
     try:
@@ -5134,7 +5144,7 @@ async def _lens_review_loop() -> None:
 
 async def handle_lens_review_send(request: web.Request) -> web.Response:
     """Sends the review queue now (same X-Lens-Token), e.g. to try it or catch up."""
-    if not LENS_API_TOKEN or request.headers.get("X-Lens-Token", "") != LENS_API_TOKEN:
+    if not _lens_authorized(request):
         return _json_error("unauthorized", 401)
     return web.json_response({"ok": True, "sent": await _send_lens_review_batch()})
 
