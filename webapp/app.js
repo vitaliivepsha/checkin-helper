@@ -448,6 +448,8 @@
     });
   });
 
+  const API_TIMEOUT_MS = 30000;
+
   async function apiPost(path, body) {
     if (PUBLIC_MODE) {
       const publicPath = PUBLIC_API_PATHS[path];
@@ -455,16 +457,27 @@
       path = publicPath;
       body = Object.assign({}, body, { fest: PUBLIC_FEST, lang: navigator.language });
     }
-    const resp = await fetch(path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": PUBLIC_MODE ? "" : initData,
-      },
-      body: JSON.stringify(body || {}),
-    });
-    const data = await resp.json().catch(() => ({}));
-    return { ok: resp.ok, status: resp.status, data };
+    // Never throws and never hangs: a dropped connection or a stalled server used to leave a rejected promise
+    // (or a request that waits forever) in front of a spinner nobody could close. status 0 = no answer.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+    try {
+      const resp = await fetch(path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Telegram-Init-Data": PUBLIC_MODE ? "" : initData,
+        },
+        body: JSON.stringify(body || {}),
+        signal: controller.signal,
+      });
+      const data = await resp.json().catch(() => ({}));
+      return { ok: resp.ok, status: resp.status, data };
+    } catch (e) {
+      return { ok: false, status: 0, data: { error: e && e.name === "AbortError" ? "timeout" : "network" } };
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   // ---- UI strings in the viewer's own language ----
