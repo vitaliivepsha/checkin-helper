@@ -75,3 +75,15 @@ def test_every_key_used_by_the_mini_app_exists():
             used |= {f"{base}_{cat}" for cat in ("one", "few", "many", "other")}
     missing = sorted(k for k in used if k not in i18n.STRINGS["en"] or k not in i18n.STRINGS["uk"])
     assert not missing, missing
+
+
+def test_app_js_markup_has_no_emoji():
+    # design rule (and audit A3): icons come from the SVG sprite, never from emoji or pictographic symbols in code
+    import re
+    pictographs = re.compile("[☀-➿\U0001F000-\U0001FAFF️⭐⬆⬇]")
+    source = open("webapp/app.js", encoding="utf-8").read()
+    offenders = [
+        n for n, line in enumerate(source.split("\n"), 1)
+        if pictographs.search(line) and not line.lstrip().startswith("//")
+    ]
+    assert offenders == [], f"emoji in app.js code on lines {offenders}"

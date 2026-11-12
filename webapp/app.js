@@ -328,7 +328,7 @@
       // list empty every 5 seconds while just sitting on the screen.
       if (!queuePollHandle) $("queue-list").innerHTML = "";
       fetchQueue();
-      if (!queuePollHandle) queuePollHandle = setInterval(fetchQueue, 5000);
+      if (!queuePollHandle) queuePollHandle = setInterval(guardedPoll(fetchQueue), 5000);
     } else if (queuePollHandle) {
       clearInterval(queuePollHandle);
       queuePollHandle = null;
@@ -337,7 +337,7 @@
       fetchFestivalStats();
       // Slower than the queue's 5s - personal festival progress changes
       // far less often per tick than a live shared queue does.
-      if (!statsPollHandle) statsPollHandle = setInterval(fetchFestivalStats, 15000);
+      if (!statsPollHandle) statsPollHandle = setInterval(guardedPoll(fetchFestivalStats), 15000);
     } else if (statsPollHandle) {
       clearInterval(statsPollHandle);
       statsPollHandle = null;
@@ -403,7 +403,7 @@
       if (!mapPollHandle) $("festival-map-zones").innerHTML = "";
       fetchFestivalMap();
       // Same 5s cadence as the queue - the precedent for "live shared state."
-      if (!mapPollHandle) mapPollHandle = setInterval(fetchFestivalMap, 5000);
+      if (!mapPollHandle) mapPollHandle = setInterval(guardedPoll(fetchFestivalMap), 5000);
     } else if (mapPollHandle) {
       clearInterval(mapPollHandle);
       mapPollHandle = null;
@@ -449,6 +449,17 @@
   });
 
   const API_TIMEOUT_MS = 30000;
+
+  // A poll tick is skipped while the page is hidden or the previous request is still running (audit F2): an
+  // older answer can no longer overwrite a newer one, and a backgrounded Mini App stops costing traffic.
+  function guardedPoll(fn) {
+    let busy = false;
+    return async () => {
+      if (document.hidden || busy) return;
+      busy = true;
+      try { await fn(); } finally { busy = false; }
+    };
+  }
 
   async function apiPost(path, body) {
     if (PUBLIC_MODE) {
@@ -1046,7 +1057,7 @@
           <div class="result-name"><span class="result-name-text">${escapeHtml(item.beerName || "")}</span></div>
           ${metaLine(item.brewery)}
           <div class="hint">
-            ${item.rating ? `★ ${item.rating}` : ""}${item.venueName ? ` · 📍 ${escapeHtml(item.venueName)}` : ""}
+            ${item.rating ? `${ICON_STAR} ${escapeHtml(String(item.rating))}` : ""}${item.venueName ? ` · ${ICON_PIN} ${escapeHtml(item.venueName)}` : ""}
           </div>
           <div class="hint pending-fail-reason">${escapeHtml(T(PENDING_FAIL_REASON_KEY[item.failReason] || "app_pending_reason_default"))}</div>
         </div>
