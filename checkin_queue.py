@@ -31,6 +31,8 @@ use but is no longer wired to the app's "✕" button.
 import asyncio
 import json
 import os
+
+import json_store
 import time
 import uuid
 
@@ -48,18 +50,15 @@ def init(data_dir: str) -> None:
 def _load() -> list[dict]:
     if not _path or not os.path.exists(_path):
         return []
-    try:
-        with open(_path, encoding="utf-8") as f:
-            return json.load(f).get("items", [])
-    except (json.JSONDecodeError, OSError):
-        return []
+    items = json_store.load_json(_path, {}).get("items", [])
+    return items if isinstance(items, list) else []
 
 
 def _save(items: list[dict]) -> None:
     tmp_path = _path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump({"items": items}, f, ensure_ascii=False, indent=2)
-    os.replace(tmp_path, _path)
+    json_store.replace_file(tmp_path, _path)
 
 
 async def list_items(group_id: int | None) -> list[dict]:

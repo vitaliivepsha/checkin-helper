@@ -21,6 +21,8 @@ Same shape as festival_watch.py/comment_watch.py: module-level `_path`,
 import asyncio
 import json
 import os
+
+import json_store
 import re
 import time
 
@@ -61,18 +63,14 @@ def init(data_dir: str) -> None:
 def _load() -> dict:
     if not _path or not os.path.exists(_path):
         return {}
-    try:
-        with open(_path, encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+    return json_store.load_json(_path, {})
 
 
 def _save(data: dict) -> None:
     tmp_path = _path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
-    os.replace(tmp_path, _path)
+    json_store.replace_file(tmp_path, _path)
 
 
 async def record(user_id: int, badge_name: str, user_badge_id) -> None:
@@ -117,18 +115,14 @@ async def get_all(user_id: int) -> dict:
 def _load_sync() -> dict:
     if not _sync_path or not os.path.exists(_sync_path):
         return {}
-    try:
-        with open(_sync_path, encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+    return json_store.load_json(_sync_path, {})
 
 
 def _save_sync(data: dict) -> None:
     tmp_path = _sync_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
-    os.replace(tmp_path, _sync_path)
+    json_store.replace_file(tmp_path, _sync_path)
 
 
 async def next_sync_turn(user_ids: list[int], full_resync_cooldown_seconds: float) -> tuple[int, int] | None:

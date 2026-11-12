@@ -26,6 +26,8 @@ visitor's browser makes - so it is crawled through that, 100 products a page.
 import asyncio
 import json
 import os
+
+import json_store
 import re
 import time
 from urllib.parse import urljoin, urlparse
@@ -82,18 +84,14 @@ def init(data_dir: str) -> None:
 def load_state() -> dict:
     if not _state_path or not os.path.exists(_state_path):
         return {}
-    try:
-        with open(_state_path, encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+    return json_store.load_json(_state_path, {})
 
 
 def save_state(state: dict) -> None:
     tmp = _state_path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, _state_path)
+    json_store.replace_file(tmp, _state_path)
 
 
 # ---- parsers (pure) ---------------------------------------------------------

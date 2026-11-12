@@ -18,6 +18,8 @@ import hashlib
 import html
 import json
 import os
+
+import json_store
 import time
 
 import lens_confirmations
@@ -48,15 +50,10 @@ def _load() -> dict:
     global _mirror
     if _mirror is not None:
         return _mirror
-    _mirror = {"items": {}, "sent": {}, "lastRun": 0, "answers": {}, "weekly": {}}
-    if _path and os.path.exists(_path):
-        try:
-            with open(_path, encoding="utf-8") as f:
-                loaded = json.load(f)
-            if isinstance(loaded, dict):
-                _mirror.update({k: loaded[k] for k in ("items", "sent", "lastRun", "answers", "weekly") if k in loaded})
-        except (json.JSONDecodeError, OSError):
-            pass
+    loaded = json_store.load_json(_path, {})
+    mirror = {"items": {}, "sent": {}, "lastRun": 0, "answers": {}, "weekly": {}}
+    mirror.update({k: loaded[k] for k in ("items", "sent", "lastRun", "answers", "weekly") if k in loaded})
+    _mirror = mirror
     return _mirror
 
 
@@ -64,7 +61,7 @@ def _save() -> None:
     tmp = _path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(_mirror, f, ensure_ascii=False, separators=(",", ":"))
-    os.replace(tmp, _path)
+    json_store.replace_file(tmp, _path)
 
 
 def _item_id(key: str, bid: int) -> str:

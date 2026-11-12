@@ -13,6 +13,8 @@ account).
 import asyncio
 import json
 import os
+
+import json_store
 import time
 
 import resync_schedule
@@ -35,11 +37,7 @@ def _load() -> dict:
     if not _path or not os.path.exists(_path):
         _mirror = {}
         return _mirror
-    try:
-        with open(_path, encoding="utf-8") as f:
-            _mirror = json.load(f)
-    except (json.JSONDecodeError, OSError):
-        _mirror = {}
+    _mirror = json_store.load_json(_path, {})
     return _mirror
 
 
@@ -47,7 +45,7 @@ def _save() -> None:
     tmp_path = _path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(_mirror, f, ensure_ascii=False, separators=(",", ":"))
-    os.replace(tmp_path, _path)
+    json_store.replace_file(tmp_path, _path)
 
 
 def _entry(user_id: int) -> dict:

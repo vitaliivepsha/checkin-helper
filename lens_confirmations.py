@@ -9,6 +9,8 @@ os.replace writes) with an in-memory mirror, since every lookup reads it."""
 import asyncio
 import json
 import os
+
+import json_store
 import time
 
 import beer_match
@@ -29,15 +31,7 @@ def _load() -> dict:
     global _mirror
     if _mirror is not None:
         return _mirror
-    _mirror = {}
-    if _path and os.path.exists(_path):
-        try:
-            with open(_path, encoding="utf-8") as f:
-                loaded = json.load(f)
-            if isinstance(loaded, dict):
-                _mirror = loaded
-        except (json.JSONDecodeError, OSError):
-            pass
+    _mirror = json_store.load_json(_path, {})   # assigned only after a successful read: an unreadable file raises
     return _mirror
 
 
@@ -45,7 +39,7 @@ def _save() -> None:
     tmp = _path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(_mirror, f, ensure_ascii=False, separators=(",", ":"))
-    os.replace(tmp, _path)
+    json_store.replace_file(tmp, _path)
 
 
 def _key(brewery: str, name: str) -> str:

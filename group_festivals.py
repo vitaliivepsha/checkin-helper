@@ -16,6 +16,8 @@ import asyncio
 import json
 import os
 
+import json_store
+
 _path: str | None = None
 _lock = asyncio.Lock()
 
@@ -28,18 +30,14 @@ def init(data_dir: str) -> None:
 def _load() -> dict:
     if not _path or not os.path.exists(_path):
         return {}
-    try:
-        with open(_path, encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+    return json_store.load_json(_path, {})
 
 
 def _save(data: dict) -> None:
     tmp_path = _path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp_path, _path)
+    json_store.replace_file(tmp_path, _path)
 
 
 async def get_group_festival(chat_id: int) -> str | None:

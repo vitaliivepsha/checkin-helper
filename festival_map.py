@@ -76,6 +76,8 @@ import asyncio
 import copy
 import json
 import os
+
+import json_store
 import re
 import unicodedata
 
@@ -114,12 +116,8 @@ def _load_all() -> dict:
     that knows the right answer (the app's current default key)."""
     if not _path or not os.path.exists(_path):
         return {}
-    try:
-        with open(_path, encoding="utf-8") as f:
-            raw = json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
-    if not isinstance(raw, dict) or ("zones" in raw and isinstance(raw["zones"], dict)):
+    raw = json_store.load_json(_path, {})
+    if "zones" in raw and isinstance(raw["zones"], dict):
         return {}
     return raw
 
@@ -128,7 +126,7 @@ def _save_all(data: dict) -> None:
     tmp_path = _path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp_path, _path)
+    json_store.replace_file(tmp_path, _path)
 
 
 async def migrate_legacy_default(default_key: str | None) -> None:
@@ -145,12 +143,8 @@ async def migrate_legacy_default(default_key: str | None) -> None:
     if not _path or not os.path.exists(_path):
         return
     async with _lock:
-        try:
-            with open(_path, encoding="utf-8") as f:
-                raw = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            return
-        if not isinstance(raw, dict) or "zones" not in raw or not isinstance(raw["zones"], dict):
+        raw = json_store.load_json(_path, {})
+        if "zones" not in raw or not isinstance(raw["zones"], dict):
             return  # already migrated, or not the old shape - nothing to do
         _save_all({_bucket_key(default_key): raw})
 

@@ -1,4 +1,6 @@
 import os
+
+import json_store
 from dotenv import load_dotenv
 load_dotenv()  # must run before any local module that reads env vars at import time (e.g. untappd_mcp._MCP_URL)
 
@@ -507,17 +509,11 @@ def _atomic_write_json(path: str, data: dict) -> None:
     tmp_path = path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp_path, path)
+    json_store.replace_file(tmp_path, path)
 
 
 def _load_json_tolerant(path: str) -> dict:
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+    return json_store.load_json(path, {})
 
 
 async def load_pinned() -> dict:
