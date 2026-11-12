@@ -359,8 +359,20 @@ async def report(limit: int = 50) -> dict:
     for e in entries:
         if e.get("via"):
             vias[e["via"]] = vias.get(e["via"], 0) + 1
+    # Matches whose catalog brewery shares no words with the shop's brewery text - the pairs a "check the brewery"
+    # rule in the matcher would demote (aliases are not logged, so some of these are fine).
+    brewery_mismatch = sorted(
+        (e for e in entries if e["outcome"] == "matched" and e.get("queryBrewery") and e.get("matchedBrewery")
+         and not beer_match.brewery_names_match(e["queryBrewery"], e["matchedBrewery"])),
+        key=lambda e: -e.get("count", 0),
+    )
     return {
         "total": len(entries), "outcomes": outcomes, "matchKinds": kinds, "viaCounts": vias,
+        "breweryMismatchTotal": len(brewery_mismatch),
+        "breweryMismatch": [
+            {k: e.get(k) for k in ("queryBrewery", "queryName", "matchedBrewery", "matchedName", "via", "count")}
+            for e in brewery_mismatch[:limit]
+        ],
         "unmatched": [brief(e) for e in unmatched[:limit]],
         "suspicious": [brief(e) for e in suspicious[:limit]],
         "changed": [brief(e) for e in changed[:limit]],

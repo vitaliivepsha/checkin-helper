@@ -207,3 +207,16 @@ async def test_report_shows_which_client_versions_ask(tmp_path, monkeypatch):
         clients = (await (await c.get("/api/lens/report", headers=headers)).json())["clients"]
     assert clients["userscript 2.9.4"]["items"] == 1 and clients["legacy (no version)"]["items"] == 2
     assert clients["userscript 2.9.4"]["ua"] == "TestBrowser/1.0" and clients["userscript 2.9.4"]["ip"] == "203.0.113.7"
+
+
+async def test_report_lists_matches_whose_catalog_brewery_shares_no_words_with_the_shop_brewery(tmp_path):
+    lens_log.init(str(tmp_path))
+    items = [{"name": "Hazy", "brewery": "Nowy Browar"}, {"name": "Lager", "brewery": "Stu Mostów"}]
+    results = [
+        {**matched("Hazy", "Totally Other Brewing", 1), "name": "Hazy"},
+        {**matched("Lager", "Browar Stu Mostów", 2), "name": "Lager"},
+    ]
+    await lens_log.record(items, results)
+    report = await lens_log.report()
+    assert report["breweryMismatchTotal"] == 1
+    assert report["breweryMismatch"][0]["queryBrewery"] == "Nowy Browar" and report["breweryMismatch"][0]["matchedBrewery"] == "Totally Other Brewing"

@@ -204,18 +204,24 @@ def _brewery_matches_query(result: dict, query_brewery_name: str) -> bool:
     and case-insensitive - the query brewery is often a shortened form of
     Untappd's fuller name (shop's "Stu Mostów" vs catalog's "Browar Stu
     Mostów"), or vice versa."""
-    # Compared as matcher words (folded letters, punctuation and curly vs straight
-    # apostrophes gone) - "l’Abbaye" and "l'Abbaye" are the same brewery.
-    query_key = " ".join(_token_list(query_brewery_name or ""))
-    if not query_key:
-        return False
     names = [(result.get("brewery") or {}).get("name") or ""]
     names.extend(result.get("aliases") or [])
-    for name in names:
-        name_key = " ".join(_token_list(name))
-        if name_key and (name_key in query_key or query_key in name_key):
-            return True
-    return False
+    return any(brewery_names_match(query_brewery_name, name) for name in names)
+
+
+def _contains_words(hay: list[str], needle: list[str]) -> bool:
+    return any(hay[i:i + len(needle)] == needle for i in range(len(hay) - len(needle) + 1))
+
+
+def brewery_names_match(a: str, b: str) -> bool:
+    """Whether two brewery names plausibly name the same brewery: one's words appear, in order, inside the
+    other's ("Stu Mostów" in "Browar Stu Mostów"). Compared as matcher words (folded letters, punctuation and curly
+    vs straight apostrophes gone) - "l’Abbaye" and "l'Abbaye" are the same brewery - and as WHOLE words: the old
+    character-substring test let "Ora" match "Browar Kormoran" and "Art" match "Stuttgart Brewing" (audit M5)."""
+    words_a, words_b = _token_list(a or ""), _token_list(b or "")
+    if not words_a or not words_b:
+        return False
+    return _contains_words(words_b, words_a) or _contains_words(words_a, words_b)
 
 
 # How many extra words a "fuller catalog name" superset match may add

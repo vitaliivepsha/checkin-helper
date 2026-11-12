@@ -228,3 +228,12 @@ def test_a_version_or_vintage_dropped_from_a_shortened_name_is_not_a_match():
     assert drops("Dark Star BBA 2016", "Dark Star BBA", "Dark Star BBA With Coffee", "Fremont")                # a vintage, not the bare name
     assert not drops("Dark Star BBA 2016", "Dark Star BBA", "Dark Star BBA", "Fremont")                        # the bare name without a year: fine
     assert not drops("Hazy Morning 500 ml", "Hazy Morning", "Hazy Morning", "PINTA")                           # packaging is not an edition
+
+
+def test_brewery_names_match_as_whole_words_not_character_substrings():
+    match = beer_match.brewery_names_match
+    assert match("Stu Mostów", "Browar Stu Mostów") and match("Browar Stu Mostów", "Stu Mostow")
+    assert match("l’Abbaye", "L'Abbaye") and match("Ziemia Obiecana/Pinta Brewery", "Ziemia Obiecana")
+    assert not match("Ora", "Browar Kormoran") and not match("Art", "Stuttgart Brewing")        # audit M5
+    assert not match("", "Anything") and not match("Pinta", "")
+    assert not match("Mikkeller Brewpub", "Brewpub Mikkeller")                                    # words keep their order
