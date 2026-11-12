@@ -350,3 +350,31 @@ def test_the_resolution_caches_are_bounded(monkeypatch):
     for i in range(500):
         beer_match._cache_set(cache, i, {"bid": i})
     assert len(cache) <= 50 and 499 in cache and 0 not in cache      # the oldest are dropped first
+
+
+def test_matcher_overrides_load_and_match_by_whole_words():
+    # audit M6: the exception tables are data, and a key no longer fires inside a longer word
+    assert beer_match.BREWERY_RENAME["bsm"] == "Stu Mostów"
+    assert beer_match._brewery_override("BSM", "Schops") == "Stu Mostów"
+    assert beer_match._brewery_override("Rodinný Pivovar Zichovec", "X") == "Zichovec"
+    assert beer_match._brewery_override("Absmith Brewery", "Schops") is None          # 'bsm' inside a word
+    assert beer_match._brewery_override("Piotrków", "X") == "Drink ID"
+    assert beer_match._brewery_override("Maryensztadt", "Freeky Mango") == "FREEKY non-alcoholic"
+    assert beer_match._brewery_override("Maryensztadt", "Hazy IPA") is None
+    assert beer_match._brewery_aliases("Browar Jurajskie") == ["Na Jurze"]
+    assert beer_match._apply_known_terms("BCBS 2020", "3 Sons Brewing") == "Broward County Brand Stout 2020"
+    assert beer_match._apply_known_terms("BCBS 2020", "Goose Island") == "Bourbon County Brand Stout 2020"
+    assert beer_match._apply_known_terms("WA Gossip", "Zichovec") == "Winter Affair Gossip"
+    assert beer_match._apply_known_terms("WA Gossip", "Other") == "WA Gossip"
+
+
+def test_the_overrides_file_has_the_expected_shape():
+    import json
+    import os
+    with open(os.path.join(os.path.dirname(beer_match.__file__), "matcher_overrides.json"), encoding="utf-8") as f:
+        raw = json.load(f)
+    for key in raw["breweryAliases"]:
+        if not key.startswith("_"):
+            assert isinstance(raw["breweryAliases"][key], list) and all(isinstance(n, str) for n in raw["breweryAliases"][key])
+    for key, value in raw["breweryRename"].items():
+        assert key.startswith("_") or isinstance(value, str)

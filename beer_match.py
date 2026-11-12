@@ -9,6 +9,7 @@ starts webapp_server.py at runtime (see bot.py's post_init), so
 webapp_server.py importing back from bot.py would be circular.
 """
 
+import json
 import logging
 import os
 import re
@@ -571,6 +572,35 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
     return None
 
 
+
+# ---- Hand-maintained exceptions ---------------------------------------------
+# The tables below (known terms, per-brewery terms, sub-line overrides, renames, aliases) live in
+# matcher_overrides.json, with the story of each entry kept in the git history of that file (audit M6): a new
+# exception is a data change, not a code change. Brewery keys are matched by whole words (_brewery_key_matches).
+
+
+def _load_overrides() -> dict:
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "matcher_overrides.json")
+    with open(path, encoding="utf-8") as f:
+        raw = json.load(f)
+    result = {}
+    for section in ("knownTerms", "breweryTerms", "overrideByNameTerm", "breweryRename", "breweryAliases"):
+        data = raw[section]
+        if not isinstance(data, dict):
+            raise ValueError(f"matcher_overrides.json: {section} must be an object")
+        result[section] = {k.lower(): v for k, v in data.items() if not k.startswith("_")}
+    return result
+
+
+_OVERRIDES = _load_overrides()
+
+
+def _brewery_key_matches(key: str, brewery_name: str) -> bool:
+    """Whether the words of `key` appear, in order and whole, in the brewery text ("bsm" is in "BSM Brewery" but
+    not in "Absmith")."""
+    key_words, words = _token_list(key), _token_list(brewery_name or "")
+    return bool(key_words) and _contains_words(words, key_words)
+
 # ---- Known terms -----------------------------------------------------------
 # Brewery-specific in-house abbreviations/nicknames (e.g. Trzech Kumpli's
 # own "ONINNI" for "Our New IPA Needs No Introduction") and known shop-
@@ -579,11 +609,7 @@ def pick_best_match(results: list[dict], beer_name: str, brewery_name: str = "",
 # ever infer them, so they're a plain, hand-maintained lookup instead. Add
 # to this as new ones turn up; keys are matched case-insensitively as whole
 # words/phrases, wherever they appear in a beer name.
-KNOWN_TERM_SUBSTITUTIONS = {
-    "oninni": "Our New IPA Needs No Introduction",
-    "bcbs": "Bourbon County Brand Stout",  # generic - most breweries' "BCBS" nods at Goose Island's famous one
-    "kawastrofa": "Kawastorfa",
-}
+KNOWN_TERM_SUBSTITUTIONS = _OVERRIDES["knownTerms"]
 
 # Some abbreviations mean something DIFFERENT for a specific brewery's own
 # in-house pun - proven live: 3 Sons' own "BCBS" is "Broward County Brand
@@ -591,19 +617,7 @@ KNOWN_TERM_SUBSTITUTIONS = {
 # Brand Stout" above. Checked first, keyed by a lowercase substring of the
 # (cleaned) brewery name; falls back to KNOWN_TERM_SUBSTITUTIONS when this
 # brewery has no override for that particular term.
-BREWERY_TERM_SUBSTITUTIONS = {
-    "3 sons": {"bcbs": "Broward County Brand Stout"},
-    # Zichovec's own shorthand for its yearly "Winter Affair" imperial
-    # stout series/collabs (e.g. a shop's "WA Gossip Pūhaste 28") - proven
-    # live: search_beers returns ZERO results for "Zichovec WA Gossip
-    # Pühaste" (with or without a trailing edition number like "28"), but
-    # finds the real "Winter Affair Gossip: Pühaste" instantly once "WA" is
-    # either dropped or expanded - bare "wa" is too ambiguous a 2-letter
-    # token to add to the generic KNOWN_TERM_SUBSTITUTIONS above (it isn't
-    # a fixed abbreviation for anything outside this one brewery's own
-    # labeling convention).
-    "zichovec": {"wa": "Winter Affair"},
-}
+BREWERY_TERM_SUBSTITUTIONS = _OVERRIDES["breweryTerms"]
 
 # A brewery sometimes spins a whole sub-line off into its own separate
 # Untappd brewery entry - proven live: Maryensztadt's "Freeky" line is
@@ -616,17 +630,7 @@ BREWERY_TERM_SUBSTITUTIONS = {
 # resolve_beer) - the shop-provided brewery is still tried too as a
 # fallback, in case a future listing under this same trigger word turns out
 # not to need the override.
-BREWERY_OVERRIDE_BY_NAME_TERM = {
-    "maryensztadt": {"freeky": "FREEKY non-alcoholic"},
-    # onemorebeer.pl's own "Producent: Fortuna" is wrong specifically for
-    # the "Grodziskie" style beers it also lists under that same producer -
-    # proven live: "Fortuna Grodziskie ... Pils" found nothing, the real
-    # brewery is "Browar Grodzisk" (a specialty brewery for this one
-    # style). Not a blanket BREWERY_RENAME like Piotrków/Drink ID below -
-    # Fortuna's OTHER (non-Grodziskie) listings are presumably correct as
-    # Fortuna, per the user's own observation this only misfires here.
-    "fortuna": {"grodziskie": "Browar Grodzisk"},
-}
+BREWERY_OVERRIDE_BY_NAME_TERM = _OVERRIDES["overrideByNameTerm"]
 
 # A shop's "Producent" field is sometimes a manufacturing/contract-brewing
 # location that never existed as its OWN brewery on Untappd at all - proven
@@ -636,26 +640,7 @@ BREWERY_OVERRIDE_BY_NAME_TERM = {
 # BREWERY_OVERRIDE_BY_NAME_TERM above) - keyed by a lowercase substring of
 # the (cleaned) brewery name. Same fallback-first-then-original-too
 # priority as the name-term overrides.
-BREWERY_RENAME = {
-    "piotrków": "Drink ID",
-    # "Krachla" (a shop's own Producent, sometimes preceded by the town
-    # "Grybów") - proven live: "Krachla Góralskie Krzepkie" (with or
-    # without "Grybów") found nothing, the real brewery is "Pilsvar".
-    "krachla": "Pilsvar",
-    # Shops list the full legal name "Rodinný Pivovar Zichovec", but
-    # Untappd has long since catalogued the brewery under just "Zichovec" -
-    # the full name returns nothing.
-    "zichovec": "Zichovec",
-    # onemorebeer.pl abbreviates "Browar Stu Mostów" down to its bare
-    # initials "BSM" in its own Producent field - proven live: "BSM Schops"
-    # returns only unrelated junk (no beer of theirs is catalogued under
-    # the literal initials "BSM" at all), while "Stu Mostów Schops" finds
-    # the real beer ("WRCLW Schöps" - Stu Mostów's own beers are catalogued
-    # under its "WRCLW" sub-brand, cross-referenced via that entry's own
-    # "Stu Mostów"/"Browar Stu Mostów" aliases, which search_beers already
-    # matches on).
-    "bsm": "Stu Mostów",
-}
+BREWERY_RENAME = _OVERRIDES["breweryRename"]
 
 # A brewery is sometimes catalogued under MULTIPLE names on Untappd at
 # once, inconsistently per-beer, rather than one single "real" name a
@@ -669,18 +654,16 @@ BREWERY_RENAME = {
 # variants worth trying, appended AFTER the shop-provided ones (see
 # resolve_beer) so the common case (shop's own name already works) isn't
 # disturbed; only consulted at all once those have failed.
-BREWERY_ALIASES = {
-    "jurajskie": ["Na Jurze"],
-}
+BREWERY_ALIASES = _OVERRIDES["breweryAliases"]
 
 
 def _brewery_override(brewery_name: str, beer_name: str) -> str | None:
     brewery_key = (brewery_name or "").strip().lower()
     for key, rename in BREWERY_RENAME.items():
-        if key in brewery_key:
+        if _brewery_key_matches(key, brewery_key):
             return rename
     for key, triggers in BREWERY_OVERRIDE_BY_NAME_TERM.items():
-        if key not in brewery_key:
+        if not _brewery_key_matches(key, brewery_key):
             continue
         for trigger, override in triggers.items():
             if re.search(r"\b" + re.escape(trigger) + r"\b", beer_name or "", re.IGNORECASE):
@@ -692,7 +675,7 @@ def _brewery_aliases(brewery_name: str) -> list[str]:
     brewery_key = (brewery_name or "").strip().lower()
     aliases: list[str] = []
     for key, names in BREWERY_ALIASES.items():
-        if key in brewery_key:
+        if _brewery_key_matches(key, brewery_key):
             aliases.extend(names)
     return aliases
 
@@ -709,7 +692,7 @@ _KNOWN_TERM_RE = re.compile(
 def _apply_known_terms(text: str, brewery_name: str = "") -> str:
     brewery_key = (brewery_name or "").strip().lower()
     overrides = next(
-        (subs for key, subs in BREWERY_TERM_SUBSTITUTIONS.items() if key in brewery_key),
+        (subs for key, subs in BREWERY_TERM_SUBSTITUTIONS.items() if _brewery_key_matches(key, brewery_key)),
         {},
     )
 

@@ -1,0 +1,30 @@
+{
+  "_about": "Hand-maintained exceptions for beer_match.py (audit M6). A brewery key matches a shop's brewery text by WHOLE WORDS (letters folded), e.g. 'zichovec' matches 'Rodinny Pivovar Zichovec' but not 'Zichovecky'. Edit this file, run the tests, push - no code change needed.",
+  "knownTerms": {
+    "_about": "In-house abbreviations and shop misspellings, replaced anywhere in a beer name (whole words, case-insensitive).",
+    "oninni": "Our New IPA Needs No Introduction",
+    "bcbs": "Bourbon County Brand Stout",
+    "kawastrofa": "Kawastorfa"
+  },
+  "breweryTerms": {
+    "_about": "Terms that mean something else for one brewery. Checked before knownTerms.",
+    "3 sons": {"bcbs": "Broward County Brand Stout"},
+    "zichovec": {"wa": "Winter Affair"}
+  },
+  "overrideByNameTerm": {
+    "_about": "A sub-line catalogued as its own brewery: brewery key -> {word in the beer name -> brewery to search under}.",
+    "maryensztadt": {"freeky": "FREEKY non-alcoholic"},
+    "fortuna": {"grodziskie": "Browar Grodzisk"}
+  },
+  "breweryRename": {
+    "_about": "The shop's brewery text is not a brewery on Untappd; search under this name instead (the original is still tried too).",
+    "piotrków": "Drink ID",
+    "krachla": "Pilsvar",
+    "zichovec": "Zichovec",
+    "bsm": "Stu Mostów"
+  },
+  "breweryAliases": {
+    "_about": "Extra brewery names worth trying after the shop's own, when a brewery is catalogued under several names.",
+    "jurajskie": ["Na Jurze"]
+  }
+}
