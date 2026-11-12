@@ -196,7 +196,7 @@ EXTRA_STRINGS = {
             "_(send `-` to remove your current sheet, or /cancel to abort)_"
         ),
         "wishlist_sheet_current": "Your current sheet: {url}\n\n",
-        "wishlist_sheet_invalid": "❌ That doesn't look like a published CSV link (should start with `https://` and contain `output=csv`) — check step 2 above and try /wishlist_sheet again.",
+        "wishlist_sheet_invalid": "❌ That doesn't look like a published CSV link (should be a `https://docs.google.com/...` link containing `output=csv`) — check step 2 above and try /wishlist_sheet again.",
         "wishlist_sheet_connected": "✅ Saved! I'll check your beers against this sheet from now on.",
         "wishlist_sheet_cleared": "🗑 Removed your wishlist sheet.",
 
@@ -398,7 +398,7 @@ EXTRA_STRINGS = {
             "_(надішли `-`, щоб прибрати поточну таблицю, або /cancel щоб скасувати)_"
         ),
         "wishlist_sheet_current": "Поточна таблиця: {url}\n\n",
-        "wishlist_sheet_invalid": "❌ Це не схоже на опубліковане CSV-посилання (має починатись з `https://` і містити `output=csv`) — перевір крок 2 вище і спробуй /wishlist_sheet ще раз.",
+        "wishlist_sheet_invalid": "❌ Це не схоже на опубліковане CSV-посилання (має бути посиланням `https://docs.google.com/...` з `output=csv`) — перевір крок 2 вище і спробуй /wishlist_sheet ще раз.",
         "wishlist_sheet_connected": "✅ Збережено! Тепер звірятиму твої пива з цією таблицею.",
         "wishlist_sheet_cleared": "🗑 Прибрав твою таблицю списку.",
 

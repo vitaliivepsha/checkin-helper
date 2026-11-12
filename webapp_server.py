@@ -19,7 +19,7 @@ import logging
 import os
 import re
 import time
-from urllib.parse import parse_qsl, quote
+from urllib.parse import parse_qsl, quote, urljoin
 
 import aiohttp
 from aiohttp import web
@@ -996,6 +996,27 @@ async def _get_wishlist_beers(user_id: int, token: str) -> list[dict]:
     return cache["data"] or []
 
 
+async def _get_sheet_text(url: str) -> str:
+    """GET with the redirects followed by hand: each hop must stay on Google's hosts, the body is capped at
+    MAX_SHEET_BYTES (audit S5)."""
+    async with aiohttp.ClientSession() as session:
+        for _ in range(wishlist_sheets.MAX_REDIRECTS + 1):
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=False) as resp:
+                if resp.status in (301, 302, 303, 307, 308):
+                    url = urljoin(str(resp.url), resp.headers.get("Location", ""))
+                    if not wishlist_sheets.is_allowed_redirect_url(url):
+                        raise ValueError("wishlist sheet redirected away from Google")
+                    continue
+                resp.raise_for_status()
+                body = b""
+                async for chunk in resp.content.iter_chunked(64 * 1024):
+                    body += chunk
+                    if len(body) > wishlist_sheets.MAX_SHEET_BYTES:
+                        raise ValueError("wishlist sheet is too large")
+                return body.decode(resp.charset or "utf-8", errors="replace")
+    raise ValueError("wishlist sheet redirected too many times")
+
+
 async def _fetch_wishlist_sheet_rows(csv_url: str) -> list[dict]:
     """Fetches and parses a published Google Sheet CSV URL (see
     WISHLIST_SHEET_CSV_URL's own comment) - a plain GET, no Google auth.
@@ -1006,10 +1027,10 @@ async def _fetch_wishlist_sheet_rows(csv_url: str) -> list[dict]:
     manually-maintained spreadsheet, not a validated data source."""
     if not csv_url:
         return []
-    async with aiohttp.ClientSession() as session:
-        async with session.get(csv_url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
-            resp.raise_for_status()
-            text = await resp.text()
+    if not wishlist_sheets.is_allowed_sheet_url(csv_url):
+        logger.warning("wishlist sheet: refusing a link that is not a published Google Sheet CSV")
+        return []
+    text = await _get_sheet_text(csv_url)
     rows: list[dict] = []
     for row in csv.DictReader(io.StringIO(text)):
         url = (row.get("Посилання") or "").strip()

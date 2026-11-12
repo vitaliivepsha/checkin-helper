@@ -2769,7 +2769,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await wishlist_sheets.clear_csv_url(user_id)
             await update.message.reply_text(t(lng, "wishlist_sheet_cleared"))
             return
-        if not text.startswith("https://") or "output=csv" not in text.lower():
+        if not wishlist_sheets.is_allowed_sheet_url(text):
             await update.message.reply_text(t(lng, "wishlist_sheet_invalid"))
             return
         await wishlist_sheets.set_csv_url(user_id, text)

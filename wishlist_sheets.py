@@ -16,6 +16,10 @@ import asyncio
 import json
 import os
 import time
+from urllib.parse import urlsplit
+
+MAX_SHEET_BYTES = 2 * 1024 * 1024   # a published wishlist is a few KB; this only bounds a hostile response
+MAX_REDIRECTS = 3
 
 _path: str | None = None
 _lock = asyncio.Lock()
@@ -24,6 +28,27 @@ _lock = asyncio.Lock()
 def init(data_dir: str) -> None:
     global _path
     _path = os.path.join(data_dir, "wishlist_sheets.json")
+
+
+def _host(url: str) -> str:
+    try:
+        parts = urlsplit(url or "")
+    except ValueError:
+        return ""
+    return (parts.hostname or "").lower() if parts.scheme == "https" and not parts.username and not parts.password else ""
+
+
+def is_allowed_sheet_url(url: str) -> bool:
+    """A published Google Sheet CSV link: https, on docs.google.com, asking for output=csv. Anything else is refused
+    before the server fetches it (audit S5: the bot used to GET whatever https URL a user registered, redirects and
+    all, from inside the VM)."""
+    return _host(url) == "docs.google.com" and "output=csv" in (url or "").lower()
+
+
+def is_allowed_redirect_url(url: str) -> bool:
+    """Where a published sheet may redirect to: Google's own hosts only, over https."""
+    host = _host(url)
+    return host == "docs.google.com" or host.endswith(".googleusercontent.com")
 
 
 def _load() -> dict:
