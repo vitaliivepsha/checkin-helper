@@ -20,6 +20,8 @@ import os
 import time
 import uuid
 
+import input_checks
+
 _path: str | None = None
 _lock = asyncio.Lock()
 
@@ -59,16 +61,9 @@ async def add_item(user_id: int, beer: dict) -> tuple[dict, bool]:
         existing = next((it for it in items if it.get("beerId") == beer.get("beerId")), None)
         if existing:
             return existing, False
-        item = {
-            "id": uuid.uuid4().hex,
-            "beerId": beer.get("beerId"),
-            "name": beer.get("name"),
-            "brewery": beer.get("brewery"),
-            "style": beer.get("style"),
-            "abv": beer.get("abv"),
-            "labelUrl": beer.get("labelUrl"),
-            "addedAt": int(time.time()),
-        }
+        if len(items) >= input_checks.MAX_WISHLIST:
+            raise input_checks.StoreFull("wishlist")
+        item = {"id": uuid.uuid4().hex, **input_checks.beer_fields(beer), "addedAt": int(time.time())}
         items.append(item)
         data[str(user_id)] = items
         _save(data)

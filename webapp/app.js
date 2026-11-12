@@ -689,7 +689,7 @@
           <span class="queue-next-by">${escapeHtml(T("app_added_by", { name: addedBy }))}</span>
         </div>
         <div class="queue-next-body">
-          <div class="thumb"><img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
+          <div class="thumb"><img src="${imgSrc(beer.labelUrl)}" alt=""></div>
           <div class="result-main">
             <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}${pendingForMeBadgeHtml(beer)}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
             ${metaLine(beer.brewery)}
@@ -704,7 +704,7 @@
       } else row.innerHTML = `
         <span class="row-checkbox${checked ? " checked" : ""}">${checked ? ICON_CHECK : ""}</span>
         <div class="queue-number">${idx + 1}</div>
-        <div class="thumb"><img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
+        <div class="thumb"><img src="${imgSrc(beer.labelUrl)}" alt=""></div>
         <div class="result-main">
           <div class="result-name">${beer.hadIt ? `<span class="badge">${ICON_CHECK}</span>` : ""}${pendingForMeBadgeHtml(beer)}<span class="result-name-text">${escapeHtml(beer.name || "")}</span></div>
           ${metaLine(beer.brewery)}
@@ -914,7 +914,7 @@
       row.innerHTML = `
         ${isNative ? `<span class="row-checkbox${checked ? " checked" : ""}">${checked ? ICON_CHECK : ""}</span>` : ""}
         <div class="thumb">
-          <img src="${beer.labelUrl || DEFAULT_LABEL_URL}" alt="">
+          <img src="${imgSrc(beer.labelUrl)}" alt="">
           ${beer.hadIt ? `<span class="had-it-corner">${ICON_CHECK}</span>` : ""}
           ${queueStatusCornerHtml(beer)}
         </div>
@@ -1027,7 +1027,7 @@
       const row = document.createElement("div");
       row.className = "result-row";
       row.innerHTML = `
-        <div class="thumb"><img src="${item.labelUrl || DEFAULT_LABEL_URL}" alt=""></div>
+        <div class="thumb"><img src="${imgSrc(item.labelUrl)}" alt=""></div>
         <div class="result-main">
           <div class="result-name"><span class="result-name-text">${escapeHtml(item.beerName || "")}</span></div>
           ${metaLine(item.brewery)}
@@ -1177,8 +1177,8 @@
       const daysText = urgent
         ? T("app_badge_last_day")
         : TP("app_badge_days_left", b.daysRemaining);
-      const iconHtml = b.icon
-        ? `<img class="special-badge-icon" src="${b.icon}" alt="">`
+      const iconHtml = safeUrl(b.icon)
+        ? `<img class="special-badge-icon" src="${safeUrl(b.icon)}" alt="">`
         : `<svg class="icon special-badge-icon-fallback"><use href="#icon-sparkle"/></svg>`;
       let detailsHtml = "";
       if (expanded) {
@@ -1198,7 +1198,7 @@
             ${chainNote}
             ${examples}
             <div class="special-badge-footer">
-              <a href="${b.sourceUrl}" target="_blank" rel="noopener" class="special-badge-link">${escapeHtml(T("app_source"))} <svg class="icon"><use href="#icon-external-link"/></svg></a>
+              <a href="${safeUrl(b.sourceUrl) || "#"}" target="_blank" rel="noopener" class="special-badge-link">${escapeHtml(T("app_source"))} <svg class="icon"><use href="#icon-external-link"/></svg></a>
               <button class="special-badge-dismiss-btn" data-badge="${escapeHtml(b.badge)}">${escapeHtml(T("app_badge_got_it"))}</button>
             </div>
           </div>`;
@@ -1347,7 +1347,7 @@
               <circle cx="32" cy="32" r="28" class="badge-card-ring-fill"
                       stroke-dasharray="${(circ * pct / 100).toFixed(1)} ${circ.toFixed(1)}"/>
             </svg>
-            <img src="${b.icon || DEFAULT_LABEL_URL}" alt="">
+            <img src="${imgSrc(b.icon)}" alt="">
           </div>
           <div class="badge-card-title">${b.done ? doneMark() : ""}${escapeHtml(b.name || "")}</div>
           ${b.level ? `<div class="badge-card-level">${escapeHtml(T("app_badge_level", { n: b.level }))}</div>` : ""}
@@ -1355,7 +1355,7 @@
       } else {
         row.className = "venue-item badge-row" + (b.done ? " done" : "");
         row.innerHTML = `
-          <img class="badge-row-icon" src="${b.icon || DEFAULT_LABEL_URL}" alt="">
+          <img class="badge-row-icon" src="${imgSrc(b.icon)}" alt="">
           <div class="badge-row-main">
             <div class="badge-row-title">${b.done ? doneMark() : ""}${escapeHtml(b.name || "")}</div>
             <div class="badge-row-progress">${b.current} / ${target}${b.level ? " · " + escapeHtml(T("app_badge_level", { n: b.level })) : ""}</div>
@@ -1415,7 +1415,7 @@
     if (!b) return;
     const target = b.nextThreshold ?? b.current;
     const pct = Math.max(0, Math.min(100, b.pct));
-    $("badge-detail-icon").src = b.icon || DEFAULT_LABEL_URL;
+    $("badge-detail-icon").src = (typeof b.icon === "string" && /^https:[/][/]/i.test(b.icon)) ? b.icon : DEFAULT_LABEL_URL;
     $("badge-detail-name").innerHTML = (b.done ? doneMark() : "") + escapeHtml(b.name || "");
     $("badge-detail-progress").textContent =
       `${b.current} / ${target}${b.level ? " · " + T("app_badge_level", { n: b.level }) : ""}`;
@@ -1780,7 +1780,7 @@
       row.className = "result-row" + (b.hadIt ? " had-it" : "");
       row.innerHTML = `
         <div class="thumb">
-          <img src="${b.labelUrl || DEFAULT_LABEL_URL}" alt="">
+          <img src="${imgSrc(b.labelUrl)}" alt="">
           ${b.hadIt ? `<span class="had-it-corner">${ICON_CHECK}</span>` : ""}
           ${queueStatusCornerHtml(b)}
         </div>
@@ -1860,6 +1860,17 @@
     return String(s).replace(/[&<>"']/g, (c) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
     }[c]));
+  }
+
+  // An image/link address that came from data (a shared queue item, a catalogue file) is only ever put into
+  // markup as an escaped https URL - a value with a quote in it used to close the attribute and add its own
+  // (a stored XSS through labelUrl). Anything else falls back to the default picture / no link.
+  function safeUrl(u) {
+    return typeof u === "string" && /^https:[/][/]/i.test(u) ? escapeHtml(u) : "";
+  }
+
+  function imgSrc(u) {
+    return safeUrl(u) || DEFAULT_LABEL_URL;
   }
 
   // Joins non-empty parts with " · ", skipping missing ones (festival beers
@@ -2259,7 +2270,7 @@
       const row = document.createElement("label");
       row.className = "result-row";
       row.innerHTML = `
-        <div class="thumb"><img src="${f.avatar || DEFAULT_LABEL_URL}" alt=""></div>
+        <div class="thumb"><img src="${imgSrc(f.avatar)}" alt=""></div>
         <div class="result-main">
           <div class="result-name"><span class="result-name-text">${escapeHtml(f.name || f.username)}</span></div>
           <div class="result-meta">@${escapeHtml(f.username)}</div>

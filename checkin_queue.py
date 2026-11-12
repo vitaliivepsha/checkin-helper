@@ -34,6 +34,8 @@ import os
 import time
 import uuid
 
+import input_checks
+
 _path: str | None = None
 _lock = asyncio.Lock()
 
@@ -128,17 +130,21 @@ async def add_item(beer: dict, added_by: dict, group_id: int) -> tuple[dict, str
                 return existing, "revived_from_completed"
             _save(items)
             return existing, "already_active"
+        if sum(1 for it in items if it.get("groupId") == group_id) >= input_checks.MAX_QUEUE_PER_GROUP:
+            raise input_checks.StoreFull("queue")
+        fields = input_checks.beer_fields(beer)
+        sessions = beer.get("sessions")
         item = {
             "id": uuid.uuid4().hex,
             "groupId": group_id,
-            "beerId": beer.get("beerId"),
-            "name": beer.get("name"),
-            "brewery": beer.get("brewery"),
-            "style": beer.get("style"),
-            "abv": beer.get("abv"),
-            "labelUrl": beer.get("labelUrl"),
-            "sessions": beer.get("sessions") or [],
-            "addedBy": added_by,
+            "beerId": fields["beerId"],
+            "name": fields["name"],
+            "brewery": fields["brewery"],
+            "style": fields["style"],
+            "abv": fields["abv"],
+            "labelUrl": fields["labelUrl"],
+            "sessions": [input_checks.text(s, 30) for s in sessions[:10] if isinstance(s, str)] if isinstance(sessions, list) else [],
+            "addedBy": {"userId": added_by.get("userId"), "name": input_checks.text(added_by.get("name"), 64)},
             "addedAt": int(time.time()),
             "completedBy": [],
             "hiddenBy": [],

@@ -35,6 +35,7 @@ import collections
 import contextlib
 import contextvars
 import logging
+import re
 import time
 
 import httpx
@@ -141,10 +142,23 @@ def get_api_usage() -> dict:
     }
 
 
+# One path segment of an API call. Ids and usernames come from request bodies (a Foursquare id, a venue id),
+# and httpx resolves ".." in a URL path: "venue/foursquare_lookup/../../friend/remove/1" would call
+# friend/remove with the owner's token. Anything outside this alphabet is refused, never "cleaned".
+_PATH_SEGMENT_RE = re.compile(r"^[A-Za-z0-9_:~-][A-Za-z0-9_.:~-]*$")
+
+
+def _check_path(path: str) -> None:
+    for segment in path.split("/"):
+        if segment in ("", ".", "..") or not _PATH_SEGMENT_RE.match(segment):
+            raise UntappdMCPError(f"unsafe Untappd API path segment: {segment!r}")
+
+
 async def _call_api(method: str, path: str, token: str, params: dict | None = None) -> dict:
     global _last_remaining, _last_limit, _last_seen_at
     if not token:
         raise UntappdMCPError("no Untappd API access token provided")
+    _check_path(path)
 
     query = dict(params or {})
     query["access_token"] = token

@@ -21,6 +21,8 @@ import os
 import time
 import uuid
 
+import input_checks
+
 _path: str | None = None
 _lock = asyncio.Lock()
 
@@ -64,22 +66,25 @@ async def add_item(user_id: int, data: dict) -> dict:
     async with _lock:
         all_data = _load()
         items = all_data.get(str(user_id), [])
+        if len(items) >= input_checks.MAX_PENDING:
+            raise input_checks.StoreFull("pending")
+        fields = input_checks.beer_fields(data)
         item = {
             "id": uuid.uuid4().hex,
-            "beerId": data.get("beerId"),
-            "beerName": data.get("beerName"),
-            "brewery": data.get("brewery"),
-            "style": data.get("style"),
-            "abv": data.get("abv"),
-            "labelUrl": data.get("labelUrl"),
+            "beerId": fields["beerId"],
+            "beerName": fields["name"],
+            "brewery": fields["brewery"],
+            "style": fields["style"],
+            "abv": fields["abv"],
+            "labelUrl": fields["labelUrl"],
             "rating": data.get("rating"),
-            "shout": data.get("shout"),
-            "foursquareId": data.get("foursquareId"),
-            "geolat": data.get("geolat"),
-            "geolng": data.get("geolng"),
-            "venueName": data.get("venueName"),
-            "queueItemId": data.get("queueItemId"),
-            "failReason": data.get("failReason"),
+            "shout": input_checks.text(data.get("shout"), 500),
+            "foursquareId": input_checks.text(data.get("foursquareId"), 40),
+            "geolat": data.get("geolat") if isinstance(data.get("geolat"), (int, float)) else None,
+            "geolng": data.get("geolng") if isinstance(data.get("geolng"), (int, float)) else None,
+            "venueName": input_checks.text(data.get("venueName")),
+            "queueItemId": input_checks.text(data.get("queueItemId"), 64),
+            "failReason": input_checks.text(data.get("failReason"), 40),
             "createdAt": int(time.time()),
         }
         items.append(item)

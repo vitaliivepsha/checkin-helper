@@ -53,6 +53,7 @@ import untappd_mcp
 import user_tokens
 import venue_index
 import special_badge_dismissals
+import input_checks
 import pending_checkins
 import wishlist_items
 import httpx
@@ -325,6 +326,26 @@ SPECIAL_BADGES_RAW_BASE_URL = os.environ.get(
 )
 
 _special_badges_sync_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
+
+
+MAX_REQUEST_BYTES = 512 * 1024   # the largest legitimate body is GitHub's push payload for the deploy webhook
+
+
+@web.middleware
+async def _json_object_middleware(request: web.Request, handler):
+    """Every JSON body of a POST must be an object. Handlers do body.get(...) right away, and a list, a number
+    or a string there was a 500 (AttributeError) in dozens of them. A body that is not JSON at all is left
+    to each handler's own invalid_json answer."""
+    if request.method in ("POST", "PUT", "PATCH") and request.can_read_body:
+        raw = await request.read()
+        if raw[:1] in (b"[", b'"') or raw[:1].isdigit():
+            try:
+                parsed = json.loads(raw)
+            except ValueError:
+                parsed = {}
+            if not isinstance(parsed, dict):
+                return _json_error("invalid_json")
+    return await handler(request)
 
 
 @web.middleware
@@ -825,6 +846,13 @@ def _search_festival_beers(
 
 
 _ZONE_NAME_RE = re.compile(r"^Area (\d+)$")
+_FOURSQUARE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,40}$")
+
+
+def _valid_foursquare_id(value) -> bool:
+    """A Foursquare place id as the Mini App sends it back (24 hex characters in practice). It ends up in an
+    Untappd API path, so only plain id characters are accepted."""
+    return isinstance(value, str) and bool(_FOURSQUARE_ID_RE.match(value))
 
 
 def _festival_editable_zone_names(beers: list | None = None, template: dict | None = None) -> list[str]:
@@ -1532,6 +1560,8 @@ async def handle_submit(request: web.Request) -> web.Response:
         return _json_error("invalid_beer_id")
     if not isinstance(rating, (int, float)) or not (0 <= rating <= 5):
         return _json_error("invalid_rating")
+    if foursquare_id is not None and not _valid_foursquare_id(foursquare_id):
+        return _json_error("invalid_foursquare_id")
 
     # Remembering the picked venue is pure local UX state (never touches
     # Untappd), so it's safe to do in both the dry-run and real branches -
@@ -1577,11 +1607,17 @@ async def handle_submit(request: web.Request) -> web.Response:
         # Saved instead of just failing, so the attempt (rating/comment/
         # venue included) isn't lost - see pending_checkins.py and the
         # Mini App's "Відкладені чекіни" screen for the retry side of this.
-        item = await pending_checkins.add_item(user_id, {**pending_fields, "failReason": "rate_limited"})
+        try:
+            item = await pending_checkins.add_item(user_id, {**pending_fields, "failReason": "rate_limited"})
+        except input_checks.StoreFull:
+            return _json_error("rate_limited", 429)   # nowhere to park it: report the failure as before
         return web.json_response({"ok": True, "pending": True, "item": item})
     except untappd_mcp.UntappdMCPError as e:
         logger.warning("check_in failed: %s", e)
-        item = await pending_checkins.add_item(user_id, {**pending_fields, "failReason": "checkin_failed"})
+        try:
+            item = await pending_checkins.add_item(user_id, {**pending_fields, "failReason": "checkin_failed"})
+        except input_checks.StoreFull:
+            return _json_error("checkin_failed", 502)
         return web.json_response({"ok": True, "pending": True, "item": item})
 
     await _apply_checkin_side_effects(user_id, beer_id, rating, foursquare_id, queue_item_id)
@@ -2463,7 +2499,10 @@ async def handle_queue_add(request: web.Request) -> web.Response:
         "userId": user_id,
         "name": tg_user.get("first_name") or tg_user.get("username") or "?",
     }
-    item, status = await checkin_queue.add_item(body, added_by, group["chatId"])
+    try:
+        item, status = await checkin_queue.add_item(body, added_by, group["chatId"])
+    except input_checks.StoreFull:
+        return _json_error("list_full", 409)
     return web.json_response({"ok": True, "item": item, "status": status})
 
 
@@ -2803,7 +2842,10 @@ async def handle_wishlist_add(request: web.Request) -> web.Response:
     if not isinstance(beer_id, int) or beer_id <= 0:
         return _json_error("invalid_beer_id")
 
-    item, added = await wishlist_items.add_item(user_id, body)
+    try:
+        item, added = await wishlist_items.add_item(user_id, body)
+    except input_checks.StoreFull:
+        return _json_error("list_full", 409)
     return web.json_response({"ok": True, "item": item, "added": added})
 
 
@@ -3143,6 +3185,8 @@ async def handle_festival_watch_set_location(request: web.Request) -> web.Respon
     await festival_watch.set_location(user_id, float(lat), float(lng), body.get("label"))
 
     foursquare_id = body.get("foursquareId")
+    if foursquare_id is not None and not _valid_foursquare_id(foursquare_id):
+        return _json_error("invalid_foursquare_id")
     if foursquare_id and DIRECT_TOKEN:
         try:
             with untappd_direct.caller("venue_lookup"):
@@ -3172,7 +3216,7 @@ async def handle_festival_watch_add_extra_venue(request: web.Request) -> web.Res
     except json.JSONDecodeError:
         return _json_error("invalid_json")
     foursquare_id = body.get("foursquareId")
-    if not foursquare_id:
+    if not foursquare_id or not _valid_foursquare_id(foursquare_id):
         return _json_error("invalid_venue")
     if not DIRECT_TOKEN:
         return _json_error("no_direct_token", 503)
@@ -3276,7 +3320,7 @@ async def handle_festival_watch_set_notify_listed(request: web.Request) -> web.R
 
 
 def _build_app() -> web.Application:
-    app = web.Application(middlewares=[_no_cache_middleware])
+    app = web.Application(middlewares=[_json_object_middleware, _no_cache_middleware], client_max_size=MAX_REQUEST_BYTES)
     app.router.add_get("/checkin", handle_index)
     app.router.add_get("/map", handle_public_index)
     app.router.add_post("/api/public/i18n", handle_public_i18n)
