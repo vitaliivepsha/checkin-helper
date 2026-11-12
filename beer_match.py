@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Bumped whenever the matching rules change in a way that can alter outcomes: the
 # lens log stores the version each entry was resolved with, and the daily crawl
 # re-resolves still-unmatched and questionable entries of an older version once.
-MATCHER_VERSION = 6
+MATCHER_VERSION = 7
 
 SEARCH_RESULT_LIMIT = 15  # a generic 1-2 word query (e.g. "IPA") can rank the
 # exact-name match past position 5 among a brewery's many similarly-styled
@@ -218,10 +218,56 @@ def brewery_names_match(a: str, b: str) -> bool:
     other's ("Stu Mostów" in "Browar Stu Mostów"). Compared as matcher words (folded letters, punctuation and curly
     vs straight apostrophes gone) - "l’Abbaye" and "l'Abbaye" are the same brewery - and as WHOLE words: the old
     character-substring test let "Ora" match "Browar Kormoran" and "Art" match "Stuttgart Brewing" (audit M5)."""
-    words_a, words_b = _token_list(a or ""), _token_list(b or "")
-    if not words_a or not words_b:
+    parts_a, parts_b = _brewery_parts(a), _brewery_parts(b)
+    return any(_parts_match(pa, pb) for pa in parts_a for pb in parts_b)
+
+
+_BREWERY_GENERIC_WORDS = frozenset({
+    "brewery", "brewing", "brew", "browar", "brouwerij", "brauerei", "brasserie", "bryghus", "pivovar", "co", "company",
+    "beer", "bier", "the", "and", "group", "ltd", "gmbh",
+})
+_BREWERY_SPLIT_RE = re.compile(r"\s+x\s+|\s*[&+/]\s*", re.IGNORECASE)
+
+
+def _brewery_parts(name: str) -> list[list[str]]:
+    """The word lists of the brewery names in `name`: a collaboration ("Pinta & Verdant", "Cztery Ściany x Szynkarnia")
+    is several breweries, any of which may be the catalog's."""
+    parts = [_token_list(p) for p in _BREWERY_SPLIT_RE.split(name or "")]
+    return [p for p in parts if p]
+
+
+def _parts_match(words_a: list[str], words_b: list[str]) -> bool:
+    if "".join(words_a) == "".join(words_b):
+        return True   # "ALE BROWAR" / "AleBrowar"
+    core_a = [w for w in words_a if w not in _BREWERY_GENERIC_WORDS] or words_a
+    core_b = [w for w in words_b if w not in _BREWERY_GENERIC_WORDS] or words_b
+    return _contains_words(core_b, core_a) or _contains_words(core_a, core_b)
+
+
+def _brewery_conflict(match: dict, brewery_name: str, beer_name: str) -> bool:
+    """True when `match` is another brewery's beer than the shop's text says: the shop names a brewery, none of the
+    result's brewery names (or Untappd's aliases for it) is that brewery, and the shop text does not mention the
+    result's brewery either (a sub-brand - "Freeky Mango Ale" by Maryensztadt, catalogued under "FREEKY non-alcoholic" -
+    names it in the title). Used to demote a lone exact/superset hit to "probable": a wrong beer shown with full
+    confidence is the worst failure (audit M1), while the same beer as 🤔 costs one tap to confirm."""
+    if not _token_list(brewery_name or "") or _brewery_matches_query(match, brewery_name):
+        return False   # no brewery on the shop side (or none in the Latin alphabet the matcher can compare)
+    names = [(match.get("brewery") or {}).get("name") or ""] + list(match.get("aliases") or [])
+    if not any(_token_list(n) for n in names):
+        return False   # the catalog name cannot be compared either
+    # The renames/aliases the matcher already searches under (Piotrków -> Drink ID, Fortuna Grodziskie -> Browar Grodzisk).
+    known = list(_brewery_query_variants(brewery_name)) + list(_brewery_aliases(brewery_name))
+    override = _brewery_override(brewery_name, beer_name)
+    if override:
+        known.append(override)
+    if any(brewery_names_match(k, n) for k in known for n in names):
         return False
-    return _contains_words(words_b, words_a) or _contains_words(words_a, words_b)
+    shop_words = set(_token_list(beer_name)) | set(_token_list(brewery_name))
+    for name in names:
+        core = [w for w in _token_list(name) if w not in _BREWERY_GENERIC_WORDS]
+        if core and shop_words & set(core):
+            return False
+    return True
 
 
 # How many extra words a "fuller catalog name" superset match may add
@@ -1472,9 +1518,13 @@ def _probable_candidate(results: list[dict], clean_name: str, brewery_name: str)
         return None
     if (q ^ c) & _VARIANT_MARKER_TOKENS:
         return None
+    return _probable_dict(result)
+
+
+def _probable_dict(result: dict) -> dict:
     bid = result.get("bid")
     return {
-        "name": result.get("beerName"), "brewery": cand_brewery or None, "bid": bid,
+        "name": result.get("beerName"), "brewery": (result.get("brewery") or {}).get("name") or None, "bid": bid,
         "url": f"https://untappd.com/beer/{bid}" if bid is not None else None,
         "style": result.get("style") or "", "abv": result.get("abv"),
         "rating": result.get("globalRating"), "ratingCount": result.get("ratingCount"),
@@ -1591,10 +1641,18 @@ async def _resolve_identity(
             if match is not None:
                 query, via = f"{brewery_name} {clean_name}".strip(), "brewery-merged"
 
+    wrong_brewery = None
+    if match is not None and via != "confirmed" and _brewery_conflict(match, brewery_name, beer_name):
+        logger.info("resolve_beer: %r is by another brewery than %r - shown as probable, not matched", match.get("beerName"), brewery_name)
+        wrong_brewery, match = match, None
+
     if match is None:
         source = first_results if first_results else last_nonempty_results
         identity = {"matched": False, "candidates": [_as_candidate(r) for r in source[:3]]}
         probable = _probable_candidate(source, clean_name, brewery_name)
+        if wrong_brewery is not None:
+            identity["candidates"] = [_as_candidate(wrong_brewery)]
+            probable = _probable_dict(wrong_brewery)
         if probable:
             identity["probable"] = probable
     else:

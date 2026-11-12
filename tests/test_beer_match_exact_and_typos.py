@@ -237,3 +237,54 @@ def test_brewery_names_match_as_whole_words_not_character_substrings():
     assert not match("Ora", "Browar Kormoran") and not match("Art", "Stuttgart Brewing")        # audit M5
     assert not match("", "Anything") and not match("Pinta", "")
     assert not match("Mikkeller Brewpub", "Brewpub Mikkeller")                                    # words keep their order
+
+
+def _result(bid, name, brewery, aliases=()):
+    return {"bid": bid, "beerName": name, "brewery": {"id": 1, "name": brewery}, "aliases": list(aliases), "style": "IPA", "globalRating": 3.6, "ratingCount": 20}
+
+
+async def _identity(monkeypatch, results, name, brewery, **kw):
+    async def fake_search(token, query, limit=10):
+        return results
+
+    monkeypatch.setattr(beer_match.untappd_mcp, "search_beers", fake_search)
+    beer_match._identity_cache.clear()
+    return await beer_match._resolve_identity("t", name, brewery, **kw)
+
+
+async def test_a_lone_hit_by_another_brewery_is_probable_not_matched(monkeypatch):
+    # audit M1: "Hazy IPA" of a small brewery missing from Untappd found another brewery's "Hazy IPA"
+    other = _result(1, "Hazy IPA", "Totally Other Brewing")
+    identity = await _identity(monkeypatch, [other], "Hazy IPA", "Nowy Browar")
+    assert identity["matched"] is False
+    assert identity["probable"]["bid"] == 1 and identity["candidates"][0]["bid"] == 1        # still offered, as 🤔
+    superset = await _identity(monkeypatch, [_result(2, "Hazy IPA Citra Mosaic", "Totally Other Brewing")], "Hazy IPA", "Nowy Browar")
+    assert superset["matched"] is False and superset["probable"]["bid"] == 2
+
+
+async def test_the_same_brewery_and_its_known_spellings_still_match(monkeypatch):
+    same = await _identity(monkeypatch, [_result(3, "Hazy IPA", "Browar Nowy")], "Hazy IPA", "Nowy Browar")
+    assert same["matched"] and same["bid"] == 3                                                # generic words and order ignored
+    glued = await _identity(monkeypatch, [_result(4, "Kraken Roll", "AleBrowar")], "Kraken Roll", "ALE BROWAR Brewery")
+    assert glued["matched"]
+    collab = await _identity(monkeypatch, [_result(5, "Beskidy", "Verdant Brewing Co")], "Beskidy", "Pinta & Verdant")
+    assert collab["matched"]                                                                   # one of the collab's breweries
+    sub_brand = await _identity(monkeypatch, [_result(6, "Freeky Mango Ale", "FREEKY non-alcoholic")], "Freeky Mango Ale", "Maryensztadt")
+    assert sub_brand["matched"]                                                                # the shop title names the catalog brand
+    renamed = await _identity(monkeypatch, [_result(7, "Trybunał Pils", "Drink ID")], "Trybunał Pils", "Piotrków")
+    assert renamed["matched"]                                                                  # BREWERY_RENAME knows Piotrków -> Drink ID
+    alias = await _identity(monkeypatch, [_result(8, "Hazy IPA", "Weird Name", aliases=["Nowy Browar"])], "Hazy IPA", "Nowy Browar")
+    assert alias["matched"]                                                                    # Untappd's own alias of the brewery
+
+
+async def test_no_brewery_or_a_non_latin_one_cannot_conflict(monkeypatch):
+    assert (await _identity(monkeypatch, [_result(9, "Hazy IPA", "Totally Other Brewing")], "Hazy IPA", ""))["matched"]
+    cyrillic = await _identity(monkeypatch, [_result(10, "Лісова пісня", "Блукач")], "Лісова пісня", "Блукач")
+    assert cyrillic["matched"] is True or cyrillic["matched"] is False   # no crash; names that cannot be compared never demote
+    assert beer_match._brewery_conflict(_result(11, "X", "Блукач"), "Блукач", "X") is False
+
+
+async def test_a_confirmed_beer_is_never_demoted(monkeypatch):
+    other = _result(12, "Hazy IPA", "Totally Other Brewing")
+    identity = await _identity(monkeypatch, [other], "Hazy IPA", "Nowy Browar", confirmed_bid=12)
+    assert identity["matched"] and identity["via"] == "confirmed"
