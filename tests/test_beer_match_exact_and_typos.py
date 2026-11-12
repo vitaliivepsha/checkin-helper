@@ -306,3 +306,14 @@ async def test_one_resolution_never_repeats_a_query_and_stops_after_the_budget(m
     assert identity["matched"] is False
     assert len(queries) == len({q.lower() for q in queries}), "an identical query was sent twice"
     assert len(queries) <= beer_match.MAX_SEARCHES_PER_RESOLUTION
+
+
+def test_a_doubled_letter_does_not_equate_style_words():
+    # audit M3
+    for a, b in (("gose", "goose"), ("hel", "hell"), ("bok", "book"), ("rose", "roose")):
+        assert not beer_match._typo_token_match(a, b), (a, b)
+        assert not beer_match._typo_token_match(b, a), (b, a)
+    for a, b in (("dass", "das"), ("kwass", "kwas"), ("mouteka", "motueka"), ("collsion", "collision")):
+        assert beer_match._typo_token_match(a, b), (a, b)
+    results = [{"bid": 1, "beerName": "Mango Goose", "brewery": {"name": "Browar Z"}}]
+    assert beer_match.pick_best_match(results, "Mango Gose", "Browar Z") is None

@@ -289,6 +289,14 @@ def _collapse_repeats(token: str) -> str:
     return re.sub(r"(.)\1+", r"\1", token)
 
 
+# Short words that are real beer styles (or words next to one): folding a doubled letter would turn the shop's
+# "Gose" into the catalog's "Goose", "Bok" into "Book", "Hel" into "Hell" (audit M3). They only ever match exactly.
+_TYPO_PROTECTED_WORDS = frozenset({
+    "gose", "bok", "bock", "hell", "helles", "rose", "wit", "wheat", "sour", "stout", "porter", "pils", "lager", "ale",
+    "ipa", "dipa", "saison", "kolsch", "weizen", "dubbel", "tripel", "quad", "mild", "rye", "pale",
+})
+
+
 def _one_adjacent_swap(a: str, b: str) -> bool:
     if len(a) != len(b) or len(a) < 5:
         return False
@@ -317,8 +325,10 @@ def _typo_token_match(a: str, b: str) -> bool:
     words with digits ("10"/"100")."""
     if a == b or any(ch.isdigit() for ch in a + b):
         return False
-    if _collapse_repeats(a) == _collapse_repeats(b) or _one_adjacent_swap(a, b):
+    if _one_adjacent_swap(a, b):
         return True
+    if _collapse_repeats(a) == _collapse_repeats(b):
+        return not (a in _TYPO_PROTECTED_WORDS or b in _TYPO_PROTECTED_WORDS or min(len(a), len(b)) < 3)
     return min(len(a), len(b)) >= 7 and _one_edit_apart(a, b)
 
 
