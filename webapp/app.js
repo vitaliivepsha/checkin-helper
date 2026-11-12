@@ -450,6 +450,18 @@
 
   const API_TIMEOUT_MS = 30000;
 
+  // Icon-only buttons ("+", the link icon, the three dots) are named by their tooltip for screen readers (audit F3);
+  // rows are rebuilt all the time, so this watches for new ones instead of patching every template.
+  function labelIconButtons(root) {
+    root.querySelectorAll("button:not([aria-label])[title]").forEach((b) => {
+      const text = b.textContent.replace(/[+⋯\s]/g, "");
+      if (!text) b.setAttribute("aria-label", b.getAttribute("title"));
+    });
+  }
+  new MutationObserver((records) => {
+    for (const r of records) r.addedNodes.forEach((n) => { if (n.nodeType === 1) labelIconButtons(n); });
+  }).observe(document.body, { childList: true, subtree: true });
+
   // A poll tick is skipped while the page is hidden or the previous request is still running (audit F2): an
   // older answer can no longer overwrite a newer one, and a backgrounded Mini App stops costing traffic.
   function guardedPoll(fn) {
@@ -736,7 +748,7 @@
           <div class="result-meta">${escapeHtml(T("app_added_by", { name: addedBy }))}</div>
         </div>
         <div class="row-actions">
-          <button class="queue-remove-btn" data-id="${beer.id}">${ICON_CLOSE}</button>
+          <button class="queue-remove-btn" data-id="${beer.id}" aria-label="${escapeHtml(T("app_remove"))}">${ICON_CLOSE}</button>
           <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>
         </div>`;
       row.addEventListener("click", (e) => {
@@ -949,7 +961,7 @@
         </div>
         <div class="row-actions">
           ${isNative
-            ? `<button class="wishlist-remove-btn" data-id="${beer.id}" data-beer-id="${beer.beerId}" data-name="${escapeHtml(beer.name || "")}">${ICON_CLOSE}</button>`
+            ? `<button class="wishlist-remove-btn" data-id="${beer.id}" data-beer-id="${beer.beerId}" data-name="${escapeHtml(beer.name || "")}" aria-label="${escapeHtml(T("app_remove"))}">${ICON_CLOSE}</button>`
             : `<span class="wishlist-sheet-tag" title="${escapeHtml(T("app_wishlist_sheet_tag_title"))}">${escapeHtml(T("app_wishlist_sheet_tag"))}</span>`}
           <button class="untappd-link-btn" title="${escapeHtml(T("app_open_in_untappd"))}">${ICON_LINK}</button>
         </div>`;
@@ -1063,7 +1075,7 @@
         </div>
         <div class="row-actions pending-checkin-actions">
           <button class="pending-retry-btn" data-id="${item.id}">${ICON_REFRESH} ${escapeHtml(T("app_pending_retry"))}</button>
-          <button class="wishlist-remove-btn" data-id="${item.id}" data-name="${escapeHtml(item.beerName || "")}">${ICON_CLOSE}</button>
+          <button class="wishlist-remove-btn" data-id="${item.id}" data-name="${escapeHtml(item.beerName || "")}" aria-label="${escapeHtml(T("app_remove"))}">${ICON_CLOSE}</button>
         </div>`;
       row.querySelector(".pending-retry-btn").addEventListener("click", async (e) => {
         const btn = e.currentTarget;

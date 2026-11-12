@@ -197,6 +197,11 @@ AUTO_TOAST_MIN_REMAINING = int(os.environ.get("AUTO_TOAST_MIN_REMAINING", "25"))
 # its own env-driven constants) - the Mini App tab/toggle stay hidden for
 # everyone else, and the API routes below double-check it server-side too.
 AUTO_TOAST_OWNER_ID = os.environ.get("AUTO_TOAST_OWNER_ID", "402733193")
+if "AUTO_TOAST_OWNER_ID" not in os.environ:
+    # Left as a default rather than required (audit S10): requiring it would stop the bot, and the deploy check that
+    # imports it, on any machine whose .env lacks the line. A copy of this repo must set it - the default id gets
+    # owner rights (admin screens, the lens report) on whoever runs it.
+    logging.getLogger(__name__).warning("AUTO_TOAST_OWNER_ID is not set; using the built-in default owner id")
 
 
 def _is_auto_toast_owner(user_id) -> bool:

@@ -4,6 +4,14 @@ import time
 import downtime_watch
 
 
+async def wait_until(predicate, timeout=5.0):
+    """Polls instead of sleeping a fixed time, so a slow machine only makes the test slower, not flaky (audit T2)."""
+    deadline = time.monotonic() + timeout
+    while not predicate():
+        assert time.monotonic() < deadline, "condition not reached in time"
+        await asyncio.sleep(0.005)
+
+
 def test_format_duration():
     assert downtime_watch.format_duration(6 * 3600 + 21 * 60) == "6 г 21 хв"
     assert downtime_watch.format_duration(2 * 3600) == "2 г"
@@ -43,7 +51,7 @@ def test_run_reports_down_when_stale_heartbeat_on_startup(tmp_path, monkeypatch)
 
     async def scenario():
         task = asyncio.create_task(downtime_watch.run(FakeBot(), 42, path))
-        await asyncio.sleep(0.05)
+        await wait_until(lambda: sent)
         task.cancel()
 
     asyncio.run(scenario())
@@ -54,7 +62,8 @@ def test_run_reports_down_when_stale_heartbeat_on_startup(tmp_path, monkeypatch)
 
 def test_run_silent_on_fresh_heartbeat(tmp_path):
     path = str(tmp_path / "heartbeat.json")
-    downtime_watch._write_heartbeat(path, time.time() - 5)
+    stale = time.time() - 5
+    downtime_watch._write_heartbeat(path, stale)
     sent = []
 
     class FakeBot:
@@ -63,7 +72,7 @@ def test_run_silent_on_fresh_heartbeat(tmp_path):
 
     async def scenario():
         task = asyncio.create_task(downtime_watch.run(FakeBot(), 42, path))
-        await asyncio.sleep(0.05)
+        await wait_until(lambda: downtime_watch._read_heartbeat(path) > stale)   # the start-up check has run
         task.cancel()
 
     asyncio.run(scenario())
@@ -85,9 +94,9 @@ def test_run_reports_frozen_when_loop_wakes_late(tmp_path, monkeypatch):
 
     async def scenario():
         task = asyncio.create_task(downtime_watch.run(FakeBot(), 42, path))
-        await asyncio.sleep(0.02)
+        await wait_until(lambda: downtime_watch._read_heartbeat(path) is not None)   # first heartbeat written
         offset["v"] = 6 * 3600  # simulate the clock jumping across a sleep
-        await asyncio.sleep(0.15)
+        await wait_until(lambda: sent)
         task.cancel()
 
     asyncio.run(scenario())
