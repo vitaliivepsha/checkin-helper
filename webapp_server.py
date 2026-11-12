@@ -2252,6 +2252,7 @@ async def _lens_resolve_item(token: str, owner_id: int, item, wishlist_bids: set
 
 
 _lens_clients: dict[str, dict] = {}   # since the last restart: client label -> {lookups, items, last}
+MAX_LENS_CLIENTS = 200   # labels come from the request body; bounded so they cannot grow without end (audit R7)
 
 
 def _constant_time_equal(a: str, b: str) -> bool:
@@ -2291,6 +2292,8 @@ async def handle_lens_lookup(request: web.Request) -> web.Response:
     # Which client version asks ("userscript 2.9.4", "extension 1.14.4"; none = an old one): a stale copy
     # somewhere keeps sending titles without their source, and this is how /api/lens/report shows it.
     client = str(body.get("client") or "legacy (no version)")[:40]
+    if client not in _lens_clients and len(_lens_clients) >= MAX_LENS_CLIENTS:
+        _lens_clients.pop(min(_lens_clients, key=lambda c: _lens_clients[c]["last"]))   # forget the longest-quiet label
     seen = _lens_clients.setdefault(client, {"lookups": 0, "items": 0, "last": 0})
     seen["lookups"] += 1
     seen["items"] += len(items)

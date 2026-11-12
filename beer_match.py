@@ -61,7 +61,15 @@ def _cache_get(cache: dict, key) -> object | None:
     return value
 
 
+_CACHE_MAX_ENTRIES = 20000
+
+
 def _cache_set(cache: dict, key, value) -> None:
+    """Entries used to leave only when the same key was read again after its TTL, so the caches grew with every
+    distinct product ever seen (audit R7); now the oldest go first once there are too many."""
+    if key not in cache and len(cache) >= _CACHE_MAX_ENTRIES:
+        for old in list(cache)[: _CACHE_MAX_ENTRIES // 10]:
+            del cache[old]
     cache[key] = (time.monotonic(), value)
 
 

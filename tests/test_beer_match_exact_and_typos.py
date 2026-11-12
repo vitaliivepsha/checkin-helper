@@ -342,3 +342,11 @@ def test_degree_conflict_only_looks_at_degrees():
     assert not beer_match._degree_conflict("Parohatej 12°", "Parohatej 12")
     assert not beer_match._degree_conflict("Hazy IPA 6,5%", "Hazy IPA 11")     # an ABV is not a degree
     assert not beer_match._degree_conflict("Parohatej 12°", "Parohatej")
+
+
+def test_the_resolution_caches_are_bounded(monkeypatch):
+    monkeypatch.setattr(beer_match, "_CACHE_MAX_ENTRIES", 50)
+    cache: dict = {}
+    for i in range(500):
+        beer_match._cache_set(cache, i, {"bid": i})
+    assert len(cache) <= 50 and 499 in cache and 0 not in cache      # the oldest are dropped first
