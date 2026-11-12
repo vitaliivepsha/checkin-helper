@@ -83,6 +83,7 @@ async def add_item(user_id: int, data: dict) -> dict:
             "venueName": input_checks.text(data.get("venueName")),
             "queueItemId": input_checks.text(data.get("queueItemId"), 64),
             "failReason": input_checks.text(data.get("failReason"), 40),
+            "maybeCreated": bool(data.get("maybeCreated")),   # the attempt timed out: Untappd may have recorded it
             "createdAt": int(time.time()),
         }
         items.append(item)
@@ -95,6 +96,37 @@ async def get_item(user_id: int, item_id: str) -> dict | None:
     async with _lock:
         items = _load().get(str(user_id), [])
         return next((it for it in items if it.get("id") == item_id), None)
+
+
+CLAIM_SECONDS = 90   # a retry that dies without releasing its claim blocks the item for this long at most
+
+
+async def claim_item(user_id: int, item_id: str) -> tuple[dict | None, str]:
+    """Marks the item "in progress" before a retry touches Untappd, so a double tap or a second device cannot start a
+    second check-in of the same record (audit R2). Returns (item, "ok"), (None, "missing") or (None, "busy")."""
+    async with _lock:
+        data = _load()
+        items = data.get(str(user_id), [])
+        item = next((it for it in items if it.get("id") == item_id), None)
+        if item is None:
+            return None, "missing"
+        if time.time() - (item.get("inProgressAt") or 0) < CLAIM_SECONDS:
+            return None, "busy"
+        item["inProgressAt"] = time.time()
+        _save(data)
+        return dict(item), "ok"
+
+
+async def release_item(user_id: int, item_id: str, **changes) -> None:
+    """Ends a claim, optionally recording what the attempt learned (failReason, maybeCreated)."""
+    async with _lock:
+        data = _load()
+        item = next((it for it in data.get(str(user_id), []) if it.get("id") == item_id), None)
+        if item is None:
+            return
+        item.pop("inProgressAt", None)
+        item.update(changes)
+        _save(data)
 
 
 async def remove_item(user_id: int, item_id: str) -> bool:

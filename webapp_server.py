@@ -21,6 +21,7 @@ import os
 import json_store
 import re
 import time
+from email.utils import parsedate_to_datetime
 from urllib.parse import parse_qsl, quote, urljoin
 
 import aiohttp
@@ -1654,8 +1655,11 @@ async def handle_submit(request: web.Request) -> web.Response:
         return web.json_response({"ok": True, "pending": True, "item": item})
     except untappd_mcp.UntappdMCPError as e:
         logger.warning("check_in failed: %s", e)
+        unknown = isinstance(e, untappd_mcp.UntappdOutcomeUnknown)
         try:
-            item = await pending_checkins.add_item(user_id, {**pending_fields, "failReason": "checkin_failed"})
+            item = await pending_checkins.add_item(user_id, {
+                **pending_fields, "failReason": "checkin_unknown" if unknown else "checkin_failed", "maybeCreated": unknown,
+            })
         except input_checks.StoreFull:
             return _json_error("checkin_failed", 502)
         return web.json_response({"ok": True, "pending": True, "item": item})
@@ -1671,6 +1675,32 @@ async def handle_pending_list(request: web.Request) -> web.Response:
     tg_user = init_data.get("user") or {}
     user_id = tg_user.get("id")
     return web.json_response({"items": await pending_checkins.list_items(user_id)})
+
+
+RECONCILE_LOOKBACK_SECONDS = 120   # the attempt ran just before the record was saved; allow for clock skew
+
+
+async def _find_existing_checkin(user_id: int, token: str, item: dict) -> dict | None:
+    """The user's own recent check-in of the item's beer made since the attempt that timed out, if there is one.
+    One feed call; if it fails the retry stops (UntappdMCPError) rather than guessing."""
+    profile = await user_tokens.get_profile(user_id)
+    username = (profile or {}).get("username")
+    if not username:
+        logger.warning("pending retry: no username to look up an earlier attempt of beer %s", item.get("beerId"))
+        return None
+    page = await untappd_mcp.get_user_checkins(token, username, limit=10)
+    since = (item.get("createdAt") or 0) - RECONCILE_LOOKBACK_SECONDS
+    for found in (page.get("checkins") or {}).get("items", []):
+        if (found.get("beer") or {}).get("bid") != item.get("beerId"):
+            continue
+        try:
+            made = parsedate_to_datetime(found.get("created_at") or "").timestamp()
+        except (TypeError, ValueError):
+            continue
+        if made >= since:
+            logger.info("pending retry: beer %s was already checked in (%s), not repeating", item.get("beerId"), found.get("checkin_id"))
+            return found
+    return None
 
 
 async def handle_pending_retry(request: web.Request) -> web.Response:
@@ -1696,19 +1726,32 @@ async def handle_pending_retry(request: web.Request) -> web.Response:
     item_id = body.get("id")
     if not item_id:
         return _json_error("invalid_id")
-    item = await pending_checkins.get_item(user_id, item_id)
-    if not item:
+    # Claimed first: a double tap, or the same record on a second device, must not start a second check-in.
+    item, claim = await pending_checkins.claim_item(user_id, item_id)
+    if claim == "missing":
         return _json_error("not_found", 404)
+    if claim == "busy":
+        return _json_error("in_progress", 409)
 
     try:
-        checkin = await untappd_mcp.check_in(
-            token, beer_id=item["beerId"], rating=item.get("rating") or 0, shout=item.get("shout") or "",
-            foursquare_id=item.get("foursquareId"), geolat=item.get("geolat"), geolng=item.get("geolng"),
-        )
+        checkin = None
+        if item.get("maybeCreated"):
+            # The first attempt timed out after the request was sent: look for the check-in before repeating it.
+            checkin = await _find_existing_checkin(user_id, token, item)
+        if checkin is None:
+            checkin = await untappd_mcp.check_in(
+                token, beer_id=item["beerId"], rating=item.get("rating") or 0, shout=item.get("shout") or "",
+                foursquare_id=item.get("foursquareId"), geolat=item.get("geolat"), geolng=item.get("geolng"),
+            )
     except untappd_mcp.UntappdRateLimited:
+        await pending_checkins.release_item(user_id, item_id)
         return _json_error("rate_limited", 429)
     except untappd_mcp.UntappdMCPError as e:
         logger.warning("pending check-in retry failed: %s", e)
+        if isinstance(e, untappd_mcp.UntappdOutcomeUnknown):
+            await pending_checkins.release_item(user_id, item_id, failReason="checkin_unknown", maybeCreated=True)
+        else:
+            await pending_checkins.release_item(user_id, item_id)
         return _json_error("checkin_failed", 502)
 
     await _apply_checkin_side_effects(

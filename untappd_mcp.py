@@ -48,6 +48,12 @@ class UntappdRateLimited(UntappdMCPError):
     """
 
 
+class UntappdOutcomeUnknown(UntappdMCPError):
+    """The request may have reached Untappd and been carried out, but no usable answer came back (read timeout,
+    dropped connection, 5xx). For read calls that is just a failure; for check_in it means the check-in may exist,
+    so it must be looked up before it is ever repeated (audit R2)."""
+
+
 class UntappdMalformedResponse(UntappdMCPError):
     """Raised when a response's JSON can't be parsed at all, even after the
     control-character/multi-line tolerance in _parse_sse_json and _call_tool.
@@ -123,8 +129,10 @@ async def _call_tool(name: str, arguments: dict, token: str) -> dict:
                 "Accept": "application/json, text/event-stream",
             },
         )
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout) as e:
+        raise UntappdMCPError(f"MCP request failed: {e}") from e   # never left this machine: safe to repeat
     except httpx.HTTPError as e:
-        raise UntappdMCPError(f"MCP request failed: {e}") from e
+        raise UntappdOutcomeUnknown(f"MCP request failed: {e}") from e
 
     if resp.status_code == 429:
         raise UntappdRateLimited("Untappd MCP returned HTTP 429")
@@ -133,7 +141,8 @@ async def _call_tool(name: str, arguments: dict, token: str) -> dict:
     try:
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        raise UntappdMCPError(f"MCP call {name!r} failed: {e}") from e
+        error_class = UntappdOutcomeUnknown if resp.status_code >= 500 else UntappdMCPError
+        raise error_class(f"MCP call {name!r} failed: {e}") from e
 
     envelope = _parse_sse_json(resp.text)
     result = envelope.get("result")

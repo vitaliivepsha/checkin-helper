@@ -1029,6 +1029,7 @@
   const PENDING_FAIL_REASON_KEY = {
     rate_limited: "app_pending_reason_rate_limited",
     checkin_failed: "app_pending_reason_checkin_failed",
+    checkin_unknown: "app_pending_reason_checkin_unknown",
   };
 
   function renderPendingCheckinsList() {
