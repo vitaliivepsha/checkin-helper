@@ -4451,7 +4451,12 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
        beer before (free, local lookup - no extra quota)."""
     if not items:
         return
-    known_beer_ids = _all_festival_beer_ids()
+    # The owner's OWN festival (personal or group-bound), not the global default one (audit R9): otherwise a beer
+    # on their list is reported as new, and one that is new to the default list but on theirs is missed.
+    festival_key = await _resolve_festival_key(owner_id)
+    owner_beers, owner_sessions_raw = _festival_data_for(festival_key)
+    _, owner_session_beer_ids, _, _ = _derive_session_data(owner_beers, owner_sessions_raw)
+    known_beer_ids = _all_festival_beer_ids(owner_session_beer_ids)
     watch_config = await festival_watch.get_config(owner_id)
     notify_listed = watch_config["notifyListedBeers"]
     # The owner's last-seen language (set when they open the Mini App);
@@ -4534,8 +4539,8 @@ async def _notify_festival_novelty(owner_id: int, items: list[dict], venue_label
             # same web_app button pattern as bot.py's /checkin (the only
             # one confirmed to carry real initData into the WebView).
             if _public_base_url:
-                zone_hint = _festival_brewery_zone_map(_festival_beers)
-                stand_brewery = _festival_brewery_aliases(_festival_beers).get(brewery_name, brewery_name)
+                zone_hint = _festival_brewery_zone_map(owner_beers)
+                stand_brewery = _festival_brewery_aliases(owner_beers).get(brewery_name, brewery_name)
                 zone = zone_hint.get(stand_brewery)
                 if zone:
                     map_url = (
