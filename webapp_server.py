@@ -291,6 +291,9 @@ PUBLIC_MAP_RATE_LIMIT_PER_MIN = int(os.environ.get("PUBLIC_MAP_RATE_LIMIT_PER_MI
 PUBLIC_MAP_SEARCH_RATE_LIMIT_PER_MIN = int(os.environ.get("PUBLIC_MAP_SEARCH_RATE_LIMIT_PER_MIN", "60"))
 _public_cache = public_map_util.TTLCache(ttl_seconds=30)
 _public_limiter = public_map_util.RateLimiter()
+# Per-user limits for the routes that spend the owner's shared keys (audit S4): Foursquare lookups.
+_user_limiter = public_map_util.RateLimiter()
+VENUES_NEARBY_PER_MIN = 30
 # Fuzzy search is the one CPU-heavy public endpoint (~10 ms of pure CPU each,
 # measured) and this process also runs the Telegram bot on the same event
 # loop - so identical queries are cached and the matching itself runs in a
@@ -1478,6 +1481,8 @@ async def handle_venues_nearby(request: web.Request) -> web.Response:
     user_id = tg_user.get("id")
     if not await _is_known_user(user_id):
         return _json_error("not_allowed", 403)
+    if not _user_limiter.allow(f"nearby:{user_id}", VENUES_NEARBY_PER_MIN):
+        return _json_error("rate_limited", 429)
 
     try:
         body = await request.json()

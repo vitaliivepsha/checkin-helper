@@ -41,6 +41,7 @@ import lens_review
 import festival_watch
 import comment_watch
 import feature_flags
+import public_map_util
 import group_festivals
 import group_membership
 import user_festivals
@@ -1917,6 +1918,10 @@ async def _process_media_group_later(context: ContextTypes.DEFAULT_TYPE, key: st
     await _process_photo_messages(messages[0], messages, context, lng)
 
 
+PHOTOS_PER_HOUR = 20
+_photo_limiter = public_map_util.RateLimiter(window_seconds=3600)
+
+
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message
     lng = lang(update)
@@ -1934,6 +1939,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # so a reply here would fire once per photo in a multi-photo album
     # instead of once for the whole thing.
     if not _is_owner(user_id) and not await feature_flags.is_enabled(feature_flags.PHOTO_RECOGNITION_KEY):
+        return
+    # Every recognised photo is a paid vision call on the owner's key: bounded per user (audit S4), silently
+    # for the same album reason as above.
+    if not _is_owner(user_id) and not _photo_limiter.allow(str(user_id), PHOTOS_PER_HOUR):
         return
 
     media_group_id = getattr(message, "media_group_id", None)
@@ -2730,6 +2739,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if text.startswith("/"):
             return
         clear_pending_untappd_token(context, user_id, chat_id)
+        try:
+            await update.message.delete()   # the token must not stay in the chat history (audit S11)
+        except Exception:
+            logger.info("could not delete the message carrying the token (no permission in this chat?)")
         try:
             profile = await untappd_mcp.get_my_profile(text)
         except untappd_mcp.UntappdRateLimited:

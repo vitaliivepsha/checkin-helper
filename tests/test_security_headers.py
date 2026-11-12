@@ -22,3 +22,10 @@ async def test_security_headers_are_set_and_the_public_map_stays_embeddable():
             r = await c.get(path)
             assert r.headers["X-Content-Type-Options"] == "nosniff"
             assert "Content-Security-Policy" not in r.headers
+
+
+def test_user_limiter_blocks_the_burst_after_the_limit():
+    limiter = ws.public_map_util.RateLimiter()
+    assert all(limiter.allow("nearby:7", ws.VENUES_NEARBY_PER_MIN) for _ in range(ws.VENUES_NEARBY_PER_MIN))
+    assert not limiter.allow("nearby:7", ws.VENUES_NEARBY_PER_MIN)
+    assert limiter.allow("nearby:8", ws.VENUES_NEARBY_PER_MIN)      # another user is unaffected
