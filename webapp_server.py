@@ -1172,12 +1172,13 @@ def validate_init_data(init_data: str, bot_token: str, max_age_seconds: int = 86
         return None
 
     auth_date = pairs.get("auth_date")
-    if auth_date:
-        try:
-            if time.time() - int(auth_date) > max_age_seconds:
-                return None
-        except ValueError:
+    if not auth_date:
+        return None   # Telegram always signs one; without it the age of this data cannot be checked
+    try:
+        if time.time() - int(auth_date) > max_age_seconds:
             return None
+    except ValueError:
+        return None
 
     if "user" in pairs:
         try:
