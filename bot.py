@@ -16,6 +16,7 @@ import zipfile
 import base64
 import html
 import logging
+import logging.handlers
 import asyncio
 from collections import defaultdict
 from datetime import datetime
@@ -164,7 +165,8 @@ logging.basicConfig(
     level=logging.INFO,
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(data_path("bot_log.txt"), encoding="utf-8"),
+        # Rotated (audit O2): the plain FileHandler had grown to 25 MB and never shrank.
+        logging.handlers.RotatingFileHandler(data_path("bot_log.txt"), maxBytes=10 * 1024 * 1024, backupCount=3, encoding="utf-8"),
     ]
 )
 logger = logging.getLogger(__name__)

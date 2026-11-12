@@ -1,0 +1,11 @@
+# Versions the code was last tested with (pip freeze of the working venv, runtime packages only).
+# requirements.txt stays the loose list the deploy installs; use this file to rebuild an environment:
+#   pip install -r requirements.lock
+aiohttp==3.14.3
+anthropic==1.8.0
+beautifulsoup4==4.15.0
+httpx==0.28.1
+python-dotenv==1.2.3
+python-telegram-bot==21.11.1
+RapidFuzz==3.14.6
+requests==2.34.2
