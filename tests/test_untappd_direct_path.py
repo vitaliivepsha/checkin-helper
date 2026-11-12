@@ -48,7 +48,7 @@ def test_foursquare_ids_from_request_bodies_are_validated():
 def test_rate_limit_text_is_matched_by_whole_words():
     # audit R4: "rate" inside "generated"/"separate" must not read as a rate limit
     from untappd_mcp import is_rate_limit_message
-    for text in ("HTTP 429", "Rate limit exceeded", "rate_limit", "Too Many Requests", "request throttled"):
+    for text in ("HTTP 429", "Rate limit exceeded", "rate_limit", "Too Many Requests", "request throttled", "venue/checkins/7795784: The authenticated user has reached their API limit for the hour. Please wait before making another call."):
         assert is_rate_limit_message(text), text
     for text in ("Beer separate from brewery", "Could not generate report", "Inaccurate id 14290", "error 14290", ""):
         assert not is_rate_limit_message(text), text

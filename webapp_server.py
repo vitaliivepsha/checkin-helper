@@ -275,6 +275,9 @@ FESTIVAL_WATCH_VENUE_BUDGET_PER_HOUR = float(os.environ.get("FESTIVAL_WATCH_VENU
 FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS = float(os.environ.get("FESTIVAL_WATCH_VENUE_IDLE_SLEEP_SECONDS", "300"))
 FESTIVAL_WATCH_VENUE_MIN_REMAINING = int(os.environ.get("FESTIVAL_WATCH_VENUE_MIN_REMAINING", "5"))
 FESTIVAL_WATCH_VENUE_CHECK_LIMIT = int(os.environ.get("FESTIVAL_WATCH_VENUE_CHECK_LIMIT", "25"))
+# When DIRECT_TOKEN's own pool is spent, the venue poll may borrow the owner's MCP token - but only while that token
+# still has plenty left, so it never competes with their live search and check-in traffic.
+FESTIVAL_WATCH_VENUE_MCP_FALLBACK_MIN_REMAINING = int(os.environ.get("FESTIVAL_WATCH_VENUE_MCP_FALLBACK_MIN_REMAINING", "60"))
 # Extra venues (festival_watch.add_extra_venue) are scraped, not API-polled -
 # see _festival_watch_scrape_loop. Pause between two venues' requests within
 # one pass (politeness / not looking like a burst), the pass interval, and
@@ -4962,6 +4965,22 @@ async def _poll_festival_friends(owner_id: int) -> None:
     await festival_watch.record_friends_tick(owner_id, newest_id)
 
 
+async def _venue_checkins_page(owner_id: int, venue_id: int, limit: int, min_id: int | None) -> dict | None:
+    """One page of a venue's public check-ins from the best pool with headroom: DIRECT_TOKEN's own pool first (as
+    always), the owner's MCP token (get_venue_checkins on the MCP server) only when that is spent. None when
+    neither has room - the tick is skipped, never retried."""
+    if DIRECT_TOKEN and _quota_allows(untappd_direct.get_api_usage(), FESTIVAL_WATCH_VENUE_MIN_REMAINING):
+        return await untappd_direct.get_venue_checkins(DIRECT_TOKEN, venue_id, limit=limit, min_id=min_id)
+    token = await user_tokens.get_token(owner_id)
+    if not token:
+        return None
+    usage = await untappd_mcp.get_untappd_api_usage(token)   # free
+    if not _quota_allows(usage, FESTIVAL_WATCH_VENUE_MCP_FALLBACK_MIN_REMAINING):
+        return None
+    logger.info("festival_watch venue poll: direct pool spent, using the owner's MCP token")
+    return await untappd_mcp.get_venue_checkins(token, venue_id, limit=limit, min_id=min_id)
+
+
 async def _festival_watch_venue_loop() -> None:
     """Independent poll of venue/checkins/{venue_id} for every owner whose
     festival_watch point has resolved to a real Untappd venue (see
@@ -4969,9 +4988,10 @@ async def _festival_watch_venue_loop() -> None:
     _check_festival_novelty's friends-only feed piggyback (the whole reason
     untappd_direct.py and this loop exist - see README.md).
 
-    Always uses DIRECT_TOKEN (untappd_direct's own separate quota pool) -
-    never untappd_mcp, since the MCP server doesn't expose this endpoint at
-    all. A no-op forever if DIRECT_TOKEN isn't configured (no owner's watch
+    Uses DIRECT_TOKEN (untappd_direct's own separate quota pool) first; the
+    MCP server's get_venue_checkins is only a fallback for when that pool is
+    spent (see _venue_checkins_page). A no-op forever if DIRECT_TOKEN isn't
+    configured (no owner's watch
     point can ever have resolved to a venueId in that case either - see
     handle_festival_watch_set_location - so list_venue_jobs() would just
     always come back empty).
@@ -5019,8 +5039,9 @@ async def _festival_watch_venue_loop() -> None:
             )
 
             usage = untappd_direct.get_api_usage()  # free, no network call
-            if not _quota_allows(usage, FESTIVAL_WATCH_VENUE_MIN_REMAINING):
-                await asyncio.sleep(tick_interval)
+            direct_ok = _quota_allows(usage, FESTIVAL_WATCH_VENUE_MIN_REMAINING)
+            if not direct_ok and not targets:
+                await asyncio.sleep(tick_interval)   # only the friends poll is due, and it needs the direct pool
                 continue
 
             for target in targets:
@@ -5039,10 +5060,11 @@ async def _festival_watch_venue_loop() -> None:
                     # consumers) was itself the first thing turned off.
                     min_id = target["lastCheckinId"]
                     try:
-                        page = await untappd_direct.get_venue_checkins(
-                            DIRECT_TOKEN, target["venueId"],
-                            limit=FESTIVAL_WATCH_VENUE_CHECK_LIMIT, min_id=min_id,
+                        page = await _venue_checkins_page(
+                            owner_id, target["venueId"], FESTIVAL_WATCH_VENUE_CHECK_LIMIT, min_id,
                         )
+                        if page is None:
+                            break   # neither pool has room this tick
                     except untappd_mcp.UntappdMCPError as e:
                         # Confirmed live: Untappd rejects a min_id pointing
                         # further back than ~10 days for this endpoint
@@ -5058,9 +5080,11 @@ async def _festival_watch_venue_loop() -> None:
                         # retrying the same doomed min_id forever.
                         if min_id is None or "min_id" not in str(e).lower():
                             raise
-                        page = await untappd_direct.get_venue_checkins(
-                            DIRECT_TOKEN, target["venueId"], limit=FESTIVAL_WATCH_VENUE_CHECK_LIMIT,
+                        page = await _venue_checkins_page(
+                            owner_id, target["venueId"], FESTIVAL_WATCH_VENUE_CHECK_LIMIT, None,
                         )
+                        if page is None:
+                            break
                         min_id = None
                     items = (page.get("checkins") or {}).get("items", [])
                     if not items:
@@ -5088,7 +5112,7 @@ async def _festival_watch_venue_loop() -> None:
                     logger.warning("festival_watch venue tick failed for owner %s: %s", owner_id, e)
                 except Exception:
                     logger.exception("festival_watch venue tick failed for owner %s", owner_id)
-            if friends_owner is not None:
+            if friends_owner is not None and direct_ok:
                 try:
                     await _poll_festival_friends(friends_owner)
                 except untappd_mcp.UntappdRateLimited:

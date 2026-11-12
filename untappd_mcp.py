@@ -27,7 +27,7 @@ _client: httpx.AsyncClient | None = None
 _id_counter = itertools.count(1)
 
 
-_RATE_LIMIT_RE = re.compile(r"\b429\b|rate[\s_-]?limit|too many requests|throttl", re.IGNORECASE)
+_RATE_LIMIT_RE = re.compile(r"\b429\b|rate[\s_-]?limit|too many requests|throttl|api limit|limit for the hour", re.IGNORECASE)
 
 
 def is_rate_limit_message(message: str) -> bool:
@@ -345,6 +345,28 @@ async def get_user_friends(token: str, username: str | None = None, limit: int =
     if username:
         arguments["username"] = username
     return await _call_tool("get_user_friends", arguments, token)
+
+
+async def get_venue_checkins(
+    token: str, venue_id: int, limit: int = 25,
+    max_id: int | None = None, min_id: int | None = None,
+) -> dict:
+    """Public check-in feed of one venue (everyone, not only friends) - the MCP server gained this tool after
+    untappd_direct.py was written, so it can now stand in for the direct API's venue/checkins when that pool is
+    spent. `venue_id` is Untappd's numeric venue id. Costs one call of the caller's own token. Same normalized
+    envelope as get_user_checkins."""
+    arguments: dict = {"venueId": venue_id, "limit": min(limit, 25)}
+    if max_id is not None:
+        arguments["maxId"] = max_id
+    if min_id is not None:
+        arguments["minId"] = min_id
+    result = await _call_tool("get_venue_checkins", arguments, token)
+    if isinstance(result, dict) and "checkins" not in result and "items" in result:
+        result = {
+            "pagination": result.get("pagination"),
+            "checkins": {"count": result.get("count"), "items": result.get("items", [])},
+        }
+    return result
 
 
 async def get_untappd_api_usage(token: str) -> dict:
