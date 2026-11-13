@@ -18,7 +18,29 @@ function getApiToken() {
 }
 // --------------------------------------------------------------------------
 
+// The feedback buttons ("not that beer" / "yes, this one" and their undo) - only these paths may be called this way.
+const FEEDBACK_PATHS = new Set(["/api/lens/reject", "/api/lens/unreject", "/api/lens/confirm", "/api/lens/unconfirm"]);
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message && message.type === "lensFeedback") {
+    (async () => {
+      try {
+        if (!FEEDBACK_PATHS.has(message.path)) throw new Error("path_not_allowed");
+        const token = await getApiToken();
+        if (!token) throw new Error("no_token: open the extension options and paste LENS_API_TOKEN");
+        const res = await fetch(API_BASE + message.path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Lens-Token": token },
+          body: JSON.stringify(message.body || {}),
+        });
+        const data = await res.json();
+        sendResponse(data.ok ? { ok: true, result: data.result } : { ok: false, error: data.error || "unknown_error" });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e && e.message ? e.message : e) });
+      }
+    })();
+    return true;
+  }
   if (!message || message.type !== "lensLookup") return false;
 
   // One retry after a few seconds: the bot restarts on every deploy and the proxy in front

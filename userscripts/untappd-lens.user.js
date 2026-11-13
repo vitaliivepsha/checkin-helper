@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Untappd Had-It Overlay
 // @namespace    checkin-helper
-// @version      2.9.4
+// @version      2.9.5
 // @description  Marks beers you've already had (plus rating + Untappd link) directly on a shop's product listing, using your own check-in history via the checkin-helper bot.
 // @match        https://www.piwnemosty.pl/*
 // @match        https://*.ontap.pl/*
@@ -672,13 +672,12 @@ ${had}
     lensStylesAdded = true;
     const style = document.createElement("style");
     style.textContent =
-      ".lens-reject-btn{display:none;border:0;background:#eee;color:#555;cursor:pointer;" +
-      "width:16px;height:16px;padding:0;border-radius:50%;font-size:10px;line-height:16px;}" +
+      ".lens-reject-btn{display:inline-block;border:0;background:#eee;color:#555;cursor:pointer;" +
+      "width:16px;height:16px;padding:0;margin-left:4px;border-radius:50%;font-size:10px;line-height:16px;}" +
       ".lens-reject-btn:hover{background:#c62828;color:#fff;}" +
-      ".lens-confirm-btn{display:none;border:0;background:#eee;color:#555;cursor:pointer;" +
-      "width:16px;height:16px;padding:0;border-radius:50%;font-size:10px;line-height:16px;}" +
-      ".lens-confirm-btn:hover{background:#2e7d32;color:#fff;}" +
-      ".lens-wrap:hover .lens-reject-btn,.lens-wrap:hover .lens-confirm-btn{display:inline-block;}";
+      ".lens-confirm-btn{display:inline-block;border:0;background:#eee;color:#555;cursor:pointer;" +
+      "width:16px;height:16px;padding:0;margin-left:4px;border-radius:50%;font-size:10px;line-height:16px;}" +
+      ".lens-confirm-btn:hover{background:#2e7d32;color:#fff;}";   // always visible: a hover-only button does not exist on a phone
     document.head.appendChild(style);
   }
 

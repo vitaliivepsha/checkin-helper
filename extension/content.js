@@ -348,9 +348,47 @@
     });
   }
 
+  function apiFeedback(path, body) {
+    return new Promise((resolve, reject) => {
+      if (!extensionContextValid()) {
+        reject(new Error("extension_context_invalidated"));
+        return;
+      }
+      try {
+        chrome.runtime.sendMessage({ type: "lensFeedback", path, body }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          if (!response || !response.ok) {
+            reject(new Error((response && response.error) || "unknown_error"));
+            return;
+          }
+          resolve(response.result);
+        });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  // "This is not that beer": the server remembers the rejection (used by the page lookup and the daily crawl
+  // alike) and returns the item re-resolved without it; unreject is the undo.
+  function apiReject(brewery, name, bid, undo) {
+    return apiFeedback(undo ? "/api/lens/unreject" : "/api/lens/reject", { brewery, name, bid });
+  }
+
+  // The opposite: "yes, this probable beer is the right one" (a confirmation the matcher then takes).
+  function apiConfirm(brewery, name, bid, undo) {
+    return apiFeedback(undo ? "/api/lens/unconfirm" : "/api/lens/confirm", { brewery, name, bid });
+  }
+
   function cacheKey(brewery, name) {
     return (brewery + "|" + name).toLowerCase();
   }
+
+  // Everything renderOverlay adds to a card - removed before a card is redrawn.
+  const LENS_CHIP_SELECTOR = ".lens-status-chip, .lens-rating-chip, .lens-list-chip, .lens-style-chip";
 
   function loadCache() {
     return new Promise((resolve) => {
@@ -425,12 +463,24 @@
     if (!wrapper || wrapper.querySelector(".lens-status-chip")) return; // don't double-render on re-runs
     const prevPosition = getComputedStyle(wrapper).position;
     if (prevPosition === "static") wrapper.style.position = "relative";
+    ensureLensStyles();
 
     const statusCorner = adapter.statusCorner || "top-left";
     const altCorner = adapter.altCorner || "top-right";
 
-    let icon, tooltip, borderColor;
-    if (result.matched) {
+    let icon, tooltip, borderColor, borderStyle = "solid";
+    const probable = !result.matched && result.probable ? result.probable : null;
+    if (probable) {
+      // Search found exactly one close lookalike by the same brewery but the matcher is not sure it is the
+      // shop's beer: shown as "probably this one" (dashed), with the candidate's own rating/link, until the
+      // user confirms or rejects it.
+      icon = "🤔";
+      const had = probable.hadIt === true ? "Вже пив" : probable.hadIt === false ? "Ще не пив" : "Невідомо, чи пив";
+      tooltip = "Ймовірно: " + probable.name + (probable.brewery ? " (" + probable.brewery + ")" : "") +
+        "\n" + had + "\nНе певний збіг - перевір";
+      borderColor = probable.hadIt === true ? "#2e7d32" : probable.hadIt === false ? "#1565c0" : "#e6a800";
+      borderStyle = "dashed";
+    } else if (result.matched) {
       if (result.hadIt === true) { icon = "✅"; tooltip = "Вже пив"; borderColor = "#2e7d32"; }
       else if (result.hadIt === false) { icon = "🆕"; tooltip = "Ще не пив"; borderColor = "#1565c0"; }
       else { icon = "❓"; tooltip = "Невідомо, чи пив"; borderColor = "#bbb"; }
@@ -450,7 +500,7 @@
     // needed since the chip is otherwise just informational in this case.
     const statusChip = document.createElement(!result.matched && result.searchUrl ? "a" : "span");
     statusChip.className = "lens-status-chip";
-    statusChip.style.cssText = CHIP_STYLE + `${cornerStyle(statusCorner)}border:2px solid ${borderColor};text-decoration:none;`;
+    statusChip.style.cssText = CHIP_STYLE + `${cornerStyle(statusCorner)}border:2px ${borderStyle} ${borderColor};text-decoration:none;`;
     statusChip.textContent = icon;
     if (!result.matched && result.searchUrl) {
       statusChip.href = result.searchUrl;
@@ -461,9 +511,53 @@
     } else {
       statusChip.title = tooltip;
     }
+    // A matched (or probable) card gets small buttons inside the status chip: "this is not that beer" (✕) and,
+    // for a probable one, "yes, this one" (✓). Always visible - a hover-only button does not exist on a phone.
+    if (probable) {
+      const confirmBtn = document.createElement("button");
+      confirmBtn.type = "button";
+      confirmBtn.className = "lens-confirm-btn";
+      confirmBtn.title = "Так, це воно";
+      confirmBtn.textContent = "✓";
+      confirmBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        confirmProbable(card, result, confirmBtn);
+      });
+      statusChip.appendChild(confirmBtn);
+    }
+    if ((result.matched && result.bid != null) || probable) {
+      const rejectBtn = document.createElement("button");
+      rejectBtn.type = "button";
+      rejectBtn.className = "lens-reject-btn";
+      rejectBtn.title = "Це не те пиво";
+      rejectBtn.textContent = "✕";
+      rejectBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        rejectMatch(card, result, rejectBtn);
+      });
+      statusChip.appendChild(rejectBtn);
+    }
     wrapper.appendChild(statusChip);
 
-    if (result.rating && !adapter.hideRating) {
+    if (probable) {
+      const probableChip = document.createElement("a");
+      probableChip.className = "lens-rating-chip";
+      probableChip.title = "Відкрити на Untappd: " + probable.name;
+      probableChip.style.cssText =
+        CHIP_STYLE + `${cornerStyle(altCorner)}text-decoration:none;cursor:pointer;border:2px dashed #999;`;
+      probableChip.textContent = probable.rating && !adapter.hideRating
+        ? `≈ ⭐ ${probable.rating.toFixed(2)}${probable.ratingCount ? ` (${probable.ratingCount})` : ""}`
+        : "≈ Untappd";
+      if (probable.url) {
+        probableChip.href = probable.url;
+        probableChip.target = "_blank";
+        probableChip.rel = "noopener";
+        probableChip.addEventListener("click", (e) => e.stopPropagation());
+      }
+      wrapper.appendChild(probableChip);
+    } else if (result.rating && !adapter.hideRating) {
       const ratingChip = document.createElement(result.url ? "a" : "span");
       ratingChip.className = "lens-rating-chip";
       ratingChip.title = "Відкрити на Untappd";
@@ -573,6 +667,101 @@
     }
   }
 
+  let lensStylesAdded = false;
+  function ensureLensStyles() {
+    if (lensStylesAdded) return;
+    lensStylesAdded = true;
+    const style = document.createElement("style");
+    style.textContent =
+      ".lens-reject-btn,.lens-confirm-btn{display:inline-block;border:0;background:#eee;color:#555;cursor:pointer;" +
+      "width:16px;height:16px;padding:0;margin-left:4px;border-radius:50%;font-size:10px;line-height:16px;}" +
+      ".lens-reject-btn:hover{background:#c62828;color:#fff;}" +
+      ".lens-confirm-btn:hover{background:#2e7d32;color:#fff;}";
+    document.head.appendChild(style);
+  }
+
+  // Redraws one card with a fresh result and keeps the 6h cache in step with it.
+  async function redrawCard(card, result) {
+    const wrapper = adapter.imageWrapper(card);
+    if (wrapper) wrapper.querySelectorAll(LENS_CHIP_SELECTOR).forEach((el) => el.remove());
+    renderOverlay(card, result);
+    const cache = await loadCache();
+    cache[cacheKey(card.dataset.lensBrewery || "", card.dataset.lensName || "")] = { at: Date.now(), result, src: 1 };
+    saveCache(cache);
+  }
+
+  let toastTimer = null;
+  function showToast(text, actionLabel, onAction) {
+    let toast = document.getElementById("lens-toast");
+    if (toast) toast.remove();
+    toast = document.createElement("div");
+    toast.id = "lens-toast";
+    toast.style.cssText =
+      "position:fixed;bottom:16px;left:16px;z-index:99999;max-width:340px;padding:10px 14px;" +
+      "border-radius:8px;background:#333;color:#fff;font-size:13px;line-height:1.4;" +
+      "box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;";
+    toast.append(text + " ");
+    if (actionLabel) {
+      const action = document.createElement("a");
+      action.href = "#";
+      action.textContent = actionLabel;
+      action.style.cssText = "color:#ffc300;font-weight:600;margin-left:6px;";
+      action.addEventListener("click", (e) => {
+        e.preventDefault();
+        toast.remove();
+        onAction();
+      });
+      toast.appendChild(action);
+    }
+    document.body.appendChild(toast);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.remove(), 9000);
+  }
+
+  async function confirmProbable(card, result, button) {
+    const brewery = card.dataset.lensBrewery || "";
+    const name = card.dataset.lensName || "";
+    const target = result.probable;
+    button.disabled = true;
+    try {
+      await redrawCard(card, await apiConfirm(brewery, name, target.bid, false));
+      showToast("Підтверджено: " + target.name + ".", "Скасувати", async () => {
+        try {
+          await redrawCard(card, await apiConfirm(brewery, name, target.bid, true));
+        } catch (e) {
+          console.error("[UntappdLens] undo failed:", e);
+          showToast("Не вдалося скасувати: " + e.message);
+        }
+      });
+    } catch (e) {
+      console.error("[UntappdLens] confirm failed:", e);
+      button.disabled = false;
+      showToast("Не вдалося підтвердити: " + e.message);
+    }
+  }
+
+  async function rejectMatch(card, result, button) {
+    const brewery = card.dataset.lensBrewery || "";
+    const name = card.dataset.lensName || "";
+    const target = result.matched ? result : result.probable; // the matched or the probable beer
+    button.disabled = true;
+    try {
+      await redrawCard(card, await apiReject(brewery, name, target.bid, false));
+      showToast("Відхилено: " + target.name + ".", "Скасувати", async () => {
+        try {
+          await redrawCard(card, await apiReject(brewery, name, target.bid, true));
+        } catch (e) {
+          console.error("[UntappdLens] undo failed:", e);
+          showToast("Не вдалося скасувати: " + e.message);
+        }
+      });
+    } catch (e) {
+      console.error("[UntappdLens] reject failed:", e);
+      button.disabled = false;
+      showToast("Не вдалося відхилити: " + e.message);
+    }
+  }
+
   function addRefreshButton() {
     const btn = document.createElement("button");
     btn.textContent = "🔄 Оновити";
@@ -586,7 +775,7 @@
       const original = btn.textContent;
       btn.textContent = "…";
       saveCache({}); // wipe the 6h cache - see CACHE_TTL_MS
-      document.querySelectorAll(".lens-status-chip, .lens-rating-chip, .lens-list-chip").forEach((el) => el.remove());
+      document.querySelectorAll(LENS_CHIP_SELECTOR).forEach((el) => el.remove());
       await runExclusive();
       btn.textContent = original;
       btn.disabled = false;
@@ -646,6 +835,8 @@
       if (!extracted || !extracted.name) return;
       const { brewery, name } = extracted;
       const key = cacheKey(brewery, name);
+      card.dataset.lensBrewery = brewery || "";
+      card.dataset.lensName = name;
       cardsByKey.set(key, card);
       const cached = cache[key];
       // src: 1 = looked up by a version that also sends shop/page; older cache entries are asked again once.
