@@ -8,5 +8,10 @@
     "url": "https://untappd.com/blog/your-next-check-in-could-make-you-a-winner-introducing-the-untappd-check-in-challenge-season-1/1971",
     "note": "Untappd Check In Challenge, Season 1 (10 weekly badges, Nov 2 2026 - Jan 10 2027): Week 1 (Nov 2-8) criteria is simply 'check in any drink' - no style or country restriction, same 'any' case as the pruned Untappd 16th Anniversary badge that this schema's kind:style/kind:country matcher can't encode. Week 2 (Nov 9-15) turned out to be style-specific ('any IPA') and was computable, so it now has its own entry in special_badges.json (see https://untappd.com/blog/untappd-check-in-challenge-week-2/1972) - remove that entry once it expires (activeUntil 2026-11-15). Weeks 3-10 are not yet revealed (each unlocks on its own Monday start date per the post's schedule: Wk3 Nov16, Wk4 Nov23, Wk5 Nov30, Wk6 Dec7, Wk7 Dec14, Wk8 Dec21, Wk9 Dec28, Wk10 Jan4), so their criteria can't be read yet. Re-check this post (or the blog) as later weeks unlock to see if any turn out to be style/country-specific and thus computable.",
     "foundAt": "2026-11-05"
+  },
+  {
+    "url": "https://untappd.com/blog/new-badge-bar-fly/1973",
+    "note": "Bar Fly badge (started Nov 13, 2026, no stated end date): earned by checking in at a beer bar (a verified venue type on Untappd), not a style or country. special_badges.json's reader only computes kind:style/kind:country, so this venue-type criterion can't be modeled here. No explicit activeUntil given in the post, so can't even tell if this is time-limited (vs. a new permanent badge, which would be out of scope for this file entirely) - re-check the post or badges.untappd.com for a sunset date.",
+    "foundAt": "2026-11-14"
   }
 ]
