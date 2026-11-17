@@ -89,21 +89,23 @@ def _is_owner(user_id) -> bool:
 # webapp_server.py via the get_toggleable_commands callback (same cross-
 # module-callback pattern as get_festival_data - see start_webapp_server's
 # own docstring for why, webapp_server.py can't import bot.py back).
+# The second and third items are i18n.py KEYS (cmdflag_<command>_label / _desc), translated for the
+# viewer by webapp_server's handle_command_flags_get - never literal text here.
 TOGGLEABLE_COMMANDS: list[tuple[str, str, str]] = [
-    ("start", "Привітання", "Вітальне повідомлення при першому запуску бота"),
-    ("stats", "Статистика", "Скільки пив із фестивалю вже випито"),
-    ("todo", "Список \"Спробувати\"", "Закріплений список пив, які ще не випробувані"),
-    ("find", "Пошук броварні", "Пошук усіх пив певної броварні на фестивалі"),
-    ("clear", "Очистити позначки", "Скидання власних позначок \"вже випив\" по чекінах"),
-    ("cancel", "Скасувати дію", "Скасування поточного пошуку чи виправлення"),
-    ("checkin", "Фестивальний чекін", "Кнопка відкриття Mini App для чекіну пива"),
-    ("join_group", "Приєднатись до групи", "Приєднання до спільної черги групи"),
-    ("set_festival", "Обрати фестиваль", "Вибір фестивалю — особисто або для всієї групи"),
-    ("connect_untappd", "Підключити Untappd", "Підключення власного Untappd-акаунта до бота"),
-    ("wishlist_sheet", "Таблиця вішлісту", "Підключення Google-таблиці власного вішлісту"),
-    ("import_history", "Імпорт історії", "Імпорт історії чекінів з Untappd у локальний кеш"),
-    ("festival_watch", "Стеження за новинками", "Сповіщення про нове пиво біля обраної точки"),
-    ("comment_watch", "Стеження за коментарями", "Сповіщення про нові коментарі під власними чекінами"),
+    ("start", "cmdflag_start_label", "cmdflag_start_desc"),
+    ("stats", "cmdflag_stats_label", "cmdflag_stats_desc"),
+    ("todo", "cmdflag_todo_label", "cmdflag_todo_desc"),
+    ("find", "cmdflag_find_label", "cmdflag_find_desc"),
+    ("clear", "cmdflag_clear_label", "cmdflag_clear_desc"),
+    ("cancel", "cmdflag_cancel_label", "cmdflag_cancel_desc"),
+    ("checkin", "cmdflag_checkin_label", "cmdflag_checkin_desc"),
+    ("join_group", "cmdflag_join_group_label", "cmdflag_join_group_desc"),
+    ("set_festival", "cmdflag_set_festival_label", "cmdflag_set_festival_desc"),
+    ("connect_untappd", "cmdflag_connect_untappd_label", "cmdflag_connect_untappd_desc"),
+    ("wishlist_sheet", "cmdflag_wishlist_sheet_label", "cmdflag_wishlist_sheet_desc"),
+    ("import_history", "cmdflag_import_history_label", "cmdflag_import_history_desc"),
+    ("festival_watch", "cmdflag_festival_watch_label", "cmdflag_festival_watch_desc"),
+    ("comment_watch", "cmdflag_comment_watch_label", "cmdflag_comment_watch_desc"),
 ]
 
 
@@ -1862,7 +1864,7 @@ async def _process_photo_messages(anchor_message, messages: list, context: Conte
 
     progress_text = t(lng, "recognizing")
     if len(messages) > 1:
-        progress_text += f" ({len(messages)} фото)"
+        progress_text += " " + t(lng, "photos_count", n=len(messages))
     progress_msg = await anchor_message.reply_text(progress_text)
 
     all_detected: list[dict] = []
@@ -2265,7 +2267,7 @@ async def _send_detected_results(
         try:
             await resilient_send_message(context,
                 chat_id=chat_id,
-                text=f"⚠️ Розпізнав {total}, але зміг показати {sent_count}. Подивись bot_log.txt — там буде причина для пропущених.",
+                text=t(lng, "detect_partial", total=total, shown=sent_count),
             )
         except Exception:
             logger.exception("Could not send failed-count notice")

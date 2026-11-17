@@ -4008,9 +4008,15 @@ async def handle_command_flags_get(request: web.Request) -> web.Response:
         return web.json_response({"available": False, "commands": [], "photoRecognition": True})
     registry = _get_toggleable_commands_fn()
     flags = await feature_flags.get_all([cmd for cmd, _, _ in registry])
-    by_command = {cmd: (label, desc) for cmd, label, desc in registry}
+    by_command = {cmd: (label_key, desc_key) for cmd, label_key, desc_key in registry}
+    lang_code = tg_user.get("language_code")
     commands = [
-        {"command": cmd, "label": by_command[cmd][0], "description": by_command[cmd][1], "enabled": flags["commands"].get(cmd, True)}
+        {
+            "command": cmd,
+            "label": i18n.t(lang_code, by_command[cmd][0]),
+            "description": i18n.t(lang_code, by_command[cmd][1]),
+            "enabled": flags["commands"].get(cmd, True),
+        }
         for cmd in flags["order"]
     ]
     return web.json_response({
@@ -5592,6 +5598,7 @@ async def _special_badges_sync_loop() -> None:
                 remote_pending = await _fetch_github_raw_json(session, "special_badges_pending_review.json")
 
             lines: list[str] = []
+            lang = await user_tokens.get_language(int(AUTO_TOAST_OWNER_ID)) or "uk"
 
             if remote_catalog is not None and isinstance(remote_catalog.get("special_badges"), list):
                 local_catalog = _read_local_json(_SPECIAL_BADGES_LOCAL_PATH) or {}
@@ -5604,14 +5611,14 @@ async def _special_badges_sync_loop() -> None:
                     _write_json_atomic(_SPECIAL_BADGES_LOCAL_PATH, remote_catalog)
                     badge_stats.reload_special_badges()
                     if added:
-                        lines.append("🆕 Нові спеціальні бейджі:")
+                        lines.append(i18n.t(lang, "badges_sync_new"))
                         by_name = {b.get("badge"): b for b in new_badges}
                         for name in added:
                             src = (by_name.get(name) or {}).get("sourceUrl")
                             label = html.escape(name)
                             lines.append(f"• <a href=\"{html.escape(src)}\">{label}</a>" if src else f"• {label}")
                     if removed:
-                        lines.append("🗑 Прибрано (термін дії сплив):")
+                        lines.append(i18n.t(lang, "badges_sync_removed"))
                         lines.extend(f"• {html.escape(n)}" for n in removed)
 
             if remote_pending is not None and isinstance(remote_pending, list):
@@ -5621,7 +5628,7 @@ async def _special_badges_sync_loop() -> None:
                     added_pending = [e for e in remote_pending if e.get("url") not in old_urls]
                     _write_json_atomic(_SPECIAL_BADGES_PENDING_LOCAL_PATH, remote_pending)
                     if added_pending:
-                        lines.append("❓ Знайдено, потребує ручної перевірки:")
+                        lines.append(i18n.t(lang, "badges_sync_review"))
                         for entry in added_pending:
                             url = entry.get("url") or ""
                             note = html.escape(entry.get("note") or "")
@@ -5629,7 +5636,7 @@ async def _special_badges_sync_loop() -> None:
                             lines.append(f"• {link} — {note}")
 
             if lines and _ptb_bot:
-                text = "Оновлення каталогу спеціальних бейджів (синхронізовано з GitHub):\n\n" + "\n".join(lines)
+                text = i18n.t(lang, "badges_sync_title") + "\n\n" + "\n".join(lines)
                 try:
                     await _ptb_bot.send_message(
                         chat_id=int(AUTO_TOAST_OWNER_ID), text=text,

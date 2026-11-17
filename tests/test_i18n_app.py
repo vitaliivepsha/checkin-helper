@@ -87,3 +87,25 @@ def test_app_js_markup_has_no_emoji():
         if pictographs.search(line) and not line.lstrip().startswith("//")
     ]
     assert offenders == [], f"emoji in app.js code on lines {offenders}"
+
+
+def test_python_ui_code_has_no_literal_cyrillic_text():
+    # audit A3: user-facing text goes through i18n.py. The allowlist is data that is not shown to anyone:
+    # the prompt text the bot recognises in a reply, and the column names of a user's own Google Sheet.
+    import ast
+    import re
+    allowed = {"введи назву пивоварні", "Посилання", "Назва", "Броварня", "Стиль"}
+    cyrillic = re.compile("[Ѐ-ӿ]")
+    offenders = []
+    for name in ("bot.py", "webapp_server.py"):
+        tree = ast.parse(open(name, encoding="utf-8").read())
+        docstrings = {
+            id(n.body[0].value) for n in ast.walk(tree)
+            if isinstance(n, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and n.body and isinstance(n.body[0], ast.Expr) and isinstance(getattr(n.body[0], "value", None), ast.Constant)
+        }
+        for n in ast.walk(tree):
+            if (isinstance(n, ast.Constant) and isinstance(n.value, str) and cyrillic.search(n.value)
+                    and id(n) not in docstrings and n.value not in allowed):
+                offenders.append((name, n.lineno, n.value[:40]))
+    assert offenders == [], f"literal Cyrillic UI text in code: {offenders}"
