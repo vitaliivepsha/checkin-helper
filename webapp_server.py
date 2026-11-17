@@ -2488,6 +2488,35 @@ async def handle_lens_crawl(request: web.Request) -> web.Response:
 _deploy_lock = asyncio.Lock()
 
 
+async def _notify_store_damaged(path: str, moved_to: str, reason: str) -> None:
+    """Tells the owner a data file could not be read and was set aside (json_store; audit R3) - the bot carries on
+    with the last good copy or an empty store, and the owner can look at the moved file."""
+    if _ptb_bot is None or not AUTO_TOAST_OWNER_ID:
+        return
+    try:
+        lang = await user_tokens.get_language(int(AUTO_TOAST_OWNER_ID)) or "uk"
+        await _ptb_bot.send_message(
+            chat_id=int(AUTO_TOAST_OWNER_ID), parse_mode="HTML",
+            text=i18n.t(lang, "store_damaged", name=html.escape(os.path.basename(path)),
+                        moved=html.escape(os.path.basename(moved_to)), reason=html.escape(str(reason)[:200])),
+        )
+    except Exception:
+        logger.exception("could not tell the owner about a damaged data file")
+
+
+def _on_store_damaged(path: str, moved_to: str, reason: str) -> None:
+    try:
+        asyncio.get_running_loop().create_task(_notify_store_damaged(path, moved_to, reason))
+    except RuntimeError:
+        pass   # not inside the event loop (start-up): _report_damaged_stores sends these once the bot is up
+
+
+async def _report_damaged_stores() -> None:
+    for moved_to in list(json_store.quarantined):
+        original = moved_to.rsplit(".corrupt-", 1)[0]
+        await _notify_store_damaged(original, moved_to, "found at start-up")
+
+
 async def _notify_deploy_rejected(previous: str, problems: list[str]) -> None:
     """Tells the owner a push was not deployed (the bot is still running the previous commit)."""
     if _ptb_bot is None or not AUTO_TOAST_OWNER_ID:
@@ -3709,6 +3738,8 @@ async def start_webapp_server(
     global _ptb_bot, _ptb_app, _data_dir, _reload_beer_db_fn, _active_festival_key, _get_festival_data_fn, _get_toggleable_commands_fn, _refresh_command_menus_fn, _public_base_url
     _ptb_bot = ptb_app.bot
     _ptb_app = ptb_app
+    json_store.set_notifier(_on_store_damaged)
+    asyncio.get_running_loop().create_task(_report_damaged_stores())
     _data_dir = os.path.abspath(data_dir or ".")
     _reload_beer_db_fn = reload_beer_db
     _active_festival_key = active_festival_key

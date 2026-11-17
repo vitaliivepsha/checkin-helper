@@ -20,6 +20,14 @@ import time
 logger = logging.getLogger(__name__)
 
 quarantined: list[str] = []   # paths moved aside since start-up, for whoever wants to tell the owner
+_notifier = None
+
+
+def set_notifier(callback) -> None:
+    """`callback(original_path, moved_to, reason)` is called (synchronously, must not raise or block) each time a
+    damaged file is moved aside, so the owner can be told at once instead of finding it in the log."""
+    global _notifier
+    _notifier = callback
 
 
 class StoreUnreadable(OSError):
@@ -40,6 +48,11 @@ def _quarantine(path: str, reason: str) -> None:
         return
     quarantined.append(target)
     logger.error("store %s is damaged (%s); moved to %s", path, reason, target)
+    if _notifier is not None:
+        try:
+            _notifier(path, target, reason)
+        except Exception:
+            logger.exception("store damage notifier failed")
 
 
 def load_json(path: str | None, default, expect: type | None = None):

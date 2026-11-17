@@ -62,3 +62,35 @@ async def test_a_truncated_token_file_is_not_silently_overwritten(tmp_path):
     # restored from the last good copy (one save back), not replaced by a near-empty file
     assert await user_tokens.get_token(1) == "tok-1" and await user_tokens.get_token(2) == "tok-2"
     assert await user_tokens.get_token(4) == "tok-4"
+
+
+def test_the_notifier_hears_about_a_damaged_file(tmp_path):
+    heard = []
+    json_store.set_notifier(lambda path, moved, reason: heard.append((path, moved, reason)))
+    try:
+        path = tmp_path / "s.json"
+        path.write_text("{broken", encoding="utf-8")
+        json_store.load_json(str(path), {})
+    finally:
+        json_store.set_notifier(None)
+    assert len(heard) == 1 and heard[0][0] == str(path) and ".corrupt-" in heard[0][1]
+
+
+async def test_the_owner_is_told_in_telegram(monkeypatch):
+    import webapp_server as ws
+
+    sent = []
+
+    class FakeBot:
+        async def send_message(self, chat_id, text, parse_mode=None):
+            sent.append((chat_id, text))
+
+    async def language(user_id):
+        return "uk"
+
+    monkeypatch.setattr(ws, "_ptb_bot", FakeBot())
+    monkeypatch.setattr(ws, "AUTO_TOAST_OWNER_ID", "7")
+    monkeypatch.setattr(ws.user_tokens, "get_language", language)
+    await ws._notify_store_damaged("/data/untappd_tokens.json", "/data/untappd_tokens.json.corrupt-1", "Expecting value")
+    assert len(sent) == 1 and sent[0][0] == 7
+    assert "untappd_tokens.json" in sent[0][1] and "corrupt-1" in sent[0][1]
