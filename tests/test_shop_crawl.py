@@ -171,7 +171,8 @@ async def test_run_shop_crawl_records_outcomes_and_stops_on_a_rate_limit(tmp_pat
     state = await ws._run_shop_crawl()
     assert state["products"] == 6 and state["resolved"] == 3 and state["stoppedEarly"] == "rate_limited"
     assert state["shops"]["ontap"]["error"] == "RuntimeError: down"
-    assert ws._shop_crawl_running is False and shop_crawl.load_state()["running"] is False
+    import lens_routes
+    assert lens_routes._shop_crawl_running is False and shop_crawl.load_state()["running"] is False   # state lives in lens_routes now
     report = await lens_log.report()
     assert report["total"] == 3 and report["outcomes"] == {"matched": 3}
 
