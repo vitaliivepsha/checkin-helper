@@ -134,9 +134,10 @@ def _matched_badges(categories: list[str]) -> list[dict]:
 
 # Owner's fallback token: only used for this exact Telegram id, so an
 # unregistered friend never silently inherits the owner's account.
-# One owner (audit R8): the admin/lens id (AUTO_TOAST_OWNER_ID) used to be a different variable from this one, and with
-# OWNER_TELEGRAM_ID unset the owner's own token fallback and direct-API pool silently did not work.
-OWNER_TELEGRAM_ID = os.environ.get("OWNER_TELEGRAM_ID") or os.environ.get("AUTO_TOAST_OWNER_ID", "402733193")
+# Deliberately NOT defaulted to AUTO_TOAST_OWNER_ID (an earlier change did, audit R8): with this unset the owner's
+# background loops never borrow DIRECT_TOKEN's pool, which the festival venue monitor depends on. Set it in .env to
+# opt in - it also enables the UNTAPPD_MCP_TOKEN fallback for this id.
+OWNER_TELEGRAM_ID = os.environ.get("OWNER_TELEGRAM_ID", "")
 FALLBACK_TOKEN = os.environ.get("UNTAPPD_MCP_TOKEN", "")
 # Real Untappd API v4 access_token - a second, completely independent quota
 # pool for the owner only (see untappd_direct.py's own module docstring for
