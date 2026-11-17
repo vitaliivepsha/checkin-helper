@@ -7,7 +7,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-SPLIT_MODULES = ["lens_routes", "checkin_routes", "festival_watch_routes"]
+SPLIT_MODULES = ["lens_routes", "checkin_routes", "festival_watch_routes", "festival_map_routes"]
+CHECKED_FOR_UNDEFINED_NAMES = SPLIT_MODULES + ["webapp_server"]   # the remainder must not name anything it moved away
 
 
 def _module_level_names(table) -> set[str]:
@@ -16,7 +17,7 @@ def _module_level_names(table) -> set[str]:
 
 def _undefined_globals(source: str) -> set[str]:
     top = symtable.symtable(source, "module", "exec")
-    defined = _module_level_names(top) | set(dir(builtins))
+    defined = _module_level_names(top) | set(dir(builtins)) | {"__file__", "__name__", "__doc__"}
     undefined: set[str] = set()
 
     def walk(table):
@@ -31,7 +32,7 @@ def _undefined_globals(source: str) -> set[str]:
     return undefined
 
 
-@pytest.mark.parametrize("module", SPLIT_MODULES)
+@pytest.mark.parametrize("module", CHECKED_FOR_UNDEFINED_NAMES)
 def test_a_split_module_refers_only_to_names_it_defines_or_reaches_through_ws(module):
     # a function moved out of webapp_server that still names something left behind would crash only when called
     source = (ROOT / f"{module}.py").read_text(encoding="utf-8")
