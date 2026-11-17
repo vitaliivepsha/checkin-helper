@@ -1,0 +1,8 @@
+{
+  "name": "checkin-helper-js-tests",
+  "private": true,
+  "description": "Dev-only: jsdom for tests/js (the lens clients). Node 14 compatible, hence jsdom 16.",
+  "devDependencies": {
+    "jsdom": "16.7.0"
+  }
+}

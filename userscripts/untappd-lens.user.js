@@ -378,7 +378,7 @@
   // `shop` and `page` (the product's own link when the card has one) tell the bot where a shop title
   // was seen - the review queue shows them as the source.
   async function apiLookup(items) {
-    return (await apiPost("/api/lens/lookup", { items, client: "userscript 2.9.4" })).results;
+    return (await apiPost("/api/lens/lookup", { items, client: "userscript 2.9.5" })).results;
   }
 
   function productLink(card) {

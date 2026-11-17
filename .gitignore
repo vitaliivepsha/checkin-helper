@@ -75,3 +75,6 @@ restart_notify.json
 limited.json
 pinned_limited.json
 bot_log.txt*
+
+# Dev-only JS test dependencies (package.json: jsdom for the lens client tests)
+node_modules/
