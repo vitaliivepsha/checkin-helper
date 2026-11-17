@@ -250,7 +250,11 @@ _BEER_URL_ID_RE = re.compile(r"/(\d+)/?$")
 # of how many owners there are.
 COMMENT_WATCH_INTERVAL_SECONDS = float(os.environ.get("COMMENT_WATCH_INTERVAL_SECONDS", "120"))
 COMMENT_WATCH_IDLE_SLEEP_SECONDS = float(os.environ.get("COMMENT_WATCH_IDLE_SLEEP_SECONDS", "300"))
-COMMENT_WATCH_MIN_REMAINING = int(os.environ.get("COMMENT_WATCH_MIN_REMAINING", "10"))
+# Floors of the background loops that spend a user's own Untappd token must leave a reserve for that user's live
+# check-ins (BACKGROUND_QUOTA_RESERVE, see tests): with floors of 5 and 10 the loops together drained the owner's
+# token to ~7 of 100 and a manual check-in could meet a 429.
+BACKGROUND_QUOTA_RESERVE = 20
+COMMENT_WATCH_MIN_REMAINING = int(os.environ.get("COMMENT_WATCH_MIN_REMAINING", "25"))
 COMMENT_WATCH_CHECK_LIMIT = int(os.environ.get("COMMENT_WATCH_CHECK_LIMIT", "10"))
 
 _comment_watch_task = None  # module-level, keeps the asyncio.create_task result alive (avoid GC)
@@ -322,7 +326,7 @@ _public_search_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="publ
 # cooldown than had_it/venue's own 30-day one is fine.
 BADGE_INDEX_SYNC_INTERVAL_SECONDS = float(os.environ.get("BADGE_INDEX_SYNC_INTERVAL_SECONDS", "60"))
 BADGE_INDEX_SYNC_IDLE_SLEEP_SECONDS = float(os.environ.get("BADGE_INDEX_SYNC_IDLE_SLEEP_SECONDS", "300"))
-BADGE_INDEX_SYNC_MIN_REMAINING = int(os.environ.get("BADGE_INDEX_SYNC_MIN_REMAINING", "5"))
+BADGE_INDEX_SYNC_MIN_REMAINING = int(os.environ.get("BADGE_INDEX_SYNC_MIN_REMAINING", "25"))
 BADGE_INDEX_SYNC_PAGE_SIZE = int(os.environ.get("BADGE_INDEX_SYNC_PAGE_SIZE", "50"))
 BADGE_INDEX_SYNC_RESYNC_COOLDOWN_SECONDS = float(os.environ.get("BADGE_INDEX_SYNC_RESYNC_COOLDOWN_SECONDS", str(24 * 60 * 60)))
 

@@ -57,3 +57,11 @@ async def test_the_mcp_wrapper_sends_the_documented_arguments(monkeypatch):
     page = await untappd_mcp.get_venue_checkins("tok", 123, limit=60, min_id=9)
     assert sent == {"name": "get_venue_checkins", "arguments": {"venueId": 123, "limit": 25, "minId": 9}}
     assert page["checkins"]["items"] == [{"checkin_id": 5}]          # flat envelope normalized like get_user_checkins
+
+
+def test_background_loops_on_a_users_token_leave_a_reserve_for_live_check_ins():
+    # the owner's token sat at ~7 of 100 because two loops stopped at floors of 5 and 10
+    for floor in (ws.HAD_IT_BACKFILL_MIN_REMAINING, ws.VENUE_BACKFILL_MIN_REMAINING, ws.AUTO_TOAST_MIN_REMAINING,
+                  ws.COMMENT_WATCH_MIN_REMAINING, ws.BADGE_INDEX_SYNC_MIN_REMAINING, ws.NOVELTY_FACTS_MIN_REMAINING,
+                  ws.FESTIVAL_WATCH_VENUE_MCP_FALLBACK_MIN_REMAINING):
+        assert floor >= ws.BACKGROUND_QUOTA_RESERVE
