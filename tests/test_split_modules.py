@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-SPLIT_MODULES = ["lens_routes", "checkin_routes"]
+SPLIT_MODULES = ["lens_routes", "checkin_routes", "festival_watch_routes"]
 
 
 def _module_level_names(table) -> set[str]:
