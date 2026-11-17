@@ -9,6 +9,7 @@ owner, and the running process is left alone."""
 import asyncio
 import json
 import os
+import shutil
 import sys
 
 IMPORT_SMOKE_SECONDS = 120
@@ -62,6 +63,12 @@ async def validate(cwd: str, changed: list[str]) -> list[str]:
             code, out = await _run(sys.executable, "-m", "py_compile", path, cwd=cwd, timeout=60)
             if code != 0:
                 errors.append(f"{name}: {out.strip().splitlines()[-1] if out.strip() else 'does not compile'}")
+        elif name.endswith(".js") and shutil.which("node"):
+            # A syntax error in app.js blanks the whole Mini App and nothing else would notice (only when node is
+            # installed on the machine; without it the check is skipped).
+            code, out = await _run("node", "--check", path, cwd=cwd, timeout=60)
+            if code != 0:
+                errors.append(f"{name}: {out.strip().splitlines()[0] if out.strip() else 'syntax error'}")
         elif name.endswith(".json"):
             try:
                 with open(path, encoding="utf-8") as f:

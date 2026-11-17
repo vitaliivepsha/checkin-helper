@@ -3,7 +3,9 @@
 import hashlib
 import hmac
 import json
+import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
@@ -82,3 +84,21 @@ async def test_the_webhook_rolls_back_a_broken_push_and_deploys_the_fix(tmp_path
         r = await c.post("/api/deploy/webhook", data=body, headers=headers)
         assert r.status == 200 and (await r.json())["deployed"] is True
         assert (live / "app.py").read_text() == "x = 2\n" and _head(live) != good       # the fix passes through the earlier bad commit
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+async def test_a_javascript_syntax_error_is_reported(tmp_path):
+    (tmp_path / "good.js").write_text("const a = 1;\n", encoding="utf-8")
+    (tmp_path / "bad.js").write_text("function (", encoding="utf-8")
+    problems = await deploy_checks.validate(str(tmp_path), ["good.js", "bad.js"])
+    assert len(problems) == 1 and problems[0].startswith("bad.js")
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+def test_every_shipped_javascript_file_parses():
+    import subprocess
+    root = Path(__file__).resolve().parent.parent
+    for path in [root / "webapp" / "app.js", root / "extension" / "content.js", root / "extension" / "background.js",
+                 root / "extension" / "options.js", root / "userscripts" / "untappd-lens.user.js"]:
+        result = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
+        assert result.returncode == 0, f"{path.name}: {result.stderr[:200]}"
