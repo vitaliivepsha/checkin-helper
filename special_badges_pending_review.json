@@ -18,5 +18,10 @@
     "url": "https://untappd.com/blog/untappd-check-in-challenge-week-4/1977",
     "note": "Untappd Check-In Challenge Week 4 (Nov 23-29, 2026): criteria is 'check in any wine' - red, white, rose, sparkling, dessert, or local winery, no narrower restriction. Wine isn't a beer style or country in Untappd's taxonomy, so special_badges.json's kind:style/kind:country matcher can't encode this (same 'any'-type case as Week 1). No distinct badge-artwork image found on the post (only a generic challenge featured image, not an assets.untappd.com/promo/... badge icon).",
     "foundAt": "2026-11-24"
+  },
+  {
+    "url": "https://untappd.com/blog/new-badge-merry-punchmas/1974",
+    "note": "Merry Punchmas badge (Nov 27 - Dec 27, 2026, sponsored by Punch Cigars): criteria is 'check in any beverage ... in the USA only' - no style/country-of-origin restriction (same 'any' case as Week 1/Week 4/16th Anniversary), and the USA-only part is a check-in-location restriction, not a beer-origin-country match, which this schema's kind:country matcher doesn't compute (badge_stats.py matches beer.country, not the user's location). Badge artwork found: https://assets.untappd.com/promo/aa44620936_blogpunchmas26.jpg.",
+    "foundAt": "2026-11-26"
   }
 ]
